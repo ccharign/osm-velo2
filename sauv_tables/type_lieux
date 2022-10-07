@@ -1,0 +1,352 @@
+id;nom_osm;nom_français;catégorie
+196;townhall;mairie;amenity
+197;school;école;amenity
+198;pharmacy;pharmacie;amenity
+199;public_bookcase;boîte à livres;amenity
+200;bicycle_parking;parking vélo;amenity
+201;doctors;médecin;amenity
+202;restaurant;restaurant;amenity
+203;shelter;abris;amenity
+204;veterinary;vétérinaire;amenity
+205;place_of_worship;lieu religieu;amenity
+206;bakery;boulangerie;shop
+207;copyshop;reprographie;shop
+208;beauty;salon de beauté;shop
+209;hairdresser;coiffeur;shop
+210;computer;boutique informatique;shop
+211;motorcycle;;shop
+212;wholesale;magasin en gros;shop
+213;shoes;magasin de chaussures;shop
+214;supermarket;supermarché;shop
+215;information;informations touristiques;tourism
+216;hotel;hôtel;tourism
+217;camp_site;camping;tourism
+218;library;bibliothèque;amenity
+219;post_office;poste;amenity
+220;community_centre;centre communautaire;amenity
+221;parking;;amenity
+222;fuel;;amenity
+223;parking_entrance;;amenity
+224;drinking_water;eau potable;amenity
+225;bank;banque;amenity
+226;pub;pub;amenity
+227;cinema;cinéma;amenity
+228;fast_food;fast food;amenity
+229;bar;bar;amenity
+230;taxi;;amenity
+231;police;police;amenity
+232;cafe;café;amenity
+233;courthouse;tribunal;amenity
+234;atm;distributeur de billets;amenity
+235;fire_station;pompiers;amenity
+236;hookah_lounge;lounge;amenity
+237;research_institute;;amenity
+238;dentist;dentiste;amenity
+239;kindergarten;crèche;amenity
+240;theatre;théâtre;amenity
+241;fountain;fontaine;amenity
+242;public_building;;amenity
+243;ski_rental;location de skis;amenity
+244;nightclub;discothèque;amenity
+245;social_facility;;amenity
+246;driving_school;;amenity
+247;car_sharing;autopartage;amenity
+248;arts_centre;centre artistique;amenity
+249;bus_station;arrêt de bus;amenity
+250;car_rental;;amenity
+251;public_bath;bains publics;amenity
+252;ice_cream;glacier;amenity
+253;dojo;dojo;amenity
+254;car_wash;;amenity
+255;recycling;déchetterie;amenity
+256;music_school;école de musique;amenity
+257;monastery;monastère;amenity
+258;marketplace;marché;amenity
+259;vending_machine;distributeur;amenity
+260;vehicle_inspection;;amenity
+261;waste_basket;poubelle;amenity
+262;college;école;amenity
+263;hunting_stand;stand de tir;amenity
+264;planetarium;planetarium;amenity
+265;bureau_de_change;bureau de change;amenity
+266;lavoir;lavoir;amenity
+267;car_pooling;;amenity
+268;swingerclub;;amenity
+269;language_school;école de languer;amenity
+270;bicycle_rental;location de vélos;amenity
+271;spa;spa;amenity
+272;studio;studio;amenity
+273;yes;;amenity
+274;food_court;restaurants;amenity
+275;ferry_terminal;ferry;amenity
+276;bench;banc;amenity
+277;stage;;amenity
+278;crypt;crypte;amenity
+279;childcare;crèche;amenity
+280;personal_service;service à domicile;amenity
+281;services;;amenity
+282;healthcare;santé;amenity
+283;toilets;toilettes;amenity
+284;translation;traducteur;amenity
+285;social_centre;centre social;amenity
+286;waste_disposal;;amenity
+287;parking_space;;amenity
+288;gas_cabinet;;amenity
+289;coworking_space;espace de cotravail;amenity
+290;clock;horloge;amenity
+291;university;université;amenity
+292;internet_cafe;café internet;amenity
+293;clinic;clinique;amenity
+294;water_point;point d’eau;amenity
+295;boat_rental;location de bateaux;amenity
+296;hospital;hôpital;amenity
+297;animal_training;;amenity
+298;mobile_library;bibliobus;amenity
+299;reception_desk;;amenity
+300;animal_breeding;animalerie;amenity
+301;charging_station;;amenity
+302;ski_school;école de ski;amenity
+303;workshop;atelier;amenity
+304;reading_box;boîte à lire;amenity
+305;money_transfer;transfert d’argent;amenity
+306;give_box;boîte à dons;amenity
+307;animal_shelter;abris pour animaux;amenity
+308;photo_booth;photomaton;amenity
+309;"bar;restaurant";bar-restaurant;amenity
+310;training;;amenity
+311;parcel_locker;casier à colis;amenity
+312;bbq;barbecue;amenity
+313;bicycle_repair_station;réparation de vélos;amenity
+314;post_box;boîte aux lettres;amenity
+315;post_depot;dépot de colis;amenity
+316;events_venue;;amenity
+317;mortuary;chambre mortuaire;amenity
+318;laboratory;laboratoire;amenity
+319;exhibition_centre;centre d’expositions;amenity
+320;concert_hall;salle de concerts;amenity
+321;grave_yard;cimetière;amenity
+322;casino;casino;amenity
+323;prison;prison;amenity
+324;mountain_rescue;poste de secours;amenity
+325;toy_library;ludothèque;amenity
+326;canteen;cantine;amenity
+327;rental;location;amenity
+328;baking_oven;four à pain;amenity
+329;pedestrian;place piétonne;amenity
+330;funeral_hall;centre funéraire;amenity
+331;clubhouse;club;amenity
+332;conference_centre;centre de conférences;amenity
+333;camping;camping;amenity
+334;multipolygon;;amenity
+335;site;site;amenity
+336;building;;amenity
+337;gas;gaz;shop
+338;"convenience;gas";;shop
+339;butcher;boucherie;shop
+340;convenience;épicerie;shop
+341;dry_cleaning;nettoyage à sec;shop
+342;wine;cave;shop
+343;books;librairie;shop
+344;greengrocer;primeur;shop
+345;frame;encadrement;shop
+346;laundry;laverie;shop
+347;florist;fleuriste;shop
+348;clothes;vêtements;shop
+349;variety_store;bazar;shop
+350;sewing;tailleur;shop
+351;mobile_phone;téléphone;shop
+352;car_repair;;shop
+353;newsagent;journaux;shop
+354;household_linen;linge de maison;shop
+355;pet;animalerie;shop
+356;gift;boutique de cadeaux;shop
+357;outdoor;magasin de plein air;shop
+358;optician;opticien;shop
+359;sports;magasin de sport;shop
+360;deli;épicerie fine;shop
+361;musical_instrument;magasin de musique;shop
+362;car;;shop
+363;chemist;droguerie;shop
+364;ticket;;shop
+365;toys;magasin de jouets;shop
+366;hardware;quincaillerie;shop
+367;furniture;magasin de meuble;shop
+368;watches;boutique de montres;shop
+369;tobacco;bureau de tabac;shop
+370;glaziery;menuisier;shop
+371;hearing_aids;aide auditive;shop
+372;confectionery;confiserie;shop
+373;kiosk;kiosque;shop
+374;kitchen;cuisiniste;shop
+375;travel_agency;agence de voyages;shop
+376;electronics;boutique d’électronique;shop
+377;beverages;cave;shop
+378;bicycle;vélociste;shop
+379;organic;magasin bio;shop
+380;alcohol;cave;shop
+381;frozen_food;magasin de surgelés;shop
+382;locksmith;serrurier;shop
+383;ski;magasin de ski;shop
+384;"bicycle;sports";vélociste;shop
+385;cheese;fromager;shop
+386;doityourself;boutique DIY;shop
+387;seafood;poissonerie;shop
+388;pastry;patisserie;shop
+389;perfumery;parfumerie;shop
+390;leather;maroquinerie;shop
+391;garden_centre;magasin de jardinage;shop
+392;"kiosk;dry_cleaning";;shop
+393;antiques;antiquaire;shop
+394;vacant;;shop
+395;car_parts;;shop
+396;paint;magasin de peinture;shop
+397;tattoo;tatoueur;shop
+398;pet_grooming;toilettage canin;shop
+399;jewelry;bijouterie;shop
+400;bed;literie;shop
+401;massage;masseur;shop
+402;cosmetics;magasin de cosmétiques;shop
+403;vacuum_cleaner;magasin d’aspirateur;shop
+404;flooring;;shop
+405;music;disquaire;shop
+406;tailor;tailleur;shop
+407;curtain;magasin de rideaux;shop
+408;funeral_directors;pompes funèbres;shop
+409;trade;;shop
+410;phone;magasin de téléphones;shop
+411;electrician;électricien;shop
+412;interior_decoration;décoration d’intérieur;shop
+413;knife;coutellerie;shop
+414;postcard;boutique de carte postales;shop
+415;video;vidéo club;shop
+416;charity;boutique caritative;shop
+417;party;articles de fête;shop
+418;photo;boutique photo;shop
+419;collecting;boutique de collections;shop
+420;hifi;magasin hifi;shop
+421;strongbox;magasin de coffres forts;shop
+422;erotic;boutique érotique;shop
+423;e-cigarette;boutique de cigarettes électroniques;shop
+424;nutrition_supplements;compléments alimentaires;shop
+425;second_hand;boutique d’occasions;shop
+426;bathroom_furnishing;meubles de salle de bain;shop
+427;games;boutique de jeux;shop
+428;bag;magasin de sacs;shop
+429;stationery;;shop
+430;houseware;matériel domestique;shop
+431;fireplace;cheminées;shop
+432;chocolate;chocolaterie;shop
+433;fabric;;shop
+434;fashion_accessories;accessoires de mode;shop
+435;video_games;jeux vidéos;shop
+436;art;galerie;shop
+437;lamps;lampes;shop
+438;photo_studio;studio photo;shop
+439;tea;thé;shop
+440;farm;produits fermiers;shop
+441;grocery;épicerie;shop
+442;herbalist;herboriste;shop
+443;medical_supply;matériel médical;shop
+444;pasta;pâtes;shop
+445;cannabis;CBD;shop
+446;coffee;café;shop
+447;printer_ink;cartouches d’encre;shop
+448;doors;portes;shop
+449;medical;matériel médical;shop
+450;baby_goods;articles pour bébés;shop
+451;windows;menuisier;shop
+452;craft;;shop
+453;fishing;pêche;shop
+454;yes;;shop
+455;mall;centre commercial;shop
+456;haberdashery;;shop
+457;repair;réparation;shop
+458;batteries;batteries;shop
+459;department_store;grand magasin;shop
+460;water_sports;sport aquatiques;shop
+461;window_blind;volets;shop
+462;swimming_pool;piscine;shop
+463;electrical;matériel électrique;shop
+464;pawnbroker;prêteur sur gages;shop
+465;paper;papéterie;shop
+466;ambulatory_care;aide à domicile;shop
+467;housecleaning;nettoyage;shop
+468;lottery;;shop
+469;carpet;tapis;shop
+470;honey;miel;shop
+471;tyres;;shop
+472;soap;savonnerie;shop
+473;tool_hire;location d’outils;shop
+474;tiles;carrelage;shop
+475;estate_agent;agent immobilier;shop
+476;appliance;;shop
+477;boutique;;shop
+478;handicraft;;shop
+479;weapons;armurerie;shop
+480;model;;shop
+481;"greengrocer;cheese";épicier fromager;shop
+482;motorcycle_repair;;shop
+483;3d_printing;impression 3D;shop
+484;general;;shop
+485;dairy;crèmerie;shop
+486;storage_rental;espace de rangement;shop
+487;health_food;nourriture diététique;shop
+488;caravan;;shop
+489;lighting;éclairage;shop
+490;rental;;shop
+491;pest_control;centre anti-nuisible;shop
+492;"car;car_repair";;shop
+493;pottery;potier;shop
+494;hairdresser_supply;matériel de coiffure;shop
+495;truck_repair;;shop
+496;mushrooms;champignons;shop
+497;skate;skate;shop
+498;scuba_diving;matériel de plongée;shop
+499;vegetables;légumes;shop
+500;brewery;brasserie;shop
+501;"furniture;hifi;electronics";;shop
+502;garden_furniture;mobilier de jardin;shop
+503;canoe_hire;location de canoés;shop
+504;battery;batteries;shop
+505;outpost;;shop
+506;no;;shop
+507;groundskeeping;;shop
+508;"bicycle;hunting;fishing";;shop
+509;radiotechnics;radio;shop
+510;multipolygon;;shop
+511;viewpoint;point de vue;tourism
+512;alpine_hut;refuge;tourism
+513;artwork;art;tourism
+514;attraction;attraction;tourism
+515;picnic_site;coin à pique nique;tourism
+516;yes;;tourism
+517;chalet;chalet;tourism
+518;guest_house;maison d’hôtes;tourism
+519;apartment;appartements;tourism
+520;museum;musée;tourism
+521;hostel;hôtel;tourism
+522;"attraction;viewpoint";;tourism
+523;"information;picnic_site";;tourism
+524;gallery;galerie;tourism
+525;caravan_site;;tourism
+526;theme_park;parc à thème;tourism
+527;wilderness_hut;refuge;tourism
+528;cabin;bungalow;tourism
+529;resort;station;tourism
+530;multipolygon;;tourism
+531;site;site;tourism
+532;sanitary_dump_station;;amenity
+533;construction;;shop
+534;soutien_scolaire;soutien scolaire;shop
+535;furnace;four;shop
+536;office_supplies;matériel de bureau;shop
+537;agrarian;matériel agricole;shop
+538;security;;shop
+539;anime;anime;shop
+540;camera;photographie;shop
+541;collector;collection;shop
+542;company;;shop
+543;home_automation;;shop
+544;"bicycle;motorcycle";;shop
+545;hvac;;shop
+546;zoo;zoo;tourism

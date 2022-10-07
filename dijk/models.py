@@ -569,17 +569,21 @@ class Lieu(models.Model):
 
     
     @classmethod
-    def of_dico(cls, d, tous_les_id_osm: set[int], créer_type=False):
+    def of_dico(cls, d, tous_les_id_osm: set[int] = None, créer_type=False):
         """
         Entrée:
             d (str-> T dico)
-            tous_les_id_osm (int list)
+
+        Sortie (Lieu×bool×bool) :
+            (l, créé, utile) : (l’objet, l’objet ne figurait pas dans la base, l’objet figurait mais des modifs ont été détectées.)
+            Si utile==True, l’ancien objet a été mis à jour.
 
         params:
-             créer_type, si vrai, l’objet TypeLieu correspond au champ d["type"] est créé s’il n’existait pas.
+            créer_type : si vrai, l’objet TypeLieu correspond au champ d["type"] est créé s’il n’existait pas.
 
-        Sortie (Lieu×bool×bool) : (l, créé, utile) : (l’objet, l’objet ne figurait pas dans la base, l’objet figurait mais des modifs ont été détectées.)
-        Si utile==True, l’ancien objet a été mis à jour.
+            tous_les_id_osm : si présent créé sera Faux si l’id_osm du lieu y figure, et utile vrai ssi des différences avec celui de la base sont détectées.
+                              Si tous_les_id_osm est None, créé sera vrai.
+
 
         La création ou la modif n’est pas sauvegardée pour permettre un bulk_create ou bulk_update ultérieur.
         """
@@ -598,7 +602,7 @@ class Lieu(models.Model):
         nv_json_nettoyé = json.dumps(d_nettoyé)  # Sert à détecter une modif
 
         # Création ou récup de l’ancien
-        if d_nettoyé["id_osm"] in tous_les_id_osm:
+        if tous_les_id_osm and d_nettoyé["id_osm"] in tous_les_id_osm:
             ancien = Lieu.objects.get(id_osm=d_nettoyé["id_osm"])
             if ancien.json_nettoyé == nv_json_nettoyé:
                 # tout est déjà dans la base

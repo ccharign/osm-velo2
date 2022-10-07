@@ -367,7 +367,7 @@ def coords_of_objet_overpy(o, type_objet_osm: str):
         return float(o.center_lon), float(o.center_lat)
 
 
-def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, tous_les_id_osm: set[int], force=False):
+def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, tous_les_id_osm: set[int] = None, force=False, bavard=0):
     """
     Entrées:
         req : une requête overpass
@@ -375,10 +375,11 @@ def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, tous_les_id
     Sortie (Lieu list × Lieu list) : (nouveaux lieu (à bulk_creater), lieux à màj)
     Paramètres:
         force, si True on mets à jour même les lieux déjà présents dans la base et avec le même json_nettoyé
+        tous_les_id_osm, si True les lieux dont l’id y figurent seront mis dans à_màj si des différences avec celui de la base sont détectér, et ignorés sinon. Si tous_les_id_osm est faux, tous les lieux seront mis dans les nouveaux lieux.
     """
     
-    api = overpy.Overpass(url="https://lz4.overpass-api.de/api/interpreter", max_retry_count=2)
-    print(f"requête overpass : \n{requête}")
+    api = overpy.Overpass(url="https://lz4.overpass-api.de/api/interpreter", max_retry_count=3)
+    LOG(f"requête overpass : \n{requête}", bavard=bavard)
     rés_req = api.query(requête)
     print(f"\nTraitement des {len(rés_req.nodes)} nœud, {len(rés_req.ways)} ways , et {len(rés_req.relations)} relations obtenues.\n")
     
@@ -393,7 +394,7 @@ def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, tous_les_id
                  #"objet overpy": x
                  }
             d.update(x.tags)
-            l, créé, utile = mo.Lieu.of_dico(d, tous_les_id_osm, créer_type=True)
+            l, créé, utile = mo.Lieu.of_dico(d, tous_les_id_osm=tous_les_id_osm, créer_type=True)
             if créé:
                 à_créer.append(l)
             elif utile or force:
@@ -442,13 +443,12 @@ def lieux_of_bb(bb, bavard=0):
     """
     res = []
     for catégorie_lieu in ["amenity", "shop", "tourism"]:
-        rés_req = récup_catégorie_lieu(
+        req = récup_catégorie_lieu(
             catégorie_lieu,
             zone_overpass=str(bb)[1:-1],
             bavard=bavard
         )
-        LOG("Résultat de la requête récupéré. Je passe au traitement.", bavard=bavard)
-        res.extend(traitement_rés_req(rés_req, catégorie_lieu))
+        res.extend(traitement_req_récup_lieux(req, catégorie_lieu)[0])
     return res
 
 
@@ -480,7 +480,7 @@ def lieux_of_types_lieux(centre, rayon, types, bavard=0):
         out center;
         """
         LOG(f"Requête overpass:\n {requête}", bavard=1)
-        res.extend(traitement_req(requête, cat))
+        res.extend(traitement_req_récup_lieux(requête, cat)[0])
     LOG(f"Résultat :\n {res}", bavard=1)
     return res
 
