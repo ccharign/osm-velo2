@@ -1,5 +1,4 @@
 # -*- coding:utf-8 -*-
-
 import re
 
 
@@ -36,37 +35,6 @@ class Étape():
         self.nom = ""
 
         
-        # Cas général : le texte est une adresse.
-        n, res.adresse = nœuds_of_étape(texte, g, z_d, nv_cache=nv_cache, bavard=bavard-1)
-        res.nœuds = set(n)
-        return res
-    #for n in self.nœuds:
-    #    assert n in g, f"J’ai obtenu un nœud qui n’est pas dans le graphe en lisant l’étape {texte} : {n}"
-
-
-    @classmethod
-    def of_dico(cls, d, champ, g, z_d, bavard=0):
-        """
-        Entrée :
-           d, dico contenant a priori le résultat d’un get
-           champ, nom du champ dans lequel chercher l’étape. S’il existe un champ nommé 'coords_'+champ et qu’il est rempli, sera utilisé pour obtenir directement les sommets via arête_la_plus_proche. L’objet renvoyé sera alors une ÉtapeArête et pas une Étape.
-        """
-        LOG(f"of_dico lancé. d: {d},\n champ:{champ}", bavard=bavard)
-        ch_coords = "coords_" + champ
-
-        if ch_coords in d and d[ch_coords]:
-            coords = tuple(map(float, d[ch_coords].split(",")))
-            LOG(f"Coords trouvées dans le champ {ch_coords} : {coords}", bavard=bavard)
-            nom, bis_ter, nom, ville = découpe_adresse(d[champ])
-            ad = Adresse()
-            ad.rue_initiale = nom
-            ad.ville = ville
-            return ÉtapeArête.of_coords(coords, g, z_d, ad=ad)
-        else:
-            nom = d[champ]
-            return cls.of_texte(nom, g, z_d)
-    
-
     def __str__(self):
         return self.nom
     
@@ -256,79 +224,6 @@ class ÉtapeLieu(Étape):
 
 
     
-
-    def marqueur_leaflet(self, coords, nomCarte="laCarte"):
-        """
-        Renvoie le code js pour créer un marqueur pour cette étape.
-        """
-        lon, lat = coords
-        infos = {"nom": str(self.adresse)}
-        return f"""marqueur_avec_popup({lon}, {lat}, {infos}, {nomCarte});"""
-
-    
-class ÉtapeArête():
-    """
-    Pour représenter une étape qui est une arête. Dispose de l’attribut nœud et de la méthode __str__ afin d’être utilisée dans un chemin comme la classe Étape.
-
-    Attributs:
-        nœuds (int set), set d’id_osm de sommets
-        coords_ini (float×float), coords du point dont cette arête était la plus proche. Servira de str pour l’enregistrement dans la base.
-        pk (int), clef primaire de l’arête dans la base models.Arête.
-        nom (str)
-    """
-    
-    def __init__(self):
-        self.nœuds = set()
-        self.coords_ini = None
-        self.pk = None
-        self.adresse = Adresse()
-        self.nom = None
-    
-    @classmethod
-    def of_arête(cls, a, coords, ad=None):
-        res = cls()
-        res.coords_ini = coords
-        res.nœuds = set((a.départ.id_osm, a.arrivée.id_osm))
-        #res.nom = nom
-        res.pk = a.pk
-        if ad:
-            res.adresse = ad
-        else:
-            res.adresse.rue_initiale = a.nom
-        res.adresse.coords = coords
-        return res
-
-    
-    @classmethod
-    def of_pk(cls, pk):
-        """
-        Je prend ici le milieu du premier segment de l’arête pour le champ coords.
-        """
-        a = Arête.objects.get(pk=pk)
-        premier_segment = a.géométrie()[:2]
-        coords = milieu(*premier_segment)
-        return cls.of_arête(a, coords)
-        
-    
-    @classmethod
-    def of_coords(cls, coords, g, z_d, ad=None):
-        a, _ = g.arête_la_plus_proche(coords, z_d)
-        return cls.of_arête(a, coords, ad=ad)
-    
-    
-    def __str__(self):
-        """
-        Sera utilisé pour enregistrement dans la base.
-        """
-        return f"Arête{self.coords_ini[0]},{self.coords_ini[1]}"
-    
-        
-    def joli_texte(self):
-        """
-        Pour affichage utilisateur.
-        """
-        return f"{self.nom}"
-
 
 def dico_arête_of_nœuds(g, nœuds):
     """

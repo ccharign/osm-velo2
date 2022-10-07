@@ -2,7 +2,6 @@
 
 import os
 import json
-
 from pprint import pformat
 
 from django.db import transaction
@@ -16,6 +15,7 @@ from params import RACINE_PROJET
 
 
 ### Données INSEE ###
+
 
 
 # def charge_villes(chemin_pop=os.path.join(RACINE_PROJET, "progs_python/stats/docs/densité_communes.csv"),
@@ -195,6 +195,7 @@ def nettoie_json_communes(chemin=os.path.join(RACINE_PROJET, "progs_python/initi
     print(f"{len(supprimés)} doublons de code insee")
     #return supprimés
 
+
 @transaction.atomic()
 def renormalise_noms_villes():
     """
@@ -226,7 +227,7 @@ def ajoute_villes_voisines():
     """
     Remplit les relations ville-ville dans la base.
     """
-    dico_coords = {}  # dico coord -> liste de villes
+    dico_coords = {} # dico coord -> liste de villes
     à_ajouter=[]
     print("Recherche des voisinages")
     for v in Ville.objects.all():

@@ -1,10 +1,13 @@
 import json
-
 from pprint import pformat
 
 from django.db import models, close_old_connections
 from dijk.progs_python.params import LOG
 from dijk.progs_python.lecture_adresse.normalisation0 import partie_commune
+#from dijk.progs_python.recup_donnees import rue_of_coords
+
+# Create your models here.
+
 
 
 def objet_of_dico(
@@ -80,7 +83,6 @@ class Ville(models.Model):
     population = models.IntegerField(null=True, default=None, blank=True)
     #densité = models.SmallIntegerField(null=True, default=None, blank=True)
     superficie = models.FloatField(null=True, default=None, blank=True)
-
     géom_texte = models.TextField(null=True, default=None, blank=True)
     données_présentes = models.BooleanField(default=False)
     #zone = models.ManyToManyField(Zone) # pb car la classe Zone n’est pas encore définie.
@@ -89,7 +91,7 @@ class Ville(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["nom_norm", "code_insee"], name="Le couple (nom_norm, code_insee) doit être unique."),
         ]
-
+    
     def __str__(self):
         return self.nom_complet
 
@@ -104,6 +106,8 @@ class Ville(models.Model):
     def of_nom(cls, nom):
         """ Renvoie la ville telle que partie_commune(nom) = ville.nom_norm"""
         return cls.objects.get(nom_norm=partie_commune(nom))
+
+    
     
 class Ville_Ville(models.Model):
     """ table d’association pour indiquer les villes voisines."""
@@ -142,6 +146,7 @@ class Ville_Zone(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["zone", "ville"], name="Pas de relation en double.")
         ]
+
 
 class Sommet(models.Model):
     
@@ -337,7 +342,6 @@ class Chemin_d(models.Model):
     def rues_interdites(self):
         return [r for r in self.interdites_texte.split(";") if len(r)>0]
     
-
     # @classmethod
     # def of_ligne_csv(cls, ligne, utilisateur=None):
     #     AR_t, pourcentage_détour_t, étapes_t,rues_interdites_t = ligne.strip().split("|")
@@ -432,6 +436,7 @@ class TypeLieu(models.Model):
     def __str__(self):
         return f"{self.nom_français} ({self.catégorie})"
 
+
     def __hash__(self):
         return self.nom_osm.__hash__()
 
@@ -488,6 +493,7 @@ class Lieu(models.Model):
         """
         return json.loads(self.json_initial)
 
+        
     def ville_ou_pas(self):
         """
         Renvoie ', nom_de_la_ville' si connue, et '' sinon
@@ -588,7 +594,6 @@ class Lieu(models.Model):
             cf: d.get(ce, None)
             for ce, cf in champs.items()
         }
-
         d_nettoyé["id_osm"] = int(d_nettoyé["id_osm"])
         nv_json_nettoyé = json.dumps(d_nettoyé)  # Sert à détecter une modif
 

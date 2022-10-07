@@ -46,7 +46,7 @@ def ajoute_code_postal(nom, code):
     Ajoute ou corrige le code postal de la ville.
     Sortie (models.Ville)
     """
-    essai = Ville.objects.filter(nom_norm=partie_commune(nom)).first()
+    essai = Ville.objects.filter(nom_norm = partie_commune(nom)).first()
     if essai:
         essai.code=code
         essai.save()
@@ -541,11 +541,11 @@ def met_en_clique(g, nœuds, nom, cycla_défaut=1.1, bavard=0):
             if t!=s:
                 if not Arête.objects.filter(départ__id_osm=s, arrivée__id_osm=t).exists():
                     a = Arête(
-                        départ=s_d,
-                        arrivée=t_d,
-                        longueur=g.d_euc(s, t),
-                        geom=f"{s_d.lon},{s_d.lat};{t_d.lon},{t_d.lat}",
-                        cycla_défaut=cycla_défaut
+                        départ = s_d,
+                        arrivée = t_d,
+                        longueur = g.d_euc(s,t),
+                        geom = f"{s_d.lon},{s_d.lat};{t_d.lon},{t_d.lat}",
+                        cycla_défaut= cycla_défaut
                     )
                     a.save()
                     cpt+=1

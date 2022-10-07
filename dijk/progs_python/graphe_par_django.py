@@ -418,6 +418,7 @@ class Graphe_django():
 
             
     def met_en_cache(self, adresse, res):
+        
         str_ad = adresse.pour_cache(),
         v_d = Ville.objects.get(nom_complet=adresse.ville.nom_complet)
         essai = Cache_Adresse.objects.filter(adresse=str_ad, ville=v_d)
@@ -490,3 +491,4 @@ class Graphe_django():
                 if nb_rés_restant < 0:
                     return []
         return [Rue.objects.get(nom_norm=r) for r in res]
+

@@ -3,7 +3,7 @@ from django import forms
 import dijk.models as mo
 
 
-class FormCycla(forms.Form):
+class CarteCycla(forms.Form):
     """
     Pour demander la zone de laquelle afficher la carte de cycla.
     """

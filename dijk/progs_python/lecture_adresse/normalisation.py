@@ -17,6 +17,7 @@ class AdresseMalFormée(Exception):
 
 ### Villes ###
 
+
 class Ville():
     """
     Attributs :

@@ -17,6 +17,7 @@ def int_of_code_insee(c):
     """
     return int(c.replace("A", "00").replace("B", "01"))
 
+
 def partie_commune(c):
     """ Appliquée à tout : nom de ville, de rue, et adresse complète
     Met en minuscules

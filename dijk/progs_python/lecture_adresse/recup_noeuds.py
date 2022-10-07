@@ -234,7 +234,7 @@ def nœuds_rue_of_nom_et_nœud(g, n, nom):
 
 
 def nœud_sur_rue_le_plus_proche(g, adresse, bavard=0):
-    """
+    """ 
     Entrée : g (graphe)
              adresse (instance de Adresse)
              coords ( (float, float) )

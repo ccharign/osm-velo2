@@ -562,6 +562,7 @@ def pour_complétion(requête, nbMax=15):
         # Fonctionne sauf qu’on ne récupère pas la ville pour l’instant
         # dans_l_arbre = g.arbre_lex_zone[z_d].complétion(à_chercher, tol=2, n_max_rés=nbMax)
         # print(dans_l_arbre)
+
         
         # Recherche dans les lieux
         lieux = Lieu.objects.filter(nom__icontains=rue, ville__in=req_villes).prefetch_related("ville", "type_lieu")
@@ -575,6 +576,7 @@ def pour_complétion(requête, nbMax=15):
         for rue_trouvée in dans_la_base:
             res.ajoute({"label": chaîne_à_renvoyer(rue_trouvée.nom_complet, rue_trouvée.ville.nom_complet)})
 
+        
         
         # Recherche dans les caches
         for truc in Cache_Adresse.objects.filter(adresse__icontains=rue, ville__in=req_villes).prefetch_related("ville"):

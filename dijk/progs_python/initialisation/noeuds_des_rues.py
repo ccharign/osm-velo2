@@ -54,8 +54,8 @@ def extrait_nœuds_des_rues(g, bavard=0):
     La liste des place piétonne est vue de la transformation d’icelles en cliques.
     """
     
-    déjàVu = {}  # dico (ville -> nom de rue -> set de nœuds). Ne sert que pour le cas d’une rue qui boucle.
-    res = {}  # dico (ville -> nom de rue -> liste des nœuds dans un ordre topologique )
+    déjàVu = {} # dico (ville -> nom de rue -> set de nœuds). Ne sert que pour le cas d’une rue qui boucle.
+    res = {} # dico (ville -> nom de rue -> liste des nœuds dans un ordre topologique )
     places_piétonnes = {}
 
     
@@ -63,13 +63,13 @@ def extrait_nœuds_des_rues(g, bavard=0):
         """
         Entrées :
             s (int), sommet actuel
-            rue (str), nom de la rue à suivre
+            rue (str), nom de la rue à suivre 
             rue_n (str), nom de la rue passé par prétraitement_rue
         Effet : remplit déjàVu[ville][rue] ainsi que res[ville][rue_n]
         """
         assert prétraitement_rue(rue_n) == rue_n, f"Rue non normalisée : {rue} (rue_n)"
         # Dans le cas d’une rue qui fourche on aura une branche après l’autre (parcours en profondeur de la rue).
-        for t in prochaine_sphère(g, [s], rue, rue_n, ville, déjàVu, set([s]), D_MAX_SUITE_RUE):  # Au cas où la rue serait découpées en plusieurs morceaux dans le graphe. Dans le cas basique, prochaine_sphère renvoie deux sommets, l’un d’eux étant sprec.
+        for t in prochaine_sphère(g, [s], rue, rue_n, ville, déjàVu, set([s]), D_MAX_SUITE_RUE): # Au cas où la rue serait découpées en plusieurs morceaux dans le graphe. Dans le cas basique, prochaine_sphère renvoie deux sommets, l’un d’eux étant sprec.
             if t not in déjàVu[ville][rue_n]:
                 res[ville][rue_n][1].append(t)
                 déjàVu[ville][rue_n].add(t)

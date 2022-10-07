@@ -7,6 +7,7 @@ import requests
 import json
 import os
 import urllib.parse
+#from io import BytesIO
 from pprint import pprint, pformat
 import subprocess
 
@@ -34,6 +35,7 @@ class LieuPasTrouvé(Exception):
 ### Avec data.gouv ###
 #https://adresse.data.gouv.fr/api-doc/adresse
 
+
 def cherche_adresse_complète(adresse, bavard=0):
     """
     Entrée : une adresse avec numéro de rue.
@@ -44,6 +46,7 @@ def cherche_adresse_complète(adresse, bavard=0):
     r = requests.get(api_url + urllib.parse.quote(str(adresse)))
     r = r.content.decode('unicode_escape')
     return json.loads(r)["features"][0]["geometry"]["coordinates"]
+
 
 
 def rue_of_coords(c, bavard=0):
@@ -103,6 +106,7 @@ def adresses_of_liste_lieux(ll, bavard=0, affiche=False):
     #os.remove("tmp.csv")
 
     return res
+        
 
 ### Avec Nominatim ###
 
@@ -364,7 +368,6 @@ def coords_of_objet_overpy(o, type_objet_osm: str):
 
 
 def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, tous_les_id_osm: set[int], force=False):
-
     """
     Entrées:
         req : une requête overpass

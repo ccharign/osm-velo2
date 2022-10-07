@@ -111,6 +111,7 @@ def union(t1, t2):
         if x not in t1:
             yield x
 
+            
 def union_liste(l):
     """
     Entrée : l, iterable d’itérables
@@ -120,11 +121,13 @@ def union_liste(l):
         for y in x:
             yield y
 
+            
 def intersection(t1, t2):
     """ Itérateur sur t1 ∩ t2."""
     for x in t1:
         if x in t2:
             yield x
+
 
 
 def morceaux_tableaux(t, taille):
@@ -230,7 +233,7 @@ def ajouteDico(d, clef, val):
         if val not in d[clef]:
             d[clef].append(val)
     else:
-        d[clef] = [val]
+            d[clef]=[val]
 
 # geopy.geocoders.options.default_user_agent = "pau à vélo"
 # localisateur = geopy.geocoders.Nominatim(user_agent="pau à vélo")
