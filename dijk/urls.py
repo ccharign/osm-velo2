@@ -13,7 +13,7 @@ urlpatterns = [
     path("limitations", views.limitations, name="limitations"),
     path("sous_le_capot", views.sous_le_capot, name="sous le capot"),
     path("rapport_de_bug", views.rapport_de_bug, name="bug"),
-    path("autourDeMoi", views.autourDeMoi, name="Autour de moi"),
+    path("autourDeMoi", views.autourDeMoi, name="autour de moi"),
     
     #path("visu_nv_chemin", views.visualisation_nv_chemin, name="visu nv chemin"),
     path("confirme_nv_chemin", views.confirme_nv_chemin, name="confirme nv chemin"),
