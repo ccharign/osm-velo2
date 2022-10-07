@@ -452,17 +452,16 @@ def lieux_of_bb(bb, bavard=0):
     return res
 
 
-def lieux_of_types_lieux(centre, rayon, types, bavard=0):
+def lieux_of_types_lieux(bb, types, bavard=0):
     """
     Entrées:
-        centre (float×float)
-        rayon (float)
+        bb (float×float×float×float)
         types (TypeLieu iterable)
 
     Sortie (dico list) : les lieux des types indiqués dans la bbox indiquée.
     """
     print(f"types reçus : {types}")
-    bb = bbox_autour(centre, rayon)
+
     # Tri par catégories de lieux:
     dico_type = {}  # dico catégorie -> liste des types de lieu de cette catégorie
     for tl in types:

@@ -37,6 +37,29 @@ function carteIci(){
     return laCarte;
 }
 
+function suivi_de_la_bb(carte, nom_form){
+    carte.on(
+	'moveend',
+	function (){
+	    t =  bbox_of_carte(carte);
+	    texte= `${t[0]},${t[1]},${t[2]},${t[3]}`;
+	    form = document.getElementById(nom_form);
+	    
+        form["id_bbox"].value = texte;
+	});
+}
+
+function bbox_of_carte(carte){
+    // Entrée : une carte leaflet
+    // Sortie : (s, o, n, e)
+    bounds = carte.getBounds();
+    ne = bounds.getNorthEast();
+    n = ne.lat; e=ne.lng;
+    so = bounds.getSouthWest();
+    s = so.lat; o=so.lng;
+    return [s,o,n,e];
+}
+
 
 function carte_bb(s,o,n,e){
     // Crée une carte sur la bb passée en arg
@@ -44,7 +67,6 @@ function carte_bb(s,o,n,e){
     // Sortie : la carte créé
 
     var laCarte = L.map('laCarte', {fullscreenControl: true}).fitBounds([[s,o],[n,e]]);
-
 
     // tuiles osm de base
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -66,7 +88,6 @@ function carte_bb(s,o,n,e){
     console.log("Carte créé :");
     console.log(laCarte);
     return laCarte;
-    
 }
 
 

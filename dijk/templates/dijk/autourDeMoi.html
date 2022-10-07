@@ -31,22 +31,28 @@
       // Localisation
       form = document.getElementById("fouine");
       navigator.geolocation.getCurrentPosition(
-	  pos => àLaGéoloc(pos, form),
-	  () => console.log("Échec de la géolocalisation.")
+	      pos => àLaGéoloc(pos, form),
+	      () => console.log("Échec de la géolocalisation.")
       );
 
       // La carte      
       // fonction jquery pour charger un script et lancer une fonction une fois ceci terminé :
-      $.getScript("{% static 'dijk/leaflet-providers.js'%}", function() {
+      // $.getScript("{% static 'dijk/leaflet-providers.js'%}", function() {
 	  // leaflet-provider a besoin que leaflet ait été chargé, et est nécessaire à carteIci
 	  // leaflet-provider chargé
-	  var laCarte = carteIci(form);
-	  console.log("(autourDeMoi.html) : laCarte:");
-	  console.log(laCarte);
+
+    {% if bbox%}
+      laCarte = carte_bb({{bbox}});
+    {% else %}
+	    var laCarte = carteIci(form);
+    {% endif %}
+
 	  {% for m in marqueurs %}
-	  {{m | safe}}
-	  {% endfor %}
-      });  
+	    {{m | safe}}
+    {% endfor %}
+
+    suivi_de_la_bb(laCarte, "fouine");
+      // });  
   })
 </script>
 {% endlocalize %}
@@ -54,6 +60,7 @@
 
 
 <!-- Le formulaire -->
+
 <!--
 Pour personaliser l’affichage, notamment le mettre sur deux colonnes : 
  https://medium.com/@alfarhanzahedi/customizing-modelmultiplechoicefield-in-a-django-form-96e3ae7e1a07

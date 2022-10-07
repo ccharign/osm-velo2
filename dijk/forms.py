@@ -103,8 +103,9 @@ class AutourDeMoi(forms.Form):
         widget=forms.CheckboxSelectMultiple,
         required=False
     )
-    rayon = forms.FloatField(label="Chercher dans un rayon de (en km) :", initial=.4)
+    #rayon = forms.FloatField(label="Chercher dans un rayon de (en km) :", initial=.4)
     localisation = forms.CharField(widget=forms.HiddenInput, initial="-0.36667,43.299999")
+    bbox = forms.CharField(widget=forms.HiddenInput())
 
 
 class RapportDeBug(forms.ModelForm):  # créer un form automatiquement depuis un modèle https://docs.djangoproject.com/en/4.0/topics/forms/modelforms/

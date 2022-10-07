@@ -643,11 +643,15 @@ def autourDeMoi(requête):
     if requête.GET:
         données = récup_données(requête.GET, forms.AutourDeMoi, validation_obligatoire=False)
         lon, lat = map(float, données["localisation"].split(","))
+        bbox = tuple(map(float, données["bbox"].split(",")))
+        print(f"bbox : {bbox}")
 
         print("Types de lieux à chercher :")
         for tl in données["type_lieu"]:
             print(f"    {tl}")
-        lieux = recup_donnees.lieux_of_types_lieux_tenace((lon, lat), données["rayon"]*1000, données["type_lieu"].all(), bavard=3)
+            
+        lieux = recup_donnees.lieux_of_types_lieux(bbox, données["type_lieu"].all(), bavard=3)
+        
         LOG(f"{len(lieux)} lieux trouvés", bavard=1)
         données["marqueurs"] = [l.marqueur_leaflet("laCarte") for l in lieux]
         pprint(données["marqueurs"])
