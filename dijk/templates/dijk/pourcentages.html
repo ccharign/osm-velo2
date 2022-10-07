@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}
+Pourcentages de voies piétonnes et de pistes cyclables
+{% endblock %}
+
+{% block contenu %}
+<table border=1px>
+  <tr>
+    <th> Ville </th> <th> Pourcentage de rues piétonnes </th> <th> Pourcentage de chemins piétons </th> <th> Pourcentage de pistes cyclables </th>
+  </tr>
+  
+  {% for x in stats %}
+  <tr>
+    {% for s in x %}
+    <th> {{s}}</th>
+    {% endfor %}
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}
+
+<p>
+  Les chemins piétons comprennent les chemins dans les parcs, les cimetières, les bois...
+  </br>
+
+  Les pistes cyclables sont les voies réservées aux vélos et physiquement séparées des autres voies. Un trait de peinture au bord d’une route n’est pas une piste cyclable.
+</p>
+<p>
+  Afin de garantir la transparence des résultats obtenus, voici le <a href="https://github.com/ccharign/osm-velo/blob/3fb79f782afc668df115fbae50742fe9a65bfbd8/site_velo/dijk/progs_python/initialisation/stats.py">code utilisé</a>
+  </br>
+
+  <ul>
+  <li>Le pourcentage de voies piétonnes est obtenu en quotientant la longueur totale de « ways » openstreetmap marquées « highway: pedestrian » pour la longueur totale de ways marquées « highway ».
+  </li>
+
+    <li>  Le pourcentage de chemins piétons est obtenu en quotientant la longueur totale de ways marquées « highway : footway ou steps » par la longueur totale de ways marquées « highway ».
+    </li>
+  
+  <li>  Le pourcentage de pistes cyclables est obtenu en quotientant la longueur totale de ways marquées « highway : cycleway » par la longueur totale de ways marquées « highway ».
+    </li>
+  </ul>
+</p>

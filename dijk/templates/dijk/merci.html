@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %} Merci {% endblock %}
+
+{% block contenu %}
+Contribution enregistrée, un grand merci !
+
+<p>
+  Chemin(s) mis en mémoire :
+  <ul>
+    {% for c in chemin %}
+    <li>{{c}}</li>
+    {% endfor %}
+  </ul>
+</p>
+{% endblock %}
+

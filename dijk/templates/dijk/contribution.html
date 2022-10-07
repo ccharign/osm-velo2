@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block titre %} Contribuer {% endblock %}
+    
+{% block contenu %}
+
+Vous voulez aider ce site ? Quelques suggestions :
+<ul>
+  <li> L’utiliser ! </li>
+  
+  <li> Enregistrer les itinéraires que vous pratiquez et recommandez. Voir <a href="{% url 'mode d’emploi'%}"> le mode d’emploi du site</a>. </li>
+  
+  <li>  <a href="{% url 'bug'%}"> Signaler les bugs</a> (et les fautes d’orthographe !).</li>
+  
+  <li>   <a href="{% url 'bug'%}"> Proposer des améliorations</a> : que ça soit de nouvelles fonctionalités, ou de simples questions de mise en page ou de plan du site, tous les détails comptent !</li>
+
+  <li> <a href="https://www.openstreetmap.fr/contribuer/">Remplir openstreetmap</a>, d’une part si vous remarquez qu’un passage n’est pas proposé par l’appli, ou pour rajouter vos bars, restaus, et boutiques favorites, qui seront alors proposées dans la complétion automatique. Vous pouvez aussi rajouter les infos pratiques comme horaires, numéro de téléphone etc qui seront affichées en info-bulles sur la carte.
+    </li>
+  
+  <li> M’envoyer un message pour me dire que ça a marché (ou pas). cyril [point] charignon [chez] net-c.com </li>
+
+  <li>Je suis un mathématicien, pas un développeur web... Si vous avez des compétences en html, css et cie et que vous pouvez améliorer l’aspect et l’ergonomie du site, je vous bénirai sur quatre générations.</li>
+
+  
+  <li> Pour les amateurs de clonages et de pull request : <a href="https://github.com/ccharign/osm-velo"> le dépôt github</a>.
+</ul>
+
+
+{% endblock %}

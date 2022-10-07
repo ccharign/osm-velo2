@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+
+
+{% block contenu %}
+
+{% load bootstrap3 %}
+
+<script>
+  $(document).ready(
+      voir_si_géoLoc
+  );
+</script>
+
+  <p>
+    Bienvenue dans le calculateur participatif d’itinéraires cyclables de {{ville}} !
+  </p>
+
+
+  <form action = "{% url 'recherche' zone_t %}" method="get" id="recherche">
+
+    <div class="form-group">
+      <div class="row">
+
+	{% bootstrap_form recherche %}
+
+	<div class="col-md-4">
+	  <input type="submit" class="btn btn-default" value="C’est parti!">
+	</div>
+
+      </div>
+
+      <div class="help-block">  La ville par défaut est {{ville}}. Pour indiquer un emplacement dans une autre ville, préciser celle-ci après une virgule. Exemples : « 84 avenue de Buros », « rue du souvenir, Lons », « mairie, Saint Etienne de Crossey » ou « The Ritz, London ».
+      </div>
+    </div>
+
+    <br>
+<<<<<<< HEAD
+
+    <input type="checkbox"  name="plusdoptions" label="Plus d’options">
+<div id="plusdoptions">
+  
+  <h4> Plus d’options : </h4>
+  
+  <br>
+  
+      <div class="form-group">
+        <label for="étapes"> Étapes, séparées par des point-virgules :</label>
+        <div class="input-group">
+    <input type="text" class="form-control" id="étapes" name="étapes" >
+    <span class="input-group-addon" data-toggle="popover" title="Étapes" data-trigger="hover" data-placement="left"
+          data-content="L’algo renverra un itinéraire passant par au moins un tronçon de chacune des étapes indiquées. Ne pas indiquer une rue que vous voulez juste traverser.">?</span>
+    </div>
+      </div>
+  
+  
+      <div class="form-group">
+        <label for="rues_interdites"> Rues à éviter, séparées par des point-virgules :</label>
+        <div class="input-group">
+    <input type="text" class="form-control" id="rues_interdites" name="rues_interdites" >
+    <span class="input-group-addon" data-toggle="popover" data-placement="left" title="Rues à éviter" data-trigger="hover"
+          data-content="L’algo renverra un itinéraire qui ne suit aucune portion des rues indiquées. Il pourra toutefois en croiser une.">?</span>
+        </div>
+      </div>
+  
+      <br>
+  
+      <div class="form-group">
+        <label for="pourcentage_détour"> Profil cycliste  : </label>
+        <input type="text" id="pourcentage_détour" class="form-control" name="pourcentage_détour"
+         placeholder="Profil cycliste" value="0;15;30">
+  
+        <div class="help-block"> Il s’agit du pourcentage duquel vous accepteriez de rallonger votre trajet pour passer d’un itinéraire entièrement non aménagé à un itinéraire entièrement en piste cyclable.
+  
+    On peut rentrer plusieurs valeurs séparées par des points-virgules, auquel cas plusieurs chemins seront affichés.
+        </div>
+      </div>
+</div>
+=======
+<h4> Plus d’options : </h4>
+
+<br>
+    
+    <div class="form-group">
+      <label for="étapes"> Étapes, séparées par des point-virgules :</label>
+      <div class="input-group">
+	<input type="text" class="form-control" id="étapes" name="étapes" >
+	<span class="input-group-addon" data-toggle="popover" title="Étapes" data-trigger="hover" data-placement="left" 
+	      data-content="L’algo renverra un itinéraire passant par au moins un tronçon de chacune des étapes indiquées. Ne pas indiquer une rue que vous voulez juste traverser.">?</span>
+	</div>
+    </div>
+
+    
+    <div class="form-group">
+      <label for="rues_interdites"> Rues à éviter, séparées par des point-virgules :</label>
+      <div class="input-group">
+	<input type="text" class="form-control" id="rues_interdites" name="rues_interdites" > 
+	<span class="input-group-addon" data-toggle="popover" data-placement="left" title="Rues à éviter" data-trigger="hover"
+	      data-content="L’algo renverra un itinéraire qui ne suit aucune portion des rues indiquées. Il pourra toutefois en croiser une.">?</span>
+      </div>
+    </div>
+
+    <br>
+    
+    <div class="form-group">
+      <label for="pourcentage_détour"> Profil cycliste  : </label>
+      <input type="text" id="pourcentage_détour" class="form-control" name="pourcentage_détour"
+	     placeholder="Profil cycliste" value="0;15;30">
+      
+      <div class="help-block"> Il s’agit du pourcentage duquel vous accepteriez de rallonger votre trajet pour passer d’un itinéraire entièrement non aménagé à un itinéraire entièrement en piste cyclable.
+
+	On peut rentrer plusieurs valeurs séparées par des points-virgules, auquel cas plusieurs chemins seront affichés.
+      </div>
+    </div>
+>>>>>>> 8183e7f03fef5e6f2bb9401af22ddb5636121379
+
+    
+    
+    <!-- <input type="hidden" id="zone_t" name="zone_t" value="{{zone_t}}"> -->
+
+    
+    <input type="submit" class="btn btn-default" value="C’est parti!">
+
+
+  </form>
+
+  
+  {% endblock %}

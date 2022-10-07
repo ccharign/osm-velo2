@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block contenu %}
+
+<form action = "{% url 'stats' %}" method="post">
+  {% csrf_token %}
+
+  <label for="villes"><b>Villes</b> : </label> On peut rentrer plusieurs villes séparées par des points-virgules. Il peut être judicieux de préciser le pays, par exemple « Voiron, France».
+  <input type="text" id="villes" name="villes">
+
+  <input type="submit" value="C’est parti!">
+
+</form>
+
+{% endblock %}

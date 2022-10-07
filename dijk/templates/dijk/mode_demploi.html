@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block titri %}Mode d’emploi{% endblock %}
+
+{% block contenu %}
+
+<h1>Mode d’emploi du site</h1>
+
+<h2>Qu’est-ce que c’est ?</h2>
+
+<p>
+Ce site permet de calculer des itinéraires à vélo. Sa spécificité est d’être basée sur une intelligence artificielle : en apprenant des trajets rentrés par les utilisateurs, il donne des résultats de plus en plus pertinents.
+</p>
+
+<p>
+  Ainsi les trajets sont-ils calculés en tenant compte de l’expérience des autres utilisateurs, donc de vrais cyclistes. Une rue sera décrétée adaptée aux vélos si et seulement si elle a été choisie par d’autres cyclistes, et non selon des critères plus facile à obtenir mais moins fiables tels que la présence « officielle » d’une bande cyclable, une limite de vitesse « théoriquement » respectée par les automobilistes, etc.
+</p>
+
+<p>
+  Cependant dans les zones où l’IA n’a pas encore été suffisamment entraînée, elle se rabat sur les critères simples tels que la présence d’une piste cyclable ou d’une zone 30 ou piétonne.
+  </p>
+
+<p>
+Concernant les sens interdits : l’itinéraire renvoyé pourra en contenir un s’il permet de gagner beaucoup de temps ou si la plupart des utilisateurs le prennent...
+</p>
+
+<p>La carte de la cyclabilité permet de se rendre compte de l’état de L’IA. Les rues à favoriser apparaissent en vert, et celles à éviter en rouge.</p>
+
+
+<h2>Recherche simple d’itinéraire</h2>
+
+
+<p>Si vous indiquez une rue sans préciser de numéro, l’algo ira au point le plus proche de cette rue.</p>
+
+<p>
+  Un bouton à gauche de la carte active la géolocalisation. Vous pouvez également télécharger la trace gps de l’itinéraire calculé en cliquant sur le lien « gpx ».
+</p>
+
+<h2>Je trouve l’itinéraire proposé peu adapté</h2>
+
+
+<p>
+  C’est que l’IA est peu ou mal entrainée dans ce quartier !<br>
+
+  Cliquez sur la carte pour imposer des points de passage. Controle-cliquez pour interdire des portions de rue.<br>
+  
+  Vous pouvez également remplir les champs « étapes » ou « rues interdites » par une ou plusieurs rues, séparées par des point-virgules. Après une première recherche, ces champs sont disponibles en dessous de la carte.
+</p>
+
+
+
+  
+<h2>Entraîner l’IA</h2>
+
+
+<p>Il est important, pour l’efficacité de l’appli que les utilisateurs comme vous indiquent les itinéraires qu’ils recommandent !
+  <br>
+  Pour ce, effectuer une recherche sur un trajet que vous connaissez bien (domicile-travail par exemple). Si l’itinéraire proposé vous semble moins adapté que le votre, corrigez-le jusqu’à obtenir l’itinéraire souhaité.
+
+  Cochez les profils de cyclistes à qui vous semble pouvoir s’adresser votre itinéraire (plus de détails sur les profils cyclistes ci-dessous); si le même itinéraire est valable pour le trajet retour aussi (pas de sens interdit notamment), cochez la case idoine; et validez  : vous avez œuvré pour l’amélioration de la qualité de vie à {{ville_défaut}} et vous avez gagné toute ma gratitude !
+</p>
+
+
+<h2> Profils de cyclistes </h2>
+
+
+<p>Les différents types de cyclistes sont représentés dans le programme par un nombre qui indique le pourcentage de détour accepté pour gagner en confort. Plus ce nombre sera élevé et plus l’algo proposera de détours.</br>
+
+  Précisément, le nombre utilisé est le pourcentage duquel le cycliste est prêt à rallonger son parcours pour remplacer un trajet entièrement sur des rues de centre-ville limitées à 50km/h non aménagées, par un trajet entièrement sur des vraies pistes cyclables.</br>
+
+  Par défaut, les trajets proposés correspondent aux pourcentages 0 (trajet direct), 15 (intermédiaire) et 30 (priorité confort). Cependant, vous pouvez indiquer d’autres valeurs en remplissant le champ idoine du formulaire. On peut rentrer plusieurs valeurs, séparées par des point-virgule : l’appli affichera un itinéraire pour chaque valeur.
+  </p>
+
+
+<h2>Qu’est-ce que la carte de la cyclabilité ?</h2>
+
+<p>Cette carte permet de visualiser l’état de l’IA. Les tronçons de rues à utiliser en priorité sont verts, et ceux à éviter sont rouges. Les zones sans couleur sont celles où elle ne dispose d’aucune donnée.<br>
+
+  Subtilité : la notion de cyclabilité employée par l’algo est « locale », ainsi un tronçon de rue apparaît en vert lorsqu’il est plus agréable, ou juste moins désagréable, que ses voisins : cela ne signifie pas qu’il est agréable dans l’absolu. En particulier deux rues d’une même couleur dans deux quartiers différents peuvent être très différentes.<br>
+
+  De part la conception même de l’algo il y a toujours à peu près autant de rouge que de vert : ces cartes ne peuvent servir à comparer différentes villes.
+  </p>
+
+
+{% endblock %}

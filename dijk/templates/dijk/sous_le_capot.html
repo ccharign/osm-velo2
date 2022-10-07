@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %} Sous le capot {% endblock %}
+
+{% block contenu %}
+
+<h1>Comment ça marche ?</h1>
+
+<h2>Les données</h2>
+
+
+<ul>
+  <li> Les graphes sont extraits des données <a href="https://www.openstreetmap.org/">d’openstreetmap</a> via le module python <a href="https://github.com/gboeing/osmnx">osmnx</a>. Mille mercis à son créateur Geoff Boeing.
+  </li>
+
+  
+  <li> Les adresses sont récupérées sur <a href="https://adresse.data.gouv.fr/base-adresse-nationale">la base nationale d’adresses</a> lorsqu’elles contiennent un numéro de rue, directement dans le graphe lorsqu’elle contiennent un nom de rue sans numéro, et sur le moteur de recherche Nominatim d’openstreetmap dans les cas restants (bâtiment public, bar, …)</li>
+</ul>
+
+<h2>Les maths !</h2>
+
+<ul>
+  <li> L’algo employé pour calculer un itinéraire est le fameux algorithme de  <a href="https://fr.wikipedia.org/wiki/Algorithme_de_Dijkstra">Dijkstra</a>, ou plutôt sa variante <a href="https://fr.wikipedia.org/wiki/Algorithme_A*">A*</a>. L’utilisation du concept de cyclabilité pour modifier le poid des arêtes fait qu’on ne peut plus utiliser la distance sphérique classique comme heuristique. Et le fait que les étapes soient souvent des ensembles de sommets nécessite aussi une petite adaptation qui lui fait perdre de son efficacité...<br>
+
+    
+    Gérer les étapes demande un rien plus de réflexion : il s’agit d’imposer au chemin de passer par au moins une arête de chaque étapes indiquée. Quoique beaucoup plus facile à programmer, imposer de passer par juste un sommet de l’étape ne correspond pas à ce à quoi s’attend l’utilisateur : quand on dit « pour aller de A vers B, j’emprunte la rue R » c’est qu’on longe R  sur une distance non nulle, et pas qu’on la traverse juste.
+    <br>
+
+    Le code est dans le fichier <a href="https://github.com/ccharign/osm-velo/blob/main/site_velo/dijk/progs_python/dijkstra.py">dijksta.py</a>.
+  </li>
+
+  
+  <li> Les rues de chaque ville sont enregistrées dans un arbre lexicographique, ce qui permet de rechercher facilement la rue la plus proche au sens de la <a href="https://fr.wikipedia.org/wiki/Distance_de_Levenshtein">distance de Levenshtein</a> (nombre de fautes de frappe) de ce qui a été tapé par l’utilisateur.
+
+    Le code est <a href="https://github.com/ccharign/osm-velo/blob/main/site_velo/dijk/progs_python/lecture_adresse/arbresLex.py">là</a>.
+  </li>
+
+  <li>
+    Il y a aussi des arbres pour la gestion des étapes indiquées par un clic de l’utilisateur. À la base, il s’agit de <a href="https://en.wikipedia.org/wiki/R-tree">R-arbres</a>, même si la manière dont ils sont créés les rend grosso-modo semblables à des <a href="https://fr.wikipedia.org/wiki/Quadtree"> arbres quadratiques </a>.
+
+    Bien qu’il soit plus facile de rechercher le sommet le plus proche du point cliqué par l’utilisateur, il est plus pertinent de rechercher l’arête la plus proche. Les arêtes du graphes sont donc découpées en segments puis rentrées dans un « arbre quadratique d’arêtes ». Et la recherche s’effectue par un <a href="https://en.wikipedia.org/wiki/Branch_and_bound"> « branch and bound » </a>. Le code est <a href="https://github.com/ccharign/osm-velo/blob/main/site_velo/dijk/progs_python/lecture_adresse/quadrarbres.py">là</a>.
+  </li>
+</ul>
+
+
+<h2>L’IA</h2>
+
+<p>La couche d’apprentissage surpervisée est tout à fait basique. On peut dire qu’il s’agit d’un réseau de neurones à une seule couche. L’avantage est qu’elle nécessite relativement peu de données pour fournir des résultats utilisables.<br>
+
+  En pratique, à chaque arête du graphe est associé un flottant qui représente sa cyclabilité, et qui est pris en compte par Dijkstra. Lorsqu’un nouvel itinéraire est rentré, il est comparé à l’ancien, celui qui aurait était renvoyé jusqu’ici. On augmente alors la cyclabilité toutes les arêtes qui figurent sur le nouvel itinéraire mais pas sur l’ancien, et on diminue la cyclabilité de toutes les arêtes qui figurent dans l’ancien itinéraire mais pas dans le nouveau (ces arêtes ont été évitées par le contributeur).</p>
+
+{% endblock %}

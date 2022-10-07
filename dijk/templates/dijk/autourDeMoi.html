@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+
+
+
+
+{% block contenu %}
+
+<!-- La carte -->
+
+{% load l10n %}
+{% localize off %} <!-- Éviter que Django ne transforme les points en virgules dans le script -->
+<div class="row">
+  <div id="laCarte"></div>
+</div>
+{% load static %}
+<style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+<style>
+  #laCarte {
+      width: 90vw;
+      height: 80vh;
+      left: 0.0%;
+      top: 0.0%;
+      position:relative
+  }
+</style>
+
+<script>
+  $(document).ready(  function(){
+
+      // Localisation
+      form = document.getElementById("fouine");
+      navigator.geolocation.getCurrentPosition(
+	  pos => àLaGéoloc(pos, form),
+	  () => console.log("Échec de la géolocalisation.")
+      );
+
+      // La carte      
+      // fonction jquery pour charger un script et lancer une fonction une fois ceci terminé :
+      $.getScript("{% static 'dijk/leaflet-providers.js'%}", function() {
+	  // leaflet-provider a besoin que leaflet ait été chargé, et est nécessaire à carteIci
+	  // leaflet-provider chargé
+	  var laCarte = carteIci(form);
+	  console.log("(autourDeMoi.html) : laCarte:");
+	  console.log(laCarte);
+	  {% for m in marqueurs %}
+	  {{m | safe}}
+	  {% endfor %}
+      });  
+  })
+</script>
+{% endlocalize %}
+
+
+
+<!-- Le formulaire -->
+<!--
+Pour personaliser l’affichage, notamment le mettre sur deux colonnes : 
+ https://medium.com/@alfarhanzahedi/customizing-modelmultiplechoicefield-in-a-django-form-96e3ae7e1a07
+  -->
+<div class="row">
+{% load bootstrap3 %}
+<form action="{% url 'Autour de moi'%}" method="get" id="fouine">
+    {% bootstrap_form form %}
+    {% buttons %}
+        <button type="submit" class="btn btn-primary">C’est parti</button>
+    {% endbuttons %}
+</form>
+</div>
+
+
+
+{% endblock contenu %}

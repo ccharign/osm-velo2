@@ -1,0 +1,259 @@
+cycla 2
+
+à Pau:
+grande allée centrale
+allée de la laïcité
+rue suzanne bacarisse
+boulevard hauterive
+la coulée verte
+rue andré mitton
+avenue louis sallenave
+rue renée char
+chemin de bernadou
+avenue de saragosse
+avenue robert schuman
+avenue d’attigny
+avenue fouchet
+rue ronsard
+boulevard du recteur jean sarrailh
+rue théo lanne
+avenue des sayettes
+rue alfred de vigny
+avenue jeliotte
+avenue des lauriers
+rue lavignotte
+avenue des acacias
+rue de l’abbé ludovic gaurier
+allée pierre laroque
+boulevard des pyrénées
+rue adoue
+allée de l’émir abd el-kader
+rue des bains
+rue du hédas
+V81
+
+
+à Lons:
+chemin salié
+voie paris-madrid
+V81
+
+
+à Billère:
+rue laffitte
+rue rené vitel
+rue de galas
+passage bellevue
+rue du lacaou
+rue des marnières
+rue vignau
+rue du golf
+rue virgilio peña córdoba
+
+
+à Lescar:
+chemin de la teulère
+
+
+à Gelos:
+rue pierre mounaud
+rue magendie
+V81
+
+
+
+à Mazères-Lezons:
+rue louis barthou
+avenue de la république
+rue pasteur
+V81
+
+
+à Jurançon:
+chemin soubacq
+chemin de gaspé
+
+à Bizanos:
+boulevard de l’aviation
+
+
+
+
+cycla 1
+
+à Pau:
+chemin de bastard
+allèe de bastard
+chemin de la forêt de bastard
+avenue de montardon
+chemin vert
+rue monseigneur campo
+chemin guilhem
+rue blanqui
+avenue léon blum
+rue paul bert
+rue louis chuchague
+rue georges mandel
+rue marx dormoy
+chemin labriart
+chemin des écoliers
+avenue pierre massé
+rue jean genèze
+rue audrey benghozi
+boulevard lucien favre
+avenue du doyen robert poplawski
+rue saint john perse
+avenue de l’université
+rue paul et jean-claude camors
+avenue rhin et danube
+avenue du président kennedy
+rue du sergent bernès-cambot
+rue victor ladeveze
+rue du père pardies
+rue viard
+rue carnot
+rue golda meir
+rue paul et henri courteault
+rue mozart
+impasse du pic d’aneto
+rue jacques prévert
+rue sambre et meuse
+rue louis blériot
+rue paul mirat
+rue frédéric mistral
+rue simin palay
+avenue norman prince
+allée de morlaàs
+rue du comte de saint-cricq
+boulevard du corps franc pommiès et du 49e régiment d’infanterie
+rue du pasteur alphonse cadier
+rue du chanoine laborde
+rue bonado
+rue lespy
+rue carrérot
+cours bosquet
+avenue trespoey
+avenue henry russel
+avenue du stade nautique
+avenue nitot
+avenue de montebello
+rue de livron
+allèe lamartine
+sentiers du roy
+place mulot
+pont d’espagne
+avenue des vallées
+rue amédée roussille
+rue du soust
+rue de lajus
+avenue de la concorde
+
+
+
+à Billère:
+rue du lacaou
+avenue de la résistance
+avenue montilleul
+rue clair-soleil
+avenue lalanne
+rue jeanne lassansaa
+rue du mohédan
+impasse lacassagne
+allée montesquieu
+pont d’espagne
+chemin latéral
+rue de la saligue
+rue de l’aubisque
+rue de la gravière
+passerelle billère
+
+
+
+à Lons:
+boulevard blériot
+boulevard des frères farman
+avenue du moulin
+rue du château
+chemin latéral
+avenue de pau
+rue du souvenir
+rue georges lassalle
+chemin des vignes
+rue des écoles
+rue de la mairie
+rue de l’église
+rue d’ariste
+rue monhauba
+
+
+à Lescar:
+chemin salié
+chemin lasbordettes
+chemin de las pachères
+chemin de lons
+chemin de la plaine
+avenue roger cadet
+rue sainte-catherine
+chemin de beneharnum
+côte du vigné
+
+
+
+à Bizanos:
+avenue beau soleil
+rue des frères cousté
+rue pasteur
+rue gallieni
+avenue de l’yser
+rue de verdun
+
+
+à Idron:
+avenue des arrouturous
+avenue du béarn
+rue du lannot
+chemin henri iv
+
+
+à Mazères-Lezons:
+rue du gave
+rue du château
+rue pasteur
+lotissement le clos corisande
+V81
+
+à Jurançon:
+pont d’espagne
+avenue des vallées
+rue massenet
+avenue ernest cazenave
+avenue gaston cambot
+rue charles de gaulle
+rue ollé laprune
+rue gaston phoebus
+avenue lamartine
+avenue du béarn
+avenue bagnell
+impasse d’oly
+rue de guindalos
+rue cyprien loustau
+avenue henri iv
+chemin du vert galant
+V81
+
+
+cycla -2
+
+à Pau:
+avenue de l’europe
+boulevard olof palme
+
+
+à Lons:
+avenue de l’hippodrome
+
+
+à Lescar:
+chemin salié
+avenue du vert galant
+

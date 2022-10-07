@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+
+{% block contenu %}
+{% load static %}
+
+<!-- Formulaire pour enregistrer la contribution -->
+{% if étapes or post_préc.rues_interdites %}
+  {% block enregistrer_contrib %}
+  {% endblock %}
+{% endif %}
+
+
+<!-- Formulaire de relance simplifié -->
+{% block modifs_rapides %}
+{% endblock %}
+
+
+<!-- Carte et stats -->
+<div class="row">
+    
+  <div class="col-md-9">
+    <!-- La carte -->
+      {% block carte %}
+      {% endblock %}
+  </div>
+  
+  <div class="col-sm-3">
+      <!-- Statistiques -->
+      <h4> Longueurs et traces gps </h4>
+      {% block stats %}
+      {% endblock %}
+      
+      {% if fouine %}
+      <img src="{% static 'dijk/fouine.jpeg' %}">
+      {% endif %}
+  </div>
+</div>
+
+<br><br>
+
+
+<!-- Trajet retour -->
+{% block retour %}
+{% endblock %}
+
+
+<!-- Formulaire complet pour relancer le calcul -->
+<br><br>
+<h4> Plus d’options </h4>
+
+  
+  {% block relancer_calcul %}
+  {% endblock %}
+
+{% endblock contenu %}

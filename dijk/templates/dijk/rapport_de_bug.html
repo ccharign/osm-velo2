@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block contenu %}
+{% load bootstrap3 %}
+{% bootstrap_messages %}
+
+Indiquez ici les problèmes techniques ou vos suggestions d’amélioration !
+
+Échelle pour l’importance:
+<ul>
+  <li> 1 : petite suggestion</li>
+  <li> 5 : bug qui empêche l’utilisation fluide de l’appli. </li>
+</ul>
+
+<form method="post" action="{% url 'bug' %}">
+  {% csrf_token %}
+  {% bootstrap_form form %}
+
+    {% buttons %}
+        <button type="submit" class="btn btn-primary">Envoyer</button>
+    {% endbuttons %}
+</form>
+{% endblock %}

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+  {% load static %}
+  
+  <head>
+    <meta charset="utf-8">
+
+    <!-- jQuery library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.js"></script>
+
+    <!-- Bootstrap -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"/>
+
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+    
+
+    
+  
+    
+    <!-- Chargement de leaflet 1.8 -->
+    <!-- le css -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
+	  integrity="sha512-hoalWLoI8r4UszCkZ5kL8vayOGVae1oxXe/2A4AO6J9+580uKHDO3JdHb7NzwwzK5xr/Fs0W40kiNHxM9vyTtQ=="
+	  crossorigin="" />
+    <!-- le js -->
+    <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"
+	    integrity="sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ=="
+	    crossorigin="">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <!-- bouton plein écran -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/1.4.2/Control.FullScreen.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/1.4.2/Control.FullScreen.min.css"/>
+    <!-- bouton localisation -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.js" charset="utf-8"></script>
+
+    
+    <!-- Mes fonctions javascript -->
+    <script src="{% static 'dijk/pour_leaflet.js'%}?version=5" type="text/javascript"> </script>
+    <script src="{% static 'dijk/fonctions.js'%}?version=15" type="text/javascript"> </script>
+
+    <!-- Ma feuille de style -->
+    <link rel="stylesheet" media="screen" href="{% static 'dijk/styles.css' %}?version=4" type="text/css"/>
+    
+    <title>{% block titre %}Recherche d’itinéraire{% endblock %}</title>
+
+    <!-- Pour d’autres params -->
+    {% block head_début %} {% endblock %}
+
+    <!-- Pour autocomplétion : jquery-ui -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.0/jquery-ui.js"> </script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.0/themes/smoothness/jquery-ui.css">
+
+  </head>
+
+
+
+  <body>
+
+    {% load bootstrap3 %}
+    
+    <script>
+      $(document).ready(  function(){
+
+	  //Autoriser les popover
+	  $('[data-toggle="popover"]').popover();
+
+
+	  // autocomplétion
+	  $(function () {
+
+	      $("#id_départ").autocomplete({
+		  source: "{% url 'complète rue' %}",
+		  minLength: 3,
+		  select: (e, ui) =>
+		  //(
+		      // ui.item : le dico renvoyé par le serveur
+		      // form = document.getElementById("recherche");
+		      // lieu = ui.item;
+		      // coords = lieu.lon+","+lieu.lat;
+		      // form.elements["coords_départ"].value=coords;
+		      //)
+		      onSelect(e, ui, document.getElementById("recherche"), "coords_départ")
+		  
+	      });
+	      
+	      
+	      $("#id_arrivée").autocomplete({
+		  source: "{% url 'complète rue' %}",
+		  minLength: 4,
+		  select: (e, ui) => onSelect(e, ui, document.getElementById("recherche"), "coords_arrivée")
+	      });
+	      
+	      $("#rues_interdites").autocomplete({
+		  source: "{% url 'complète rue' %}",
+		  minLength: 4,
+	      });
+
+	      $("#étapes").autocomplete({
+		source: "{% url 'complète rue' %}",
+		minLength: 4,
+	      });
+	      
+	  });
+
+      });
+    </script>
+
+
+    
+    <!-- <header> -->
+      <nav class="navbar navbar-default">
+	<div class="container-fluid">
+
+	  <div class="navbar-header">
+	    <!-- Remplacer le menu par un seul bouton si petit écran -->
+	    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+	    </button>
+	    <!-- <a class="navbar-brand" href="{% url 'index'%}"> Itinéraires cyclistes </a> -->
+	  </div>
+
+	  <div class="collapse navbar-collapse" id="myNavbar">
+	    <ul class="nav navbar-nav">
+
+	      {% if zone_t %}
+	      <li><a href="{% url 'recherche' zone_t %}"> Nouvelle recherche </a></li>
+	      {% endif %}
+
+	      <li><a href="{% url 'index' %}">Entrée</a></li>
+	      
+	      <li class="dropdown">
+		<a class="dropdown-toggle" data-toggle="dropdown" href="#">
+		  Comment ça marche
+		  <span class="caret"></span></a>
+		<ul class="dropdown-menu" role="menu">
+		  <li> <a href="{% url 'mode d’emploi' %}"> Mode d’emploi </a></li>
+		  <!-- <li><a href="{% url 'limitations'%}"> Problèmes connus </a> </li> -->
+		  <li><a href="{% url 'sous le capot'%}"> Sous le capot </a> </li>
+		  <li><a href="{% url 'bug'%}"> Signaler un bug ou proposer une amélioration </a> </li>
+		</ul>
+	      </li>
+	      
+	      <li> <a href="{% url 'cycla'%}"> Cartes de cyclabilité </a>
+		
+	      <li><a href="{% url 'contribution' %}"> Contribution </a>
+	    </ul>
+
+	    <ul class="nav navbar-nav navbar-right">
+	      <li><a href="{% url 'recherche pourcentages' %}"> Pourcentages de rues piétonnes / cyclables </a>
+	    </ul>
+	    
+	  </div>
+	</div>
+      </nav>
+      <!-- </header> -->
+
+    <div class="container-fluid">
+      {% block contenu %} {% endblock %}
+    </div>
+  </body>
+
+  
+
+  {% block script %} {% endblock %}
+
+</html>

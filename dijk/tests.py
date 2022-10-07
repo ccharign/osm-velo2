@@ -1,0 +1,52 @@
+from django.test import TestCase
+from importlib import reload
+from importlib import reload
+from pprint import pprint
+
+import dijk.pour_shell as sh
+
+import dijk.progs_python.initialisation.amenities as amen
+from dijk.progs_python.initialisation.communes import charge_villes
+from dijk.progs_python.initialisation.initialisation import À_RAJOUTER_PAU, charge_zone, ZONE_GRENOBLE
+
+import dijk.progs_python.utils as utils
+
+from django.db import close_old_connections
+
+import dijk.models as mo
+import dijk.views as v
+import dijk.progs_python.initialisation.communes as communes
+
+import dijk.progs_python.recup_donnees as rd
+
+gre = sh.mo.Ville.objects.get(nom_complet="Grenoble")
+ousse = sh.mo.Ville.objects.get(nom_complet="Ousse")
+
+
+# Create your tests here.
+
+
+def charge_lieux_of_ville():
+    amen.charge_lieux_of_ville(gre, force=True, bavard=3)
+
+    
+def charge_lieux_of_ville_ousse():
+    amen.charge_lieux_of_ville(ousse, force=True, bavard=3)
+
+    
+def test_data_gouv(nb=5):
+    """
+    Teste adresses_of_liste_lieux sur les np premiers lieux de la base.
+    """
+    ll = mo.Lieu.objects.all()[:nb]
+    pprint(ll)
+    rés = rd.adresses_of_liste_lieux(ll, bavard=2, affiche=True)
+    for l, r in zip(ll, rés):
+        if "result_housenumber" not in r:
+            print(f"Pas de result_housenumber pour {l}\n Données reçues :\n{r}")
+    return rés
+
+def entrainement():
+    v.g.charge_zone("Pau_agglo")
+    v.g.charge_zone("Grenoble")
+    utils.lecture_tous_les_chemins(sh.v.g, bavard=6)

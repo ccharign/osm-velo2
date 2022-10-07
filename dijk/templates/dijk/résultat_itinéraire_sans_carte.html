@@ -1,0 +1,179 @@
+{% extends "dijk/résultat_itinéraire_base.html" %}
+
+
+{% load bootstrap3 %}
+{# Display django.contrib.messages as Bootstrap alerts #}
+{% bootstrap_messages %}
+
+
+<!-- La carte -->
+{% block carte %}
+<div id="laCarte"></div>
+<script>
+  laCarte = carte_bb{{bbox}};
+  
+  {% for code_js in js_itinéraires %}
+  {{code_js | safe}}
+  {% endfor %}
+  
+  gèreLesClics(laCarte);
+  form_recherche = document.getElementById("relance_rapide");
+  marqueurs_of_form(form_recherche, laCarte);
+</script>
+<a href="https://www.cyclosm.org/legend.html" target="blank"> Légende </a>
+{% endblock carte %}
+<!-- fin de la carte -->
+
+
+<!-- Formulaire pour enregistrer la contribution -->
+{% block enregistrer_contrib %}
+<h4 class="alert-info">
+  Entraînez l’IA et améliorez l’appli pour les prochains utilisateurs !
+</h4>
+
+<p>
+  Sélectionnez les profils cyclistes pour lesquels il vous semble pertinent, pour aller de « {{départ}} » à « {{arrivée}} »,
+
+  {% if étapes %}
+  de passer par les étapes
+  {% endif %}
+  {% if étapes and post_préc.rues_interdites %}
+  et
+  {% endif %}
+  {% if post_préc.rues_interdites %}
+  d’éviter les tronçons
+  {% endif%} indiqués.
+</p>
+
+<p>
+  <form action = "{% url 'confirme nv chemin' %}" method="post">
+    {% csrf_token %}
+    
+    <ul>
+      {% for x in stats %}
+      {% if x.id != "ps0" %}
+      <li>
+	<label for="{{x.id}}" ><input type="checkbox" id="{{x.id}}" name="{{x.id}}" > {{x.légende}} </label>
+	<span class="btn-sm btn-default" data-toggle="popover" title="{{x.légende}}" data-trigger="hover" data-content="{{x.aide}}">?</span>
+      </li>
+      {% endif %}
+      {% endfor %}
+    </ul>
+
+      {% bootstrap_form enregistrer_contrib %}
+    <input type="submit" class="btn btn-default" value="Enregistrer">
+    
+  </form>
+</p>
+{% endblock %}
+<!-- fin enregistrer contrib -->
+
+
+
+<!-- Statistiques et trace gpx -->
+{% block stats %}
+<ul>
+  {% for x in stats %}
+  <li> 
+    <form action="{% url 'téléchargement' %}" method="post">
+      {% csrf_token %}
+      <span class="btn-xs btn-default" data-toggle="popover" title="{{x.légende}}" data-trigger="hover" data-content="{{x.aide}}">?</span>
+      <span style="color: {{x.couleur}};"> {{x.légende}} :  {{x.longueur}} m, {{x.temps}} mn (détour de {{x.p_détour_effectif}} %)</span>
+      <input type="hidden" id="gpx" name="gpx" value={{x.gpx}}>
+      <input type="submit" class="btn btn-link" value="gpx">
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}
+<!-- fin stats -->
+
+
+
+
+<!-- Formulaire pour relancer le calcul -->
+{% block relancer_calcul %}
+
+<form action = "{% url 'résultat' %}" method="get" id="relancer_recherche">
+  
+  <div class="from-group">
+    <label for="étapes"> Étapes </label>
+    <div class="input-group">
+      <input type="text" class="form-control" id="étapes" name="étapes" value="{{post_préc.étapes}}" >
+      <span class="input-group-addon" data-toggle="popover" title="Étapes" data-trigger="hover" data-placement="left" 
+	    data-content="L’algo renverra un itinéraire passant par au moins un tronçon de chacune des étapes indiquées. Ne pas indiquer une rue que vous voulez juste traverser.">?</span>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="rue_interdites"> Rues interdites </label>
+    <div class="input-group">
+      <input type="text" class="form-control" id="rues_interdites" name="rues_interdites" value="{{post_préc.rues_interdites}}" >
+      <span class="input-group-addon" data-toggle="popover" data-placement="left" title="Rues à éviter" data-trigger="hover"
+	    data-content="L’algo renverra un itinéraire qui ne suit aucune portion des rues indiquées. Il pourra toutefois en croiser une.">?</span>
+    </div>
+  </div>
+  
+  <div class="form-group">
+    <div class="row">
+      <div class="col-sm-4">
+	<div class="input-group">
+	  <span class="input-group-addon">De </span>
+	  <input type="text" class="form-control" id="départ" name="départ" value="{{départ}}">
+	</div>
+      </div>
+      <div class="col-sm-4">
+	<div class="input-group">
+	  <span class="input-group-addon">À </span>
+	  <input type="text" class="form-control" id="arrivée" name="arrivée" value="{{arrivée}}">
+	</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- <input type="hidden" id="zone_t" name="zone_t" value="{{zone_t}}"> -->
+
+  
+  <div class="form-group">
+    <label for="pourcentage_détour"> Profil cycliste  : </label>
+    <input type="text" id="pourcentage_détour" class="form-control" name="pourcentage_détour"
+	   placeholder="Profil cycliste" value="0;15;30">
+    
+    <input type="submit" class="btn btn-default" value="Recalculer l’itinéraire">
+  </div>
+</form>
+{% endblock %}
+<!-- fin relance complet -->
+
+
+
+<!-- Relance rapide du formulaire -->
+{% block modifs_rapides %}
+<form action = "{% url 'relance_rapide' %}" method="get" id="relance_rapide">
+  Voici l’itinéraire obtenu à l’aide de mes connaissances actuelles. Pour me corriger:
+  <ul>
+    <li> indiquez des tronçons de rue à emprunter en cliquant sur la carte;</li>
+    <li> indiquez des tronçons à éviter en controle-cliquant.
+  </ul>
+(Ou formulaire complet en bas de page.)
+  {% bootstrap_form relance_rapide %}
+
+  {% buttons %}
+  <button type="submit" class="btn btn-primary">Recalculer</button>
+  {% endbuttons %}
+</form>
+{% endblock %}
+<!-- fin relance rapide -->
+
+    
+
+<!-- Trajet retour -->
+{% block retour %}
+<form action = "{% url 'retour' %}" method="get">
+  {% bootstrap_form trajet_retour %}
+  {% buttons %}
+  <button type="submit" class="btn btn-primary">Trajet retour</button>
+  {% endbuttons %}
+</form>
+{% endblock %}
+<!-- fin trajet retour -->

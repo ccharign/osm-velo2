@@ -1,0 +1,6 @@
+Pour cache sqlite :
+https://stackoverflow.com/questions/28397847/most-straightforward-way-to-cache-geocoding-data
+
+
+Pour charger les données osm depuis un fichier xml
+http://lubim.co/2019/09/18/extracting-data-from-osm-file-with-dynamo-and-python/

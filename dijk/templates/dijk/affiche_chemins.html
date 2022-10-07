@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block titre %}
+Liste des chemins en mémoire
+{% endblock %}
+
+{% block contenu %}
+Nombre de chemins : {{nb_chemins}}
+
+<table border=1px>
+  <tr>
+    <th> AR </th>
+    <th> Étapes </th>
+    <th> Rues interdites </th>
+    <th> p détour </th>
+    <th> dernier p_modif </th>
+  </tr>
+
+  
+{% for c in chemins %}
+  <tr>
+    <th> {{c.ar}} </th>
+    <th> {{c.étapes_texte}} </th>
+    <th> {{c.interdites_texte}} </th>
+    <th> {{c.p_détour}} </th>
+    <th> {{c.dernier_p_modif}} </th>
+    <th>
+      <form action="{% url 'modif chemin'%}" method="post">
+	{% csrf_token %}
+	<input type="hidden" id="action" value="voir" name="action">
+	<input type="hidden" id="id_chemin" value="{{c.id}}" name="id_chemin">
+	<input type="submit" value="voir"  target="_blank">
+      </form>
+
+      <form action="{% url 'modif chemin'%}" method="post">
+	{% csrf_token %}
+	<input type="hidden" id="action" value="effacer" name="action">
+	<input type="hidden" id="id_chemin" value="{{c.id}}" name="id_chemin">
+	<input type="submit" value="effacer">
+      </form>
+      
+    </th>
+  </tr>
+{% endfor %}
+</table>
+
+{% endblock %}
