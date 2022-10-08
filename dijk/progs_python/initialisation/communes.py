@@ -147,14 +147,14 @@ def charge_villes(chemin=os.path.join(RACINE_PROJET, "progs_python/initialisatio
                                 champs_à_traiter={"géom_texte": ("géom_texte", json.dumps)}
                                 )
             à_créer.append(v_d)
-        nb+=1
+        nb += 1
         if nb%500==0: print(f"{nb} villes traitées")
     print(f"Enregistrement des {len(à_créer)} nouvelles villes")
     close_old_connections()
     Ville.objects.bulk_create(à_créer)
     print(f"Màj des {len(à_màj)} autres villes (code postal, géométrie, superficie, population).")
     close_old_connections()
-    Ville.objects.bulk_update(à_màj, ["code", "géom_texte", "superficie", "population"])
+    Ville.objects.bulk_update(à_màj, ["code", "géom_texte", "superficie", "population"], batch_size=2000)
 
 
 def nettoie_json_communes(chemin=os.path.join(RACINE_PROJET, "progs_python/initialisation/données_à_charger/code-postal.json")):
