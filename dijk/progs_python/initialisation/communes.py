@@ -4,7 +4,7 @@ import os
 import json
 from pprint import pformat
 
-from django.db import transaction
+from django.db import transaction, close_old_connections
 
 from dijk.models import Ville, objet_of_dico
 
@@ -150,8 +150,10 @@ def charge_villes(chemin=os.path.join(RACINE_PROJET, "progs_python/initialisatio
         nb+=1
         if nb%500==0: print(f"{nb} villes traitées")
     print(f"Enregistrement des {len(à_créer)} nouvelles villes")
+    close_old_connections()
     Ville.objects.bulk_create(à_créer)
     print(f"Màj des {len(à_màj)} autres villes (code postal, géométrie, superficie, population).")
+    close_old_connections()
     Ville.objects.bulk_update(à_màj, ["code", "géom_texte", "superficie", "population"])
 
 
