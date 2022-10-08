@@ -263,7 +263,7 @@ def charge_zone(liste_villes, zone: str, ville_defaut: str, réinit=False, effac
     return pb
 
 
-def charge_lieux_of_liste_ville(villes, arbre_a: QuadrArbreArête) -> list[Ville]:
+def charge_lieux_of_liste_ville(villes, arbre_a: QuadrArbreArête) -> list:
     """
     Charge les lieux des villes de la liste éponyme.
     Sortie : villes pour lesquelles charge_lieux_of_ville a échoué.
