@@ -23,7 +23,7 @@ site_velo/dijk/données/Pau/sauv**
 **passenger*
 **.db
 **.sqlite3
-**/données**
+**/données/**
 !**/à_laisser_dans_git**
 passenger.log
 site_velo/db.sqlite*
