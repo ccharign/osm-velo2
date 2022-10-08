@@ -14,7 +14,7 @@ from progs_python.utils import lecture_tous_les_chemins, réinit_cycla
 osmnx.config(use_cache=True, log_console=True)
 
 print("""
-- charge_villes() Pour charger les données INSEE des villes de France.
+- charge_villes()  (attention au s !) pour charger les données INSEE des villes de France.
 - charge_ville(nom:str, code_postal:int, zone:str) pour charger une ville dans la base et l’associer à la zone indiquée.
 - charge_zone(liste_villes: list[str*int], zone:str, ville_defaut:str ) idem mais avec une *liste* de (ville, code_postal)
 
