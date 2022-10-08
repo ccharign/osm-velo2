@@ -11,7 +11,12 @@
 Installation
 ============
 
- - Une fois le dépôt cloné, le settings.py configuré (notamment pour paramétrer le serveur de base de données) et le `python manage.py migrate` effectués pour initialiser la base, ouvrir un shell pour la remplir (`python manage.py shell`)
+ - `git clone https://github.com/ccharign/osm-velo2.git`
+ - `cd osm-velo2`
+ - `pip install -r requirements.txt`
+ - Configurer le settings.py configuré, notamment pour paramétrer le serveur de base de données.
+ - `python manage.py migrate` pour initialiser la base
+ - Ouvrir un shell Django pour la remplir : `python manage.py shell`
  - `from dijk.pour_shell import *`
  - `charge_ville()` charge les données INSEE sur les villes de France. Patience...
  - `charge_zone([("ville 1", code postal1), ("ville2", code postal 2), ...], zone = "nom_de_la_zone", ville_défaut = "nom_de_la_ville_par_défaut", code = code_postal_de_la_ville_par_défaut)`
