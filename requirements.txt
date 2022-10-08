@@ -1,4 +1,4 @@
-django==4.0.5
+django
 django-bootstrap3
 folium
 geopy>=2.2.0
