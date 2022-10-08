@@ -4,9 +4,6 @@ from pprint import pformat
 from django.db import models, close_old_connections
 from dijk.progs_python.params import LOG
 from dijk.progs_python.lecture_adresse.normalisation0 import partie_commune
-#from dijk.progs_python.recup_donnees import rue_of_coords
-
-# Create your models here.
 
 
 
@@ -65,7 +62,7 @@ def objet_of_dico(
 
     # Champs à traiter
     d_nettoyé.update(
-        {cf: f(d[ci]) for (ci, (cf,f)) in champs_à_traiter.items()}
+        {cf: f(d[ci]) for (ci, (cf, f)) in champs_à_traiter.items()}
     )
     
     return cls(**d_nettoyé)
@@ -569,7 +566,7 @@ class Lieu(models.Model):
 
     
     @classmethod
-    def of_dico(cls, d, tous_les_id_osm: set[int] = None, créer_type=False):
+    def of_dico(cls, d, tous_les_id_osm=None, créer_type=False):
         """
         Entrée:
             d (str-> T dico)
@@ -601,7 +598,7 @@ class Lieu(models.Model):
         d_nettoyé["id_osm"] = int(d_nettoyé["id_osm"])
         nv_json_nettoyé = json.dumps(d_nettoyé)  # Sert à détecter une modif
 
-        # Création ou récup de l’ancien
+        # Création ou récup de l’ancien lieu
         if tous_les_id_osm and d_nettoyé["id_osm"] in tous_les_id_osm:
             ancien = Lieu.objects.get(id_osm=d_nettoyé["id_osm"])
             if ancien.json_nettoyé == nv_json_nettoyé:

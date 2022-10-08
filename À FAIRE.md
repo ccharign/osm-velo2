@@ -10,21 +10,14 @@ nom des arêtes
 	- pour affichage dans «enregistrer contrib »
 	
 	
-Ménage:
-   - static dans dijk
-
 Amenities :
-	Afficher le nom dans les popups
 	
     Faire un passer par un(e) ...
 
 	Faire des regroupements, comme « logement », « restauration »
 		- Table GroupeDeTypes
 		- init : charger les groupes dans le fichier de config, créer des singletons pour ce qui reste.
-		- changer le formulaire de recherche. Au passage : chercher dans la bb plutôt qu’avec un rayon.
-
-AutourDeMoi:
-	recherche dans le cadre d’affichage
+		- changer le formulaire de recherche.
 
 
 Type polyline de Django pour le champ nœuds des rues
@@ -72,19 +65,10 @@ Vaut-il mieux mettre les nœuds d'une rue en texte dans la base, ou avec une rel
 
 À FAIRE (un jour)
 
-Afficher les étapes sur la carte
-
 
 Si un sommet change lors d’une màj de g, que se passe-t-il dans le cache ? -> recréer (à partir de la liste des chemins) ou supprimer le cache lors d’une màj ?
 
-Mettre une case pour donner un bonus/malus à une rue dans la recherche ?
-
 Y-a-t-il des risques de conflit si deux utilisateurs en même temps ?
-
-- Accélérer l'apprentissage ?
-  	    Éliminer au fur et à mesure les zones où plus de changement
-  	    Sauvegarder les trajets calculé par Dijkstra ?
-
 
 - Gestion des transitions entre deux rues.
   	  - rajouter un coeff de transition entre deux arêtes
