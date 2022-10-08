@@ -367,7 +367,7 @@ def coords_of_objet_overpy(o, type_objet_osm: str):
         return float(o.center_lon), float(o.center_lat)
 
 
-def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, tous_les_id_osm: set[int] = None, force=False, bavard=0):
+def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, tous_les_id_osm=None, force=False, bavard=0):
     """
     Entrées:
         req : une requête overpass
