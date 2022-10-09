@@ -45,6 +45,7 @@ def quadArbreAretesDeZone(z_d, sauv=True, bavard=0):
     res = QuadrArbreArête.of_list_darêtes_d(l)
     if sauv:
         rép = os.path.join(DONNÉES, z_d.nom)
+        os.makedirs(rép, exist_ok=True)
         res.sauv(os.path.join(rép, f"arbre_arêtes_{z_d}"))
         print(f"Arbre sauvegardé dans {os.path.join(rép, f'arbre_arêtes_{z_d}')}")
     chrono(tic, f"création et sauvegarde de l’arbre quad de la zone {z_d}", bavard=bavard)
