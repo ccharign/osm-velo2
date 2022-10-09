@@ -185,6 +185,7 @@ def crée_tous_les_arbres_des_rues():
     "Artigueloutan": 64420,
     "Mazères-Lezons": 64110
 }.items()
+VDS_PAU = [Ville.objects.get(nom_norm=partie_commune(v)) for v in À_RAJOUTER_PAU]
 
 ZONE_VOIRON = {
     "saint étienne de crossey": 38960,
@@ -202,7 +203,7 @@ ZONE_GRENOBLE = [
     ("Voreppe", 38340),
     ("Échirolles", 38130),
 ]
-
+VDS_GRE = [Ville.objects.get(nom_norm=partie_commune(v)) for v in ZONE_GRENOBLE]
 
 
 def charge_zone(liste_villes, zone: str, ville_defaut: str, réinit=False, effacer_cache=False, bavard=2, rapide=0):
