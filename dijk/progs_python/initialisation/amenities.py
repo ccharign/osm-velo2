@@ -78,7 +78,7 @@ def ajoute_ville_et_rue(ll, taille_paquets=1000, force=False, bavard=0):
         taille_paquets : nb de lieux à envoyer à la fois à data.gouv.
     """
     nb_traités = 0
-    nb_problèmes=0
+    nb_problèmes = 0
     for paquet in morceaux_tableaux(ll, taille_paquets):
         print(f"{nb_traités} lieux traités")
         nb_traités += taille_paquets
@@ -116,9 +116,12 @@ def charge_lieux_of_ville(v_d, arbre_a=None, bavard=0, force=False):
 
     LOG(f"Lieux de {v_d}", bavard=1)
 
-    # 1) Récu ou création des Lieux
+    # 1) Récup ou création des Lieux
     LOG("Récupération des lieux via overpass", bavard=1)
     ll = lieux_of_ville(v_d, bavard=bavard, force=force)
+
+    # POur débug
+    Lieu.objects.bulk_update(ll, "nom")
     
     # 2) Ajout de villes
     LOG(f"Récupération des noms de ville et des adresses via data.gouv pour les {len(ll)} lieux obtenus", bavard=1)

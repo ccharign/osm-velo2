@@ -185,7 +185,7 @@ def crée_tous_les_arbres_des_rues():
     "Artigueloutan": 64420,
     "Mazères-Lezons": 64110
 }.items()
-VDS_PAU = [Ville.objects.get(nom_norm=partie_commune(v)) for v,_ in À_RAJOUTER_PAU]
+VDS_PAU = [Ville.objects.get(nom_norm=partie_commune(v)) for v, _ in À_RAJOUTER_PAU]
 
 ZONE_VOIRON = {
     "saint étienne de crossey": 38960,
@@ -203,7 +203,7 @@ ZONE_GRENOBLE = [
     ("Voreppe", 38340),
     ("Échirolles", 38130),
 ]
-VDS_GRE = [Ville.objects.get(nom_norm=partie_commune(v)) for v,_ in ZONE_GRENOBLE]
+VDS_GRE = [Ville.objects.get(nom_norm=partie_commune(v)) for v, _ in ZONE_GRENOBLE]
 
 
 def charge_zone(liste_villes, zone: str, ville_defaut: str, réinit=False, effacer_cache=False, bavard=2, rapide=0):
@@ -214,6 +214,7 @@ def charge_zone(liste_villes, zone: str, ville_defaut: str, réinit=False, effac
 
     Effet : charge toutes ces ville dans la base, associées à la zone indiquée.
             Si la zone n’existe pas, elle sera créée, en y associant ville_défaut.
+            Si la zone existe, l’ancienne est supprimée.
 
     Paramètres:
        Si réinit, tous les éléments associés à la zone (villes, rues, sommets, arêtes) ainsi que le cache sont au préalable supprimés.
@@ -226,13 +227,14 @@ def charge_zone(liste_villes, zone: str, ville_defaut: str, réinit=False, effac
     zs_d = Zone.objects.filter(nom=zone)
     if zs_d.exists():
         z_d = zs_d.first()
-    else:
-        try:
-            ville_défaut_d = Ville.objects.get(nom_complet=ville_defaut)
-            z_d = Zone(nom=zone, ville_défaut=ville_défaut_d)
-            z_d.save()
-        except dijk.models.Ville.DoesNotExists:
-            raise RuntimeError("Ville pas trouvée. Avez-vous chargé la liste des villes avec communes.charge_villes() ?")
+        z_d.delete()
+    
+    try:
+        ville_défaut_d = Ville.objects.get(nom_complet=ville_defaut)
+        z_d = Zone(nom=zone, ville_défaut=ville_défaut_d)
+        z_d.save()
+    except dijk.models.Ville.DoesNotExists:
+        raise RuntimeError("Ville pas trouvée. Avez-vous chargé la liste des villes avec communes.charge_villes() ?")
 
     # Réinitialisation de la zone :
     if réinit:

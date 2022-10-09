@@ -601,7 +601,7 @@ class Lieu(models.Model):
         # Création ou récup de l’ancien lieu
         if tous_les_id_osm and d_nettoyé["id_osm"] in tous_les_id_osm:
             ancien = Lieu.objects.get(id_osm=d_nettoyé["id_osm"])
-            if ancien.json_nettoyé == nv_json_nettoyé:
+            if not ancien.ville or ancien.json_nettoyé == nv_json_nettoyé:
                 # tout est déjà dans la base
                 return ancien, False, False
             else:
