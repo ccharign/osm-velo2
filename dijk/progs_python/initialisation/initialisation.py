@@ -19,7 +19,7 @@ from petites_fonctions import chrono, LOG
 
 import initialisation.vers_django as vd
 from quadrarbres import QuadrArbreSommet, QuadrArbreArête
-from initialisation.amenities import charge_lieux_of_ville
+from initialisation.amenities import charge_lieux_of_ville, ajoute_ville_et_rue_manquantes
 from initialisation.communes import charge_villes
 
 ### Fonctions pour (ré)initialiser ou ajouter une nouvelle ville ou zone.
@@ -264,7 +264,9 @@ def charge_zone(liste_villes, zone: str, ville_defaut: str, réinit=False, effac
         pprint(échec_lieux)
     else:
         print("\nFini!")
-    return pb
+
+    print("Je lance ajoute_ville_et_rue_manquantes pour faire un deuxième essai de recherche des adresses des lieux sur toute la base..")
+    ajoute_ville_et_rue_manquantes(bavard=bavard-1)
 
 
 def charge_lieux_of_liste_ville(villes, arbre_a: QuadrArbreArête) -> list:
