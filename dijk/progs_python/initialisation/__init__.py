@@ -6,3 +6,4 @@ Ce module ne sera pas chargé lors d’une utilisation de routine de l’appli. 
 
 from .initialisation import charge_ville, charge_villes
 from .initialisation import charge_zone
+from .amen import ajoute_ville_et_rue_manquantes

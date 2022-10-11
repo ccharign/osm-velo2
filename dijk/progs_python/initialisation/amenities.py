@@ -106,6 +106,17 @@ def ajoute_ville_et_rue(ll, taille_paquets=1000, force=False, bavard=0):
         print(f"Enregistrement des modifs ({len(à_maj)} lieux.\n)")
         Lieu.objects.bulk_update(à_maj, ["ville", "adresse"])
 
+        
+def ajoute_ville_et_rue_manquantes(bavard=1):
+    """
+    Essaie de rajouter ville et adresse des lieux dans la base qui n’en ont pas.
+    """
+
+    à_traiter = Lieu.objects.filter(ville__is_null=True)
+    LOG(f"{len(à_traiter)} lieux n’ont pas de Ville.")
+    ajoute_ville_et_rue(à_traiter, bavard=bavard-1)
+    à_traiter = Lieu.objects.filter(ville__is_null=True)
+    LOG(f"Maintenant {len(à_traiter)} lieux n’ont pas de Ville.")
 
 def charge_lieux_of_ville(v_d, arbre_a=None, bavard=0, force=False):
     """

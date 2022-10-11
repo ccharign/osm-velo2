@@ -277,12 +277,12 @@ def nœuds_of_idsrue(ids_rue, bavard=0):
     Entrée : ids_rue (int itérable), ids osm de ways.
     Sortie : liste des nœuds de celles-ci.
     """
-    assert len(list(ids_rue))>0, f"(rd.nœuds_of_idsrue) J’ai reçu ids_rue={list(ids_rue)}"
-    api = overpy.Overpass()
-    requête=f"""
+    assert len(list(ids_rue)) > 0, f"(rd.nœuds_of_idsrue) J’ai reçu ids_rue={list(ids_rue)}"
+    api = overpy.Overpass(url="https://lz4.overpass-api.de/api/interpreter", max_retry_count=3)
+    requête = f"""
             way(id:{",".join(map(str, ids_rue))});
             out;"""
-    if bavard>0:print(requête)
+    LOG(requête, bavard=bavard)
     print("J’attends 5s pour overpass.")
     time.sleep(5)
     res_req = api.query(requête)
