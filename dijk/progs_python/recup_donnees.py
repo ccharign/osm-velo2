@@ -386,19 +386,19 @@ def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, tous_les_id
     à_créer, à_màj = [], []
     for x, type_objet_osm in [(n, "nœud") for n in rés_req.nodes] + [(w, "way") for w in rés_req.ways] + [(r, "rel") for r in rés_req.relations]:
         #if catégorie_lieu in x.tags:  # Sinon c’est que c’est un nœud d’un way rajouté par le > dans le requête overpass. (ne devrait plus se produire maintenant que j’utilise « out center » au lieu de « > ».)
-            lon, lat = coords_of_objet_overpy(x, type_objet_osm)
-            d = {"id_osm": x.id,
-                 "lon": lon, "lat": lat,
-                 "type": x.tags.pop(catégorie_lieu),
-                 "catégorie": catégorie_lieu,
-                 #"objet overpy": x
-                 }
-            d.update(x.tags)
-            l, créé, utile = mo.Lieu.of_dico(d, tous_les_id_osm=tous_les_id_osm, créer_type=True)
-            if créé:
-                à_créer.append(l)
-            elif utile or force:
-                à_màj.append(l)
+        lon, lat = coords_of_objet_overpy(x, type_objet_osm)
+        d = {"id_osm": x.id,
+             "lon": lon, "lat": lat,
+             "type": x.tags.pop(catégorie_lieu),
+             "catégorie": catégorie_lieu,
+             #"objet overpy": x
+             }
+        d.update(x.tags)
+        l, créé, utile = mo.Lieu.of_dico(d, tous_les_id_osm=tous_les_id_osm, créer_type=True)
+        if créé:
+            à_créer.append(l)
+        elif utile or force:
+            à_màj.append(l)
     return à_créer, à_màj
 
 

@@ -78,7 +78,7 @@ def charge_ville(nom, code, zone, recalculer_arbre_arêtes_de_la_zone=True,
         - recalculer_arbre_arêtes_de_la_zone (bool) : si vrai le fichier contenant l’arbre quad des arêtes de la zone est recalculé (~4s pour Pau_agglo)
     """
 
-
+    close_old_connections() 
     ## Création ou récupération de la zone
     if ville_defaut is not None:
         zone_d, créée = Zone.objects.get_or_create(nom=zone, ville_défaut=Ville.objects.get(nom_norm=partie_commune(ville_defaut)))
@@ -222,7 +222,7 @@ def charge_zone(liste_villes, zone: str, ville_defaut: str, réinit=False, effac
 
     Sortie (Ville list) : liste des villes pour lesquels on n’a pas pu récupérer les lieux.
     """
-
+    close_old_connections()
     # Récupération ou création de la zone :
     zs_d = Zone.objects.filter(nom=zone)
     if zs_d.exists():

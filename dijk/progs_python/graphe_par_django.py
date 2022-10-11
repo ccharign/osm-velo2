@@ -419,7 +419,7 @@ class Graphe_django():
             
     def met_en_cache(self, adresse, res):
         
-        str_ad = adresse.pour_cache(),
+        str_ad = adresse.pour_cache()
         v_d = Ville.objects.get(nom_complet=adresse.ville.nom_complet)
         essai = Cache_Adresse.objects.filter(adresse=str_ad, ville=v_d)
         if essai:
@@ -442,6 +442,7 @@ class Graphe_django():
         À FAIRE : arbre lex
         """
         assert isinstance(adresse, str)
+        assert "(" not in adresse, f"Adresse reçue : {adresse}"
         _, _, rue, ville = no.découpe_adresse(adresse)
         print(f"Après découpe_adresse : {rue}, {ville}")
         res = Cache_Adresse.objects.filter(adresse__iexact=rue, ville__nom_complet=ville)

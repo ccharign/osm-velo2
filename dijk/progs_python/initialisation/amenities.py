@@ -121,7 +121,7 @@ def charge_lieux_of_ville(v_d, arbre_a=None, bavard=0, force=False):
     ll = lieux_of_ville(v_d, bavard=bavard, force=force)
 
     # POur débug
-    Lieu.objects.bulk_update(ll, ["nom"])
+    #Lieu.objects.bulk_update(ll, ["nom"])
     
     # 2) Ajout de villes
     LOG(f"Récupération des noms de ville et des adresses via data.gouv pour les {len(ll)} lieux obtenus", bavard=1)
