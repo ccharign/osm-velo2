@@ -27,3 +27,4 @@ site_velo/dijk/données/Pau/sauv**
 !**/à_laisser_dans_git**
 passenger.log
 site_velo/db.sqlite*
+**flycheck**
