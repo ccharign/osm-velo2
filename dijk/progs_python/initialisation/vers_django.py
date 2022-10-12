@@ -336,8 +336,8 @@ def transfert_graphe(g, zone_d, bavard=0, rapide=1, juste_arêtes=False):
     ### Arêtes ###
 
     # pour profiling
-    temps={"correspondance":0., "remplace_arêtes":0., "màj_arêtes":0., "récup_nom":0.}
-    nb_appels={"correspondance":0, "remplace_arêtes":0, "màj_arêtes":0, "récup_nom":0}
+    temps = {"correspondance":0., "remplace_arêtes":0., "màj_arêtes":0., "récup_nom":0.}
+    nb_appels = {"correspondance":0, "remplace_arêtes":0, "màj_arêtes":0, "récup_nom":0}
 
     # Création du dico sommet -> liste de (voisin, arête) pour les arêtes déjà existantes dans la base.
     dico_voisins={}
@@ -397,7 +397,7 @@ def transfert_graphe(g, zone_d, bavard=0, rapide=1, juste_arêtes=False):
             Met à jour les champs cycla_défaut, zone, géométrie des arêtes_d avec les données des arête_nx.
         Sortie : les arêtes modifiées. Il faudra encore un Arête.bulk_update.
         """
-        res=[]
+        res = []
         for a_d, a_x in zip(arêtes_d, arêtes_x):
             #a_d.geom = géom_texte(s, t, a_x, g)
             #a_d.zone.add(zone_d)
@@ -423,61 +423,61 @@ def transfert_graphe(g, zone_d, bavard=0, rapide=1, juste_arêtes=False):
             LOG(f"arête à supprimer : {a} -> {a.départ, a.arrivée, a.nom}\n à remplacer par {arêtes_nx} -> {list(arêtes_nx)[0].get('name')}.", bavard=bavard-1)
             a.delete()
         
-        res=[]
+        res = []
         for a_nx in arêtes_nx:
-            a_d = Arête(départ = s_d,
+            a_d = Arête(départ=s_d,
                         arrivée=t_d,
-                        nom = a_nx.get("name", None),
-                        longueur = longueur_arête(s, t, a_nx, g),
-                        cycla_défaut = cycla_défaut(a_nx),
-                        geom = géom_texte(s, t, a_nx, g)
-            )
+                        nom=a_nx.get("name", None),
+                        longueur=longueur_arête(s, t, a_nx, g),
+                        cycla_défaut=cycla_défaut(a_nx),
+                        geom=géom_texte(s, t, a_nx, g)
+                        )
             res.append(a_d)
         return res
 
     LOG("Chargement des arêtes depuis le graphe osmnx", bavard)
-    nb=0
+    nb = 0
     à_créer = []
     à_màj = []
-    with transaction.atomic(): # Utile pour les suppressions d’anciennes arêtes.
+    with transaction.atomic():  # Utile pour les suppressions d’anciennes arêtes.
         for s in gx.nodes:
             s_d = tous_les_sommets.get(id_osm=s)
             for t, _ in gx[s].items():
-                if t!=s : # Suppression des boucles
+                if t!=s :  # Suppression des boucles
                     nb+=1
                     if nb%500==0: print(f"    {nb} arêtes traitées\n ") #{temps}\n{nb_appels}\n")
                     t_d = tous_les_sommets.get(id_osm=t)
                     if rapide<2:
-                        correspondent, arêtes_d, arêtes_x =  correspondance(s_d, t_d, s, t, gx)
+                        correspondent, arêtes_d, arêtes_x = correspondance(s_d, t_d, s, t, gx)
                         if rapide==0 or not correspondent:
                             à_créer.extend(remplace_arêtes(s_d, t_d, s, t, arêtes_d, gx, bavard=bavard-1))
                         else:
                             à_màj.extend(màj_arêtes(s_d, t_d, s, t, arêtes_d, arêtes_x))
     
     LOG(f"Ajout des {len(à_créer)} nouvelles arêtes dans la base", bavard)
-    sauv_données(à_créer) # bulk_create pas possible
+    sauv_données(à_créer)  # bulk_create pas possible
     LOG(f"Mise à jour des {len(à_màj)} anciennes arêtes")
     Arête.objects.bulk_update(à_màj, ["cycla_défaut"])
 
     
     ### Zone des arêtes
     LOG("Ajout de la zone à chaque arête")
-    nb=0
+    nb = 0
     ## nouvelles arêtes -> rajouter zone_d mais aussi les éventuelles anciennes zones.
     rel_àcréer = []
     for a_d in à_créer:
         for z in union([zone_d], intersection(a_d.départ.zone.all(), a_d.arrivée.zone.all())):
-            rel = Arête.zone.through(arête_id = a_d.id, zone_id = z.id)
+            rel = Arête.zone.through(arête_id=a_d.id, zone_id=z.id)
             rel_àcréer.append(rel)
     Arête.zone.through.objects.bulk_create(rel_àcréer)
     ## anciennes arêtes mises à jour -> rajouter zone_d et ville_d si pas présente.
-    rel_àcréer=[]
+    rel_àcréer = []
     for a_d in à_màj:
-        if zone_d not in a_d.zone.all() :
-            rel = Arête.zone.through(arête_id = a_d.id, zone_id = zone_d.id)
+        if zone_d not in a_d.zone.all():
+            rel = Arête.zone.through(arête_id=a_d.id, zone_id=zone_d.id)
             rel_àcréer.append(rel)
-        nb+=1
-        if nb%1000==0:print(f"    {nb} arêtes traités")
+        nb += 1
+        if nb%1000==0: print(f"    {nb} arêtes traités")
     Arête.zone.through.objects.bulk_create(rel_àcréer)
 
     return à_créer, à_màj

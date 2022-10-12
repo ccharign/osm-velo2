@@ -52,9 +52,14 @@ def quadArbreAretesDeZone(z_d, sauv=True, bavard=0):
     return res
 
 
-def charge_ville(nom, code, zone, recalculer_arbre_arêtes_de_la_zone=True,
+
+
+def charge_ville(nom, code, zone,
+                 force=False,
+                 recalculer_arbre_arêtes_de_la_zone=True,
                  rajouter_les_lieux=True,
-                 ville_defaut=None, pays="France", bavard=2, rapide=0):
+                 ville_defaut=None, pays="France", bavard=2, rapide=0
+                 ):
     """
     Entrées : nom (str), nom de la ville à charger.
               code (int)
@@ -66,9 +71,12 @@ def charge_ville(nom, code, zone, recalculer_arbre_arêtes_de_la_zone=True,
            - Rues
         Le tout associé à la zone indiquée, qui est créée si besoin.
 
+    Sortie (Ville×bool), (l’objet Ville, données ajoutées)
+
     NB : actuellement, les places piétonnes sont récupérées via la fonction noeuds_des_rues, et la procédure place_en_clique est programmée, mais elle n’est pas lancée, car sur Pau en tout cas, cela ne semble pas pertinent (cf la place Clemenceau).
 
     Paramètres:
+        - force : si vrai, recharge les données même si le champ données_présentes valait True.
         - rapide (int) : indique la stratégie en cas de données déjà présentes.
              pour tout  (s,t) sommets voisins dans g,
                 0 -> efface toutes les arêtes de s vers t et remplace par celles de g
@@ -78,7 +86,7 @@ def charge_ville(nom, code, zone, recalculer_arbre_arêtes_de_la_zone=True,
         - recalculer_arbre_arêtes_de_la_zone (bool) : si vrai le fichier contenant l’arbre quad des arêtes de la zone est recalculé (~4s pour Pau_agglo)
     """
 
-    close_old_connections() 
+    close_old_connections()
     ## Création ou récupération de la zone
     if ville_defaut is not None:
         zone_d, créée = Zone.objects.get_or_create(nom=zone, ville_défaut=Ville.objects.get(nom_norm=partie_commune(ville_defaut)))
@@ -87,23 +95,29 @@ def charge_ville(nom, code, zone, recalculer_arbre_arêtes_de_la_zone=True,
     else:
         zone_d = Zone.objects.get(nom=zone)
 
-        
-    #ville_d = vd.ajoute_code_postal(nom, code)
     ville_d = Ville.objects.get(nom_norm=partie_commune(nom), code=code)
     rel, créée = Ville_Zone.objects.get_or_create(ville=ville_d, zone=zone_d)
     if créée: rel.save()
 
+
+    ## ATTENTION : la création du l’arbre d’arête nécessite de connaître les arêtes de la zone.
+    #Et l’association arête zone est faite par transfert_graphe ci-dessous.
+    #if ville_d.données_présentes and not force:
+    #    return ville_d, False
     
     ## Récup des graphe via osmnx
     print(f"\nRécupération du graphe pour « {ville_d.code} {ville_d.nom_complet}, {pays} » avec une marge :\n")
     gr_avec_marge = osmnx.graph_from_place(
-        {"city": f"{ville_d.nom_complet}", "postcode": ville_d.code, "country":pays},
+        {"city": f"{ville_d.nom_complet}", "postcode": ville_d.code, "country": pays},
         network_type="all",  # Tout sauf private
         retain_all="False",  # Sinon il peut y avoir des enclaves déconnectées car accessibles seulement par chemin privé (ex: CSTJF)
         buffer_dist=500  # Marge de 500m
     )
     print("\n\nRécupération du graphe exact:\n")
-    gr_strict = osmnx.graph_from_place({"city":f"{nom}", "postcode":code, "country":pays}, network_type="all", retain_all="True")
+    gr_strict = osmnx.graph_from_place(
+        {"city": f"{nom}", "postcode": code, "country": pays},
+        network_type="all", retain_all="True"
+    )
 
     g = Graphe_nx(gr_avec_marge)
 
@@ -149,7 +163,7 @@ def charge_ville(nom, code, zone, recalculer_arbre_arêtes_de_la_zone=True,
     
     ville_d.données_présentes = True
     ville_d.save()
-    return ville_d
+    return ville_d, True
 
 
 def crée_tous_les_arbres_des_rues():
@@ -206,7 +220,10 @@ ZONE_GRENOBLE = [
 VDS_GRE = [Ville.objects.get(nom_norm=partie_commune(v)) for v, _ in ZONE_GRENOBLE]
 
 
-def charge_zone(liste_villes, zone: str, ville_defaut: str, réinit=False, effacer_cache=False, bavard=2, rapide=0):
+def charge_zone(liste_villes, zone: str, ville_defaut: str,
+                réinit=False, effacer_cache=False, bavard=2, rapide=0,
+                force_lieux=False
+                ):
     """
     Entrée : liste_villes, itérable de (nom de ville, code postal)
              zone (str), nom de la zone
@@ -218,9 +235,10 @@ def charge_zone(liste_villes, zone: str, ville_defaut: str, réinit=False, effac
 
     Paramètres:
        Si réinit, tous les éléments associés à la zone (villes, rues, sommets, arêtes) ainsi que le cache sont au préalable supprimés.
+       Si force_lieux, on charge les lieux même pour les villes qui avaient données_présentes à True.
        À FAIRE : Si effacer_cache, tous les fichiers .json du dossier cache du répertoire courant seront effacés.
 
-    Sortie (Ville list) : liste des villes pour lesquels on n’a pas pu récupérer les lieux.
+    Sortie (Ville list) : liste des villes pour lesquelles on n’a pas pu récupérer les lieux.
     """
     close_old_connections()
     # Récupération ou création de la zone :
@@ -239,7 +257,8 @@ def charge_zone(liste_villes, zone: str, ville_defaut: str, réinit=False, effac
     # Réinitialisation de la zone :
     if réinit:
         for v in z_d.villes():
-            v.delete()
+            v.données_présentes = False
+            v.save()
         Sommet.objects.filter(zone=z_d).delete()
         Cache_Adresse.objects.all().delete()
 
@@ -247,9 +266,11 @@ def charge_zone(liste_villes, zone: str, ville_defaut: str, réinit=False, effac
     
     # Chargement des villes :
     LOG("\nChargement des villes", bavard=bavard)
-    villes_d = []
+    villes_modifiées = []
     for nom, code in liste_villes:
-        villes_d.append(charge_ville(nom, code, zone, bavard=bavard, rapide=rapide, recalculer_arbre_arêtes_de_la_zone=False, rajouter_les_lieux=False))
+        v_d, données_ajoutées = charge_ville(nom, code, zone, bavard=bavard, rapide=rapide, recalculer_arbre_arêtes_de_la_zone=False, rajouter_les_lieux=False)
+        if données_ajoutées or force_lieux:
+            villes_modifiées.append(v_d)
 
     # Arbre quad des arêtes
     LOG("\nCréation du R-arbre des arêtes", bavard=bavard)
@@ -257,7 +278,7 @@ def charge_zone(liste_villes, zone: str, ville_defaut: str, réinit=False, effac
 
     # Lieux (besoin de l’arbre des arêtes)
     LOG("\nChargement des lieux")
-    échec_lieux = charge_lieux_of_liste_ville(villes_d, arbre_a)
+    échec_lieux = charge_lieux_of_liste_ville(villes_modifiées, arbre_a)
 
     if échec_lieux:
         print("Problème sur les villes :")
