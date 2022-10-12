@@ -348,30 +348,33 @@ def confirme_nv_chemin(requête):
     """
     Traitement du formulaire d’enregistrement d’un nouveau chemin.
     """
+    nb_lectures = 50
+
+    
     try:
 
-        données = récup_données(requête.POST, forms.ToutCaché)
+        données = récup_données(requête.POST, forms.EnregistrerContrib)
         z_d, étapes, étapes_interdites, _ = z_é_i_d(g, données)
-
-        nb_lectures = 50
-
-        #noms_étapes = [é for é in requête.POST["étapes"].strip().split(";") if len(é)>0]
         AR = bool_of_checkbox(requête.POST, "AR")
-        #rues_interdites = [r for r in requête.POST["rues_interdites"].strip().split(";") if len(r)>0]
+        
+        def traite_un_chemin(pourcentage_détour: int):
+            c = Chemin.of_étapes(z_d, étapes, pourcentage_détour, AR, g, étapes_interdites=étapes_interdites, nv_cache=2, bavard=2)
+            chemins.append(c)
+            c_d = c.vers_django(bavard=1)
+            prop_modif = n_lectures(nb_lectures, g, [c], bavard=1)
+            c_d.dernier_p_modif = prop_modif
+            c_d.save()
+
 
         chemins = []
         for id_chemin in requête.POST.keys():
             if id_chemin[:2] == "ps" and requête.POST[id_chemin] == "on":
                 pourcentage_détour = int(id_chemin[2:])
-                c = Chemin.of_étapes(z_d, étapes, pourcentage_détour, AR, g, étapes_interdites=étapes_interdites, nv_cache=2, bavard=2)
-                chemins.append(c)
-                for é in c.étapes:
-                    print(é.nœuds)
-                c_d = c.vers_django(bavard=1)
+                traite_un_chemin(pourcentage_détour)
+
+        if données["autre_p_détour"]:
+            traite_un_chemin(données["autre_p_détour"])
                 
-                prop_modif = n_lectures(nb_lectures, g, [c], bavard=1)
-                c_d.dernier_p_modif = prop_modif
-                c_d.save()
 
         return render(requête, "dijk/merci.html", {"chemin": chemins, "zone_t": z_d.nom})
     
