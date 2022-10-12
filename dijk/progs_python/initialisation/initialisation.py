@@ -52,6 +52,52 @@ def quadArbreAretesDeZone(z_d, sauv=True, bavard=0):
     return res
 
 
+def charge_graphe_de_ville(ville_d, zone_d, pays="France", bavard=0, rapide=0):
+    ## Récup des graphe via osmnx
+    print(f"\nRécupération du graphe pour « {ville_d.code} {ville_d.nom_complet}, {pays} » avec une marge :\n")
+    gr_avec_marge = osmnx.graph_from_place(
+        {"city": f"{ville_d.nom_complet}", "postcode": ville_d.code, "country": pays},
+        network_type="all",  # Tout sauf private
+        retain_all="False",  # Sinon il peut y avoir des enclaves déconnectées car accessibles seulement par chemin privé (ex: CSTJF)
+        buffer_dist=500  # Marge de 500m
+    )
+    print("\n\nRécupération du graphe exact:\n")
+    gr_strict = osmnx.graph_from_place(
+        {"city": f"{ville_d.nom_complet}", "postcode": ville_d.code, "country": pays},
+        network_type="all", retain_all="True"
+    )
+
+    g = Graphe_nx(gr_avec_marge)
+
+    
+    ## Noms des villes ajouté dans g (Graphe_nx)
+    print("\n\nAjout du nom de ville.")
+    for n in gr_strict:
+        g.villes_of_nœud[n] = [ville_d.nom_complet]
+
+        
+    ## Nœuds des rues
+    print("\n\nCalcul des nœuds de chaque rue")
+    dico_rues, places_piétonnes = extrait_nœuds_des_rues(g, bavard=bavard-1)  # dico ville -> rue_n -> (rue, liste nœuds) # Seules les rues avec nom de ville, donc dans g_strict seront calculées.
+    print("Écriture des nœuds des rues dans la base.")
+    close_old_connections()
+    vd.charge_dico_rues_nœuds(ville_d, dico_rues[ville_d.nom_complet])
+    print(f"\nPlaces piétonnes trouvées : {places_piétonnes}\n")
+    
+    print("Création de l'arbre lexicographique")
+    arbre_rue_dune_ville(
+        ville_d,
+        dico_rues[ville_d.nom_complet].keys()
+    )
+
+    ## Désorientation
+    close_old_connections()
+    print("\nDésorientation du graphe")
+    vd.désoriente(g, bavard=bavard-1)
+    
+    ## Transfert du graphe
+    close_old_connections()
+    return vd.transfert_graphe(g, zone_d, bavard=bavard-1, juste_arêtes=False, rapide=rapide)
 
 
 def charge_ville(nom, code, zone,
@@ -99,66 +145,23 @@ def charge_ville(nom, code, zone,
     rel, créée = Ville_Zone.objects.get_or_create(ville=ville_d, zone=zone_d)
     if créée: rel.save()
 
-
-    ## ATTENTION : la création du l’arbre d’arête nécessite de connaître les arêtes de la zone.
-    #Et l’association arête zone est faite par transfert_graphe ci-dessous.
-    #if ville_d.données_présentes and not force:
-    #    return ville_d, False
-    
-    ## Récup des graphe via osmnx
-    print(f"\nRécupération du graphe pour « {ville_d.code} {ville_d.nom_complet}, {pays} » avec une marge :\n")
-    gr_avec_marge = osmnx.graph_from_place(
-        {"city": f"{ville_d.nom_complet}", "postcode": ville_d.code, "country": pays},
-        network_type="all",  # Tout sauf private
-        retain_all="False",  # Sinon il peut y avoir des enclaves déconnectées car accessibles seulement par chemin privé (ex: CSTJF)
-        buffer_dist=500  # Marge de 500m
-    )
-    print("\n\nRécupération du graphe exact:\n")
-    gr_strict = osmnx.graph_from_place(
-        {"city": f"{nom}", "postcode": code, "country": pays},
-        network_type="all", retain_all="True"
-    )
-
-    g = Graphe_nx(gr_avec_marge)
-
-    
-    ## Noms des villes ajouté dans g (Graphe_nx)
-    print("\n\nAjout du nom de ville.")
-    for n in gr_strict:
-        g.villes_of_nœud[n] = [nom]
-
+    if not ville_d.données_présentes or force:
+        # création et enregistrement du graph de la ville
+        arêtes_créées, arêtes_màj = charge_graphe_de_ville(ville_d, zone_d, pays="France", bavard=0, rapide=rapide)
+        vd.ajoute_zone_des_arêtes(zone_d, arêtes_créées, arêtes_màj)
+        return ville_d, False
+    else:
+        # juste ajout de la zone aux arêtes de la ville
+        vd.ajoute_zone_des_arêtes(zone_d, [], zone_d.arête_set.all())
         
-    ## Nœuds des rues
-    print("\n\nCalcul des nœuds de chaque rue")
-    dico_rues, places_piétonnes = extrait_nœuds_des_rues(g, bavard=bavard-1)  # dico ville -> rue_n -> (rue, liste nœuds) # Seules les rues avec nom de ville, donc dans g_strict seront calculées.
-    print("Écriture des nœuds des rues dans la base.")
-    close_old_connections()
-    vd.charge_dico_rues_nœuds(ville_d, dico_rues[nom])
-    print(f"\nPlaces piétonnes trouvées : {places_piétonnes}\n")
-    
-    print("Création de l'arbre lexicographique")
-    arbre_rue_dune_ville(
-        ville_d,
-        dico_rues[nom].keys()
-    )
-
-    ## Désorientation
-    close_old_connections()
-    print("\nDésorientation du graphe")
-    vd.désoriente(g, bavard=bavard-1)
-    
-    ## Transfert du graphe
-    close_old_connections()
-    arêtes_créées, arêtes_màj = vd.transfert_graphe(g, zone_d, bavard=bavard-1, juste_arêtes=False, rapide=rapide)
-
 
     ## Arbre q des arêtes
-    if recalculer_arbre_arêtes_de_la_zone:
-        quadArbreAretesDeZone(zone_d, sauv=True)
+    if recalculer_arbre_arêtes_de_la_zone or rajouter_les_lieux:  # Pour rajouter les lieux il faut être sûr que l’arbre des arêtes est à jour
+        arbre_a = quadArbreAretesDeZone(zone_d, sauv=True)
         
     ## Lieux
     if rajouter_les_lieux:
-        charge_lieux_of_ville(ville_d)
+        charge_lieux_of_ville(ville_d, arbre_a=arbre_a)
     
     
     ville_d.données_présentes = True

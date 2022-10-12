@@ -304,15 +304,13 @@ def transfert_graphe(g, zone_d, bavard=0, rapide=1, juste_arêtes=False):
                 à_créer.append(s_d)
             else:
                 s_d = essai
-                #màj des coords au cas où...
-                s_d.lon=lon
-                s_d.lat=lat
+                # màj des coords au cas où...
+                s_d.lon = lon
+                s_d.lat = lat
                 à_màj.append(s_d)
+                
         LOG(f"Ajout des {len(à_créer)} nouveaux sommets dans la base")
-        #créés=Sommet.objects.bulk_create(à_créer) # Attention : les objets renvoyés par bulk_create n’ont pas d’id
         sauv_données(à_créer)
-        #if len(créés) != len(à_créer):
-        #    raise RuntimeError(f"{len(créés)} sommets créés par bulk_create alors qu’il fallait en créer {len(à_créer)}")
         LOG(f"Mise à jour des {len(à_màj)} sommets modifiés")
         Sommet.objects.bulk_update(à_màj, ["lon", "lat"])
 
@@ -321,14 +319,14 @@ def transfert_graphe(g, zone_d, bavard=0, rapide=1, juste_arêtes=False):
         # Il faudrait un bulk_manyToMany ... -> utiliser la table d’association automatiquement créée par Django : through
         #https://docs.djangoproject.com/en/4.0/ref/models/fields/#django.db.models.ManyToManyField
         LOG("Sommets créés", bavard=bavard)
-        rel_àcréer=[]
+        rel_àcréer = []
         for s_d in à_créer:
-            rel = Sommet.zone.through(sommet_id = s_d.id, zone_id = zone_d.id)
+            rel = Sommet.zone.through(sommet_id=s_d.id, zone_id=zone_d.id)
             rel_àcréer.append(rel)
         LOG("Sommets mis à jour", bavard=bavard)
         for s_d in à_màj:
-            if zone_d not in s_d.zone.all() :
-                rel = Sommet.zone.through(sommet_id = s_d.id, zone_id = zone_d.id)
+            if zone_d not in s_d.zone.all():
+                rel = Sommet.zone.through(sommet_id=s_d.id, zone_id=zone_d.id)
                 rel_àcréer.append(rel)
         Sommet.zone.through.objects.bulk_create(rel_àcréer)
 
@@ -340,7 +338,7 @@ def transfert_graphe(g, zone_d, bavard=0, rapide=1, juste_arêtes=False):
     nb_appels = {"correspondance":0, "remplace_arêtes":0, "màj_arêtes":0, "récup_nom":0}
 
     # Création du dico sommet -> liste de (voisin, arête) pour les arêtes déjà existantes dans la base.
-    dico_voisins={}
+    dico_voisins = {}
     toutes_les_arêtes = Arête.objects.all().select_related("départ", "arrivée")
     for a in toutes_les_arêtes:
         s = a.départ.id_osm
@@ -371,12 +369,12 @@ def transfert_graphe(g, zone_d, bavard=0, rapide=1, juste_arêtes=False):
         else:
             arêtes = gx[s][t].values()
             noms = [ a.get("name", None) for a in arêtes ]
-            if len(noms)!= len(vieilles_arêtes):
+            if len(noms) != len(vieilles_arêtes):
                 return False, vieilles_arêtes, arêtes
             else:
                 arêtes_ordre = []
                 for a in arêtes:
-                    essai_a_d = récup_noms(vieilles_arêtes, a.get("name", None) )
+                    essai_a_d = récup_noms(vieilles_arêtes, a.get("name", None))
                     if len(essai_a_d) != 1:
                         #if vieilles_arêtes.filter(nom=a.get("name", None)).count()!=1:
                         return False, vieilles_arêtes, arêtes
@@ -443,13 +441,13 @@ def transfert_graphe(g, zone_d, bavard=0, rapide=1, juste_arêtes=False):
         for s in gx.nodes:
             s_d = tous_les_sommets.get(id_osm=s)
             for t, _ in gx[s].items():
-                if t!=s :  # Suppression des boucles
-                    nb+=1
+                if t != s:  # Suppression des boucles
+                    nb += 1
                     if nb%500==0: print(f"    {nb} arêtes traitées\n ") #{temps}\n{nb_appels}\n")
                     t_d = tous_les_sommets.get(id_osm=t)
-                    if rapide<2:
+                    if rapide < 2:
                         correspondent, arêtes_d, arêtes_x = correspondance(s_d, t_d, s, t, gx)
-                        if rapide==0 or not correspondent:
+                        if rapide == 0 or not correspondent:
                             à_créer.extend(remplace_arêtes(s_d, t_d, s, t, arêtes_d, gx, bavard=bavard-1))
                         else:
                             à_màj.extend(màj_arêtes(s_d, t_d, s, t, arêtes_d, arêtes_x))
@@ -460,27 +458,28 @@ def transfert_graphe(g, zone_d, bavard=0, rapide=1, juste_arêtes=False):
     Arête.objects.bulk_update(à_màj, ["cycla_défaut"])
 
     
+    
+
+def ajoute_zone_des_arêtes(zone_d, créées, màj):
     ### Zone des arêtes
     LOG("Ajout de la zone à chaque arête")
     nb = 0
     ## nouvelles arêtes -> rajouter zone_d mais aussi les éventuelles anciennes zones.
     rel_àcréer = []
-    for a_d in à_créer:
+    for a_d in créées:
         for z in union([zone_d], intersection(a_d.départ.zone.all(), a_d.arrivée.zone.all())):
             rel = Arête.zone.through(arête_id=a_d.id, zone_id=z.id)
             rel_àcréer.append(rel)
     Arête.zone.through.objects.bulk_create(rel_àcréer)
     ## anciennes arêtes mises à jour -> rajouter zone_d et ville_d si pas présente.
     rel_àcréer = []
-    for a_d in à_màj:
+    for a_d in màj:
         if zone_d not in a_d.zone.all():
             rel = Arête.zone.through(arête_id=a_d.id, zone_id=zone_d.id)
             rel_àcréer.append(rel)
         nb += 1
         if nb%1000==0: print(f"    {nb} arêtes traités")
     Arête.zone.through.objects.bulk_create(rel_àcréer)
-
-    return à_créer, à_màj
 
 
 @transaction.atomic()
