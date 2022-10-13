@@ -131,7 +131,7 @@ def charge_ville(nom, code, zone,
                 2 -> si il y a quelque chose dans la base pour (s,t), ne rien faire.
         - recalculer_arbre_arêtes_de_la_zone (bool) : si vrai le fichier contenant l’arbre quad des arêtes de la zone est recalculé (~4s pour Pau_agglo)
     """
-
+    LOG(f"chargement de {nom}.\n")
     close_old_connections()
     ## Création ou récupération de la zone
     if ville_defaut is not None:

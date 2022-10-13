@@ -111,7 +111,7 @@ def ajoute_ville_et_rue_manquantes(bavard=1):
     """
     Essaie de rajouter ville et adresse des lieux dans la base qui n’en ont pas.
     """
-
+    close_old_connections()
     à_traiter = Lieu.objects.filter(ville__isnull=True)
     LOG(f"{len(à_traiter)} lieux n’ont pas de Ville.")
     ajoute_ville_et_rue(à_traiter, bavard=bavard-1)
