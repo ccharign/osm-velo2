@@ -268,7 +268,7 @@ def charge_zone(liste_villes, zone: str, ville_defaut: str,
     # Vidage du cache d’osmnx ?
     
     # Chargement des villes :
-    LOG("\nChargement des villes", bavard=bavard)
+    LOG(f"\nChargement des villes {liste_villes}", bavard=bavard)
     villes_modifiées = []
     for nom, code in liste_villes:
         v_d, données_ajoutées = charge_ville(nom, code, zone, bavard=bavard, rapide=rapide, recalculer_arbre_arêtes_de_la_zone=False, rajouter_les_lieux=False)
