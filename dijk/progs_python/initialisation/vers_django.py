@@ -262,6 +262,15 @@ def longueur_arête(s, t, a, g):
         return deuc
     else:
         return a["length"]
+
+@transaction.atomic
+def supprime_tout(à_supprimer):
+    """
+    Entrée : à_supprimer (iterable d’objets ayant une méthode delete)
+    Effet : supprime de la base tous ces objets en une seule requête.
+    """
+    for x in à_supprimer:
+        x.delete()
     
     
 def transfert_graphe(g, ville_d, bavard=0, rapide=1, juste_arêtes=False):
@@ -341,51 +350,50 @@ def transfert_graphe(g, ville_d, bavard=0, rapide=1, juste_arêtes=False):
     dico_voisins = {}
     toutes_les_arêtes = Arête.objects.all().select_related("départ", "arrivée")
     for a in toutes_les_arêtes:
-        s = a.départ.id_osm
-        t = a.arrivée.id_osm
-        if s not in dico_voisins: dico_voisins[s]=[]
+        s = a.départ#.id_osm
+        t = a.arrivée#e.id_osm
+        if s not in dico_voisins: dico_voisins[s] = []
         dico_voisins[s].append((t, a))
 
     #@mesure_temps("récup_nom", temps, nb_appels)
     def récup_noms(arêtes_d, nom):
         """ Renvoie le tuple des a∈arêtes_d qui ont pour nom 'nom'"""
-        return [a_d for a_d in arêtes_d if nom==a_d.nom]
+        return [a_d for a_d in arêtes_d if nom == a_d.nom]
     
     #@mesure_temps("correspondance", temps, nb_appels)
-    def correspondance(s_d, t_d, s, t, gx):
+    def correspondance(s_d, t_d, gx):
         """
         Entrées:
             - s_d, t_d (Sommet)
-            - s, t (int)
             - gx (multidigraph)
         Sortie ( bool × (Arête list) × (dico list)) : le triplet ( les arêtes correspondent à celles dans la base, arêtes de la bases, arêtes de gx)
         Dans le cas où il y a correspondance, les deux listes renvoyées contiennent les arêtes dans le même ordre.
         Ne prend en compte que les arêtes de s_d vers t_d.
         « Correspondent » signifie ici même nombre, et mêmes noms. En cas de plusieurs arêtes de même nom, le résultat sera Faux dans tous les cas.
         """
-        vieilles_arêtes = [a_d for (v, a_d) in dico_voisins.get(s, []) if v==t]
-        if t not in gx[s]:
+        vieilles_arêtes = [a_d for (v, a_d) in dico_voisins.get(s, []) if v==t_d]
+        if t_d.id_osm not in gx[s_d.id_osm]:
             return False, vieilles_arêtes, []
         else:
-            arêtes = gx[s][t].values()
-            noms = [ a.get("name", None) for a in arêtes ]
+            arêtes_x = gx[s_d.id_osm][t_d.id_osm].values()
+            noms = [ a.get("name", None) for a in arêtes_x ]
             if len(noms) != len(vieilles_arêtes):
-                return False, vieilles_arêtes, arêtes
+                return False, vieilles_arêtes, arêtes_x
             else:
                 arêtes_ordre = []
-                for a in arêtes:
+                for a in arêtes_x:
                     essai_a_d = récup_noms(vieilles_arêtes, a.get("name", None))
                     if len(essai_a_d) != 1:
                         #if vieilles_arêtes.filter(nom=a.get("name", None)).count()!=1:
-                        return False, vieilles_arêtes, arêtes
+                        return False, vieilles_arêtes, arêtes_x
                     else:
                         arêtes_ordre.append(essai_a_d[0])
                     
-                return True, arêtes_ordre, arêtes
+                return True, arêtes_ordre, arêtes_x
 
     
     #@mesure_temps("màj_arêtes", temps, nb_appels)
-    def màj_arêtes(s_d, t_d, s, t, arêtes_d, arêtes_x):
+    def màj_arêtes(arêtes_d, arêtes_x):
         """
         Entrées:
             - arêtes_d (Arête list) : arêtes de la base
@@ -404,25 +412,19 @@ def transfert_graphe(g, ville_d, bavard=0, rapide=1, juste_arêtes=False):
         return res
 
     #@mesure_temps("remplace_arêtes", temps, nb_appels)
-    def remplace_arêtes(s_d, t_d, s, t, arêtes_d, gx, bavard=0):
+    def remplace_arêtes(s_d, t_d, arêtes_d, arêtes_x, bavard=0):
         """
         Supprime les arêtes de arêtes_d, et crée à la place celles venant de gx[s][t].
-        Sortie (Arête list): les arêtes créées. Pas encore sauvées.
+        Sortie (Arête list × Arête list): (arêtes à supprimer, arêtes à créer)
         Effet : les arêtes à créer sont ajoutées dans à_créer.
         """
-        #arêtes_d.delete()
-        
-        if t in gx[s]:
-            arêtes_nx = gx[s][t].values()
-        else:
-            arêtes_nx = []
-        
+        à_supprimer = []
         for a in arêtes_d:
-            LOG(f"arête à supprimer : {a} -> {a.départ, a.arrivée, a.nom}\n à remplacer par {arêtes_nx} -> {list(arêtes_nx)[0].get('name')}.", bavard=bavard-1)
-            a.delete()
+            LOG(f"arête à supprimer : {a} -> {a.départ, a.arrivée, a.nom}\n à remplacer par {arêtes_x} -> {list(arêtes_x)[0].get('name')}.", bavard=bavard-1)
+            à_supprimer.append(a)
         
-        res = []
-        for a_nx in arêtes_nx:
+        à_créer = []
+        for a_nx in arêtes_x:
             a_d = Arête(départ=s_d,
                         arrivée=t_d,
                         nom=a_nx.get("name", None),
@@ -430,13 +432,14 @@ def transfert_graphe(g, ville_d, bavard=0, rapide=1, juste_arêtes=False):
                         cycla_défaut=cycla_défaut(a_nx),
                         geom=géom_texte(s, t, a_nx, g)
                         )
-            res.append(a_d)
-        return res
+            à_créer.append(a_d)
+        return à_supprimer, à_créer
 
     LOG("Chargement des arêtes depuis le graphe osmnx", bavard)
     nb = 0
     à_créer = []
     à_màj = []
+    à_supprimer = []
     with transaction.atomic():  # Utile pour les suppressions d’anciennes arêtes.
         for s in gx.nodes:
             s_d = tous_les_sommets.get(id_osm=s)
@@ -446,15 +449,19 @@ def transfert_graphe(g, ville_d, bavard=0, rapide=1, juste_arêtes=False):
                     if nb%500==0: print(f"    {nb} arêtes traitées\n ")  #{temps}\n{nb_appels}\n")
                     t_d = tous_les_sommets.get(id_osm=t)
                     if rapide < 2:
-                        correspondent, arêtes_d, arêtes_x = correspondance(s_d, t_d, s, t, gx)
+                        correspondent, arêtes_d, arêtes_x = correspondance(s_d, t_d, gx)
                         if rapide == 0 or not correspondent:
-                            à_créer.extend(remplace_arêtes(s_d, t_d, s, t, arêtes_d, gx, bavard=bavard-1))
+                            à_s, à_c = remplace_arêtes(s_d, t_d, arêtes_d, arêtes_x, bavard=bavard-1)
+                            à_créer.extend(à_c)
+                            à_supprimer.extend(à_s)
                         else:
-                            à_màj.extend(màj_arêtes(s_d, t_d, s, t, arêtes_d, arêtes_x))
-    
-    LOG(f"Ajout des {len(à_créer)} nouvelles arêtes dans la base", bavard)
+                            à_màj.extend(màj_arêtes(s_d, t_d, arêtes_d, arêtes_x))
+
+    LOG(f"Suppression de {len(à_supprimer)} arêtes.", bavard=bavard)
+    supprime_tout(à_supprimer)
+    LOG(f"Ajout des {len(à_créer)} nouvelles arêtes dans la base", bavard=bavard)
     sauv_données(à_créer)  # bulk_create pas possible
-    LOG(f"Mise à jour des {len(à_màj)} anciennes arêtes")
+    LOG(f"Mise à jour des {len(à_màj)} anciennes arêtes", bavard=bavard)
     Arête.objects.bulk_update(à_màj, ["cycla_défaut"])
 
     return à_créer, à_màj
