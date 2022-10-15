@@ -133,7 +133,7 @@ class Graphe_django():
             tic = perf_counter()
             print("Chargement des sommets")
 
-            for s in Sommet.objects.filter(zone=z_d):
+            for s in z_d.sommets():
                 self.dico_Sommet[s.id_osm] = s
                 self.dico_voisins[s.id_osm] = []
             tic = chrono(tic, "Chargement des sommets")
@@ -142,10 +142,10 @@ class Graphe_django():
             ## Arêtes
             print("Chargement des arêtes")
 
-            arêtes = Arête.objects.filter(zone=z_d).select_related("départ", "arrivée")
             d_arête_of_pk = {}  # Pour le chargement de l’arbre quad.
-            print(f"{len(arêtes)} arêtes dans la base pour la zone {z_d}")
-            for a in arêtes:
+            arêtes_de_z = z_d.arêtes()
+            
+            for a in arêtes_de_z:
                 s = a.départ.id_osm
                 t = a.arrivée.id_osm
                 d_arête_of_pk[a.pk] = a
@@ -159,12 +159,13 @@ class Graphe_django():
             tic = perf_counter()
             LOG(f"Chargement de l’arbre quad des arêtes depuis {chemin}", bavard=bavard)
             self.arbre_arêtes[z_d.nom] = QuadrArbreArête.of_fichier(chemin)
-            chrono(tic, "Chargement de l’arbre quad des arêtes", bavard=bavard, force=True)
+            tic = chrono(tic, "Chargement de l’arbre quad des arêtes", bavard=bavard, force=True)
                 
                 
             ## Cycla min et max
+            
             self.calcule_cycla_min_max(z_d)
-
+            chrono(tic, "Calcul des cycla min et max", bavard=bavard, force=True)
             self.zones.append(z_d)
             
         else:
@@ -272,17 +273,20 @@ class Graphe_django():
         #self.cycla_max = max(self.cycla_max, a_d.cycla)
 
         
-    def calcule_cycla_min_max(self, z_d):
+    def calcule_cycla_min_max(self, z_d, arêtes=None):
         
-        cycla_min = Arête.objects.filter(zone=z_d).aggregate(Min("cycla"))["cycla__min"]
-        cycla_défaut_min = Arête.objects.filter(zone=z_d, cycla_défaut__gt=0).aggregate(Min("cycla_défaut"))["cycla_défaut__min"]
+        if not arêtes:
+            arêtes = z_d.arêtes()
+            
+        cycla_min = arêtes.aggregate(Min("cycla"))["cycla__min"]
+        cycla_défaut_min = arêtes.aggregate(Min("cycla_défaut"))["cycla_défaut__min"]
         if cycla_min is None:
             self.cycla_min[z_d] = cycla_défaut_min
         else:
             self.cycla_min[z_d] = min(cycla_défaut_min, cycla_min)
 
-        cycla_max = Arête.objects.filter(zone=z_d).aggregate(Max("cycla"))["cycla__max"]
-        cycla_défaut_max = Arête.objects.filter(zone=z_d).aggregate(Max("cycla_défaut"))["cycla_défaut__max"]
+        cycla_max = arêtes.aggregate(Max("cycla"))["cycla__max"]
+        cycla_défaut_max = arêtes.aggregate(Max("cycla_défaut"))["cycla_défaut__max"]
         if cycla_max is None:
             self.cycla_max[z_d] = cycla_défaut_max
         else:

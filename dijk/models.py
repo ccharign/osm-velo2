@@ -126,13 +126,27 @@ class Zone(models.Model):
     def villes(self):
         return (rel.ville for rel in Ville_Zone.objects.filter(zone=self).prefetch_related("ville"))
 
+    # def arêtes(self):
+    #     """
+    #     Générateur des arêtes de self.
+    #     """
+    #     for v in self.villes():
+    #         for a in v.arête_set.all():
+    #             yield a
+
     def arêtes(self):
         """
-        Générateur des arêtes de self.
+        Sortie (queryset) : les arêtes des villes de la zone
+        """
+        return Arête.objects.filter(villes__zone=self).prefetch_related("départ", "arrivée")
+        
+    def sommets(self):
+        """
+        Générateur des sommets de self.
         """
         for v in self.villes():
-            for a in v.arête_set.all():
-                yield a
+            for s in v.sommet_set.all():
+                yield s
 
     def ajoute_ville(self, ville):
         rel = Ville_Zone(ville=ville, zone=self)

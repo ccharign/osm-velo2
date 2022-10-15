@@ -151,7 +151,7 @@ def charge_ville(nom, code, zone,
         # création et enregistrement du graphe de la ville
         arêtes_créées, arêtes_màj = charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=rapide)
         assert len(arêtes_créées)+len(arêtes_màj) == len(set(arêtes_créées+arêtes_màj)), "Arêtes en double"
-        vd.ajoute_arêtes_de_ville(zone_d, arêtes_créées, arêtes_màj)
+        vd.ajoute_arêtes_de_ville(ville_d, arêtes_créées, arêtes_màj)
         return ville_d, False
     #else:
         # juste ajout de la zone aux arêtes de la ville

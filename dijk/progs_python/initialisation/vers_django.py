@@ -452,8 +452,8 @@ def transfert_graphe(g, ville_d, bavard=0, rapide=1, juste_arêtes=False):
                         correspondent, arêtes_d, arêtes_x = correspondance(s_d, t_d, gx)
                         if rapide == 0 or not correspondent:
                             à_s, à_c = remplace_arêtes(s_d, t_d, arêtes_d, arêtes_x, bavard=bavard-1)
-                            à_créer.extend(à_c)
                             à_supprimer.extend(à_s)
+                            à_créer.extend(à_c)
                         else:
                             à_màj.extend(màj_arêtes(s_d, t_d, arêtes_d, arêtes_x))
 
@@ -494,28 +494,27 @@ def ajoute_arêtes_de_ville(ville_d, créées, màj, bavard=0):
     """
     Ajoute les arêtes indiquées à la ville.
     """
-    assert len(créées) == len(set(créées)), "Arêtes en double !"
+    assert isinstance(ville_d, Ville)
     
     LOG(f"Ajout des arêtes à la ville {ville_d}")
 
-    arêtes_avec_la_ville = set(ville_d.arêtes())
-    toutes_les_arêtes = set(Arête.objects.all())
+    arêtes_avec_la_ville = set(ville_d.arête_set.all())
     
     ## nouvelles arêtes -> rajouter ville_d mais aussi les éventuelles anciennes villes.
     rel_àcréer = []
     couples=set()  # juste pour débug
+    n=1
     for a_d in créées:
-        assert a_d not in toutes_les_arêtes, f"Arête déjà existente : {a_d}"
         villes_de_a = tuple(intersection(a_d.départ.get_villes(), a_d.arrivée.get_villes()))
-        assert len(villes_de_a)==len(set(villes_de_a)), f"Villes en double pour l’arête {a_d} : {villes_de_a}"
-        if len(villes_de_a)>1: print(f"Plusieurs villes pour cette arête : {villes_de_a}")
-        for z in villes_de_a:
-            rel = Arête.villes.through(arête_id=a_d.id, ville_id=ville_d.id)
-            if (a_d,ville_d) not in couples:
-                couples.add((a_d, ville_d))
+        for v in villes_de_a:
+            rel = Arête.villes.through(arête_id=a_d.id, ville_id=v.id)
+            if (a_d, v) not in couples:
+                couples.add((a_d, v))
             else:
-                raise RuntimeError(f"Rel déjà créée : {a_d, ville_d}")
+                raise RuntimeError(f"Rel déjà créée : {a_d, v}. Ville de l’arête : {villes_de_a}. L’arête était la {n}ième traitée")
             rel_àcréer.append(rel)
+            n+=1
+            
     LOG(f"Enregistrement des {len(rel_àcréer)} relations pour les nouvelles arêtes.")
     assert len(rel_àcréer)==len(set(couples)), "Des relations ont été créées en double"
     Arête.villes.through.objects.bulk_create(rel_àcréer)
