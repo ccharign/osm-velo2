@@ -40,7 +40,9 @@ def quadArbreAretesDeZone(z_d, sauv=True, bavard=0):
     Sortie : arbre des arêtes de cette zone
     Effet : si sauv, enregistre l’arbre à l’adresse "{DONNÉES}/{z_d.nom}/arbre_arêtes_{z_d}"
     """
-    l = list(Arête.objects.filter(zone=z_d).prefetch_related("départ", "arrivée"))
+    
+    l = list(z_d.arêtes())
+    LOG(f"Villes de la zone {z_d} : {z_d.villes()}\n {len(l)} arêtes.")
     tic = perf_counter()
     res = QuadrArbreArête.of_list_darêtes_d(l)
     if sauv:
@@ -52,7 +54,7 @@ def quadArbreAretesDeZone(z_d, sauv=True, bavard=0):
     return res
 
 
-def charge_graphe_de_ville(ville_d, zone_d, pays="France", bavard=0, rapide=0):
+def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
     ## Récup des graphe via osmnx
     print(f"\nRécupération du graphe pour « {ville_d.code} {ville_d.nom_complet}, {pays} » avec une marge :\n")
     gr_avec_marge = osmnx.graph_from_place(
@@ -97,7 +99,7 @@ def charge_graphe_de_ville(ville_d, zone_d, pays="France", bavard=0, rapide=0):
     
     ## Transfert du graphe
     close_old_connections()
-    return vd.transfert_graphe(g, zone_d, bavard=bavard-1, juste_arêtes=False, rapide=rapide)
+    return vd.transfert_graphe(g, ville_d, bavard=bavard-1, juste_arêtes=False, rapide=rapide)
 
 
 def charge_ville(nom, code, zone,
@@ -146,13 +148,14 @@ def charge_ville(nom, code, zone,
     if créée: rel.save()
 
     if not ville_d.données_présentes or force:
-        # création et enregistrement du graph de la ville
-        arêtes_créées, arêtes_màj = charge_graphe_de_ville(ville_d, zone_d, pays="France", bavard=0, rapide=rapide)
-        vd.ajoute_zone_des_arêtes(zone_d, arêtes_créées, arêtes_màj)
+        # création et enregistrement du graphe de la ville
+        arêtes_créées, arêtes_màj = charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=rapide)
+        assert len(arêtes_créées)+len(arêtes_màj) == len(set(arêtes_créées+arêtes_màj)), "Arêtes en double"
+        vd.ajoute_arêtes_de_ville(zone_d, arêtes_créées, arêtes_màj)
         return ville_d, False
-    else:
+    #else:
         # juste ajout de la zone aux arêtes de la ville
-        vd.ajoute_zone_des_arêtes(zone_d, [], zone_d.arête_set.all())
+        # vd.ajoute_zone_des_arêtes(zone_d, [], zone_d.arête_set.all())
         
 
     ## Arbre q des arêtes
@@ -189,9 +192,9 @@ def crée_tous_les_arbres_des_rues():
 
 
 À_RAJOUTER_PAU = {
+    "Pau": 64000,
     "Gelos": 64110,
     "Lée": 64320,
-    "Pau": 64000,
     "Lescar": 64230,
     "Billère": 64140,
     "Jurançon": 64110,
@@ -205,11 +208,11 @@ def crée_tous_les_arbres_des_rues():
 VDS_PAU = [Ville.objects.get(nom_norm=partie_commune(v)) for v, _ in À_RAJOUTER_PAU]
 
 ZONE_VOIRON = {
+    "voiron": 38500,
     "saint étienne de crossey": 38960,
     "coublevie": 38500,
     "la buisse": 38500,
     "saint aupre": 38960,
-    "voiron": 38500
 }.items()
 
 ZONE_GRENOBLE = [
@@ -220,17 +223,32 @@ ZONE_GRENOBLE = [
     ("Voreppe", 38340),
     ("Échirolles", 38130),
 ]
+
 VDS_GRE = [Ville.objects.get(nom_norm=partie_commune(v)) for v, _ in ZONE_GRENOBLE]
 
+def ville_of_nom_et_code_postal(nom: str, code: int):
+    """
+    Renvoie la ville de la base ayant le nom indiqué (après normalisation par partie_commune)
+    En cas de non unicité, utilise le code postal pour départager.
+    """
 
-def charge_zone(liste_villes, zone: str, ville_defaut: str,
+    essai1 = Ville.objects.filter(nom_norm=partie_commune(nom))
+    if len(essai1)==1:
+        return essai1.first()
+    elif len(essai1)==0:
+        raise RuntimeError("Ville pas trouvée. Avez-vous chargé la liste des villes avec communes.charge_villes() ?")
+    else:
+        return Ville.objects.get(nom_norm=partie_commune(nom), code=code)
+
+
+
+def charge_zone(liste_villes_str, zone: str,
                 réinit=False, effacer_cache=False, bavard=2, rapide=0,
                 force_lieux=False
                 ):
     """
-    Entrée : liste_villes, itérable de (nom de ville, code postal)
+    Entrée : liste_villes, itérable de (nom de ville, code postal). La ville par défaut sera la première de cette liste.
              zone (str), nom de la zone
-             ville_defaut (str), nom de la ville par défaut de la zone. Utilisé uniquement si la zone est créée.
 
     Effet : charge toutes ces ville dans la base, associées à la zone indiquée.
             Si la zone n’existe pas, elle sera créée, en y associant ville_défaut.
@@ -243,34 +261,38 @@ def charge_zone(liste_villes, zone: str, ville_defaut: str,
 
     Sortie (Ville list) : liste des villes pour lesquelles on n’a pas pu récupérer les lieux.
     """
+    
     close_old_connections()
+
+    # Récup des villes :
+    liste_villes_d = [ville_of_nom_et_code_postal(*c) for c in liste_villes_str]
+    
     # Récupération ou création de la zone :
     zs_d = Zone.objects.filter(nom=zone)
     if zs_d.exists():
         z_d = zs_d.first()
         z_d.delete()
-    
-    try:
-        ville_défaut_d = Ville.objects.get(nom_complet=ville_defaut)
-        z_d = Zone(nom=zone, ville_défaut=ville_défaut_d)
-        z_d.save()
-    except dijk.models.Ville.DoesNotExists:
-        raise RuntimeError("Ville pas trouvée. Avez-vous chargé la liste des villes avec communes.charge_villes() ?")
 
+    z_d = Zone(nom=zone, ville_défaut=liste_villes_d[0])
+    z_d.save()
+    for v in liste_villes_d:
+        z_d.ajoute_ville(v)
+        
     # Réinitialisation de la zone :
     if réinit:
-        for v in z_d.villes():
+        for v in liste_villes_d:
             v.données_présentes = False
             v.save()
-        Sommet.objects.filter(zone=z_d).delete()
+            print(f"J’ai mis données présentes à False pour {v}")
+            Sommet.objects.filter(villes=v).delete()
         Cache_Adresse.objects.all().delete()
 
     # Vidage du cache d’osmnx ?
     
     # Chargement des villes :
-    LOG(f"\nChargement des villes {liste_villes}", bavard=bavard)
+    LOG(f"\nChargement des villes {liste_villes_d}", bavard=bavard)
     villes_modifiées = []
-    for nom, code in liste_villes:
+    for nom, code in liste_villes_str:
         v_d, données_ajoutées = charge_ville(nom, code, zone, bavard=bavard, rapide=rapide, recalculer_arbre_arêtes_de_la_zone=False, rajouter_les_lieux=False)
         if données_ajoutées or force_lieux:
             villes_modifiées.append(v_d)

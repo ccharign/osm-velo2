@@ -130,21 +130,21 @@ def désoriente(g, bavard=0):
     def ajoute_inverse(s,t,a):
         if bavard>1:
             print(f"ajout de l’arête inverse de {s}, {t}, {a}")
-        a_i = {att:val for att,val in a.items()}
+        a_i = {att: val for att, val in a.items()}
         if "maxspeed" in a and a["maxspeed"] in ["10", "20", "30"]:
-            a_i["contresens cyclable"]=True
+            a_i["contresens cyclable"] = True
         else:
-            a_i["sens_interdit"]=True
-        gx.add_edge(t,s,**a_i )
+            a_i["sens_interdit"] = True
+        gx.add_edge(t, s, **a_i)
 
         
-    gx=g.multidigraphe
+    gx = g.multidigraphe
     for s in gx.nodes:
         for t in gx[s].keys():
-            if t!=s:  # Il semble qu’il y ait des doublons dans les boucles dans les graphes venant de osmnx
+            if t != s:  # Il semble qu’il y ait des doublons dans les boucles dans les graphes venant de osmnx
                 for a in gx[s][t].values():
-                    if a["highway"]!="cycleway" and not any("rond point" in c for c in  map(partie_commune, tuple_valeurs(a, "name"))) and not existe_inverse(s, t, a):
-                        ajoute_inverse(s,t,a)
+                    if a["highway"] != "cycleway" and not any("rond point" in c for c in map(partie_commune, tuple_valeurs(a, "name"))) and not existe_inverse(s, t, a):
+                        ajoute_inverse(s, t, a)
                     
 @transaction.atomic
 def sauv_données(à_sauver):
@@ -161,7 +161,7 @@ def géom_texte(s, t, a, g):
     """
     Entrée : a (dico), arête de nx.
              s_d, t_d (Sommet, Sommet), sommets de départ et d’arrivée de a
-    Sortie : str adéquat pour le champ geom d'un objet Arête. 
+    Sortie : str adéquat pour le champ geom d'un objet Arête.
     """
     if "geometry" in a:
         geom = a["geometry"].coords
@@ -264,10 +264,10 @@ def longueur_arête(s, t, a, g):
         return a["length"]
     
     
-def transfert_graphe(g, zone_d, bavard=0, rapide=1, juste_arêtes=False):
+def transfert_graphe(g, ville_d, bavard=0, rapide=1, juste_arêtes=False):
     """
     Entrée : g (Graphe_nx)
-             zone_d (instance de Zone)
+             ville_d (instance de Zone)
 
     Effet : transfert le graphe dans la base Django.
     La longueur des arêtes est mise à min(champ "length", d_euc de ses sommets).
@@ -282,7 +282,7 @@ def transfert_graphe(g, zone_d, bavard=0, rapide=1, juste_arêtes=False):
                             2 -> si il y a quelque chose dans la base pour (s,t), ne rien faire.
         juste_arêtes (bool) : si vrai, ne recharge pas les sommets.
     """
-
+    assert isinstance(ville_d, Ville), f"transfert_graphe attend une ville et a reçu {ville_d}"
     gx = g.multidigraphe
 
     tous_les_sommets = Sommet.objects.all()
@@ -308,27 +308,27 @@ def transfert_graphe(g, zone_d, bavard=0, rapide=1, juste_arêtes=False):
                 s_d.lon = lon
                 s_d.lat = lat
                 à_màj.append(s_d)
-                
+
+        ## Création/màj des sommets
         LOG(f"Ajout des {len(à_créer)} nouveaux sommets dans la base")
         sauv_données(à_créer)
         LOG(f"Mise à jour des {len(à_màj)} sommets modifiés")
         Sommet.objects.bulk_update(à_màj, ["lon", "lat"])
 
-        LOG("Ajout de la zone à chaque sommet")
-        # Pas possible avant car il faut avoir sauvé l’objet pour rajouter une relation ManyToMany.
-        # Il faudrait un bulk_manyToMany ... -> utiliser la table d’association automatiquement créée par Django : through
-        #https://docs.djangoproject.com/en/4.0/ref/models/fields/#django.db.models.ManyToManyField
+        ## ville des sommets
+        LOG("Ajout de la ville à chaque sommet...")
+        # Ne serait-il pas plus simple de tout supprimer puis tout recréer ?
         LOG("Sommets créés", bavard=bavard)
         rel_àcréer = []
         for s_d in à_créer:
-            rel = Sommet.zone.through(sommet_id=s_d.id, zone_id=zone_d.id)
+            rel = Sommet.villes.through(sommet_id=s_d.id, ville_id=ville_d.id)
             rel_àcréer.append(rel)
         LOG("Sommets mis à jour", bavard=bavard)
         for s_d in à_màj:
-            if zone_d not in s_d.zone.all():
-                rel = Sommet.zone.through(sommet_id=s_d.id, zone_id=zone_d.id)
+            if ville_d not in s_d.villes.all():  # c’est ce test qui est lent a priori
+                rel = Sommet.villes.through(sommet_id=s_d.id, ville_id=ville_d.id)
                 rel_àcréer.append(rel)
-        Sommet.zone.through.objects.bulk_create(rel_àcréer)
+        Sommet.villes.through.objects.bulk_create(rel_àcréer)
 
 
     ### Arêtes ###
@@ -443,7 +443,7 @@ def transfert_graphe(g, zone_d, bavard=0, rapide=1, juste_arêtes=False):
             for t, _ in gx[s].items():
                 if t != s:  # Suppression des boucles
                     nb += 1
-                    if nb%500==0: print(f"    {nb} arêtes traitées\n ") #{temps}\n{nb_appels}\n")
+                    if nb%500==0: print(f"    {nb} arêtes traitées\n ")  #{temps}\n{nb_appels}\n")
                     t_d = tous_les_sommets.get(id_osm=t)
                     if rapide < 2:
                         correspondent, arêtes_d, arêtes_x = correspondance(s_d, t_d, s, t, gx)
@@ -457,29 +457,75 @@ def transfert_graphe(g, zone_d, bavard=0, rapide=1, juste_arêtes=False):
     LOG(f"Mise à jour des {len(à_màj)} anciennes arêtes")
     Arête.objects.bulk_update(à_màj, ["cycla_défaut"])
 
-    
+    return à_créer, à_màj
     
 
-def ajoute_zone_des_arêtes(zone_d, créées, màj):
-    ### Zone des arêtes
-    LOG("Ajout de la zone à chaque arête")
-    nb = 0
-    ## nouvelles arêtes -> rajouter zone_d mais aussi les éventuelles anciennes zones.
+# def ajoute_zone_des_arêtes(zone_d, créées, màj):
+#     ### Zone des arête
+#     assert False, "Cette fonction est dépréciée. Passer par ajoute_arêtes_de_ville"
+#     LOG("Ajout de la zone à chaque arête")
+#     nb = 0
+#     ## nouvelles arêtes -> rajouter zone_d mais aussi les éventuelles anciennes zones.
+#     rel_àcréer = []
+#     for a_d in créées:
+#         for z in union([zone_d], intersection(a_d.départ.zone.all(), a_d.arrivée.zone.all())):
+#             rel = Arête.zone.through(arête_id=a_d.id, zone_id=z.id)
+#             rel_àcréer.append(rel)
+#     Arête.zone.through.objects.bulk_create(rel_àcréer)
+#     ## anciennes arêtes mises à jour -> rajouter zone_d et ville_d si pas présente.
+#     rel_àcréer = []
+#     for a_d in màj:
+#         if zone_d not in a_d.zone.all():
+#             rel = Arête.zone.through(arête_id=a_d.id, zone_id=zone_d.id)
+#             rel_àcréer.append(rel)
+#         nb += 1
+#         if nb%1000==0: print(f"    {nb} arêtes traités")
+#     Arête.zone.through.objects.bulk_create(rel_àcréer)
+
+    
+def ajoute_arêtes_de_ville(ville_d, créées, màj, bavard=0):
+    """
+    Ajoute les arêtes indiquées à la ville.
+    """
+    assert len(créées) == len(set(créées)), "Arêtes en double !"
+    
+    LOG(f"Ajout des arêtes à la ville {ville_d}")
+
+    arêtes_avec_la_ville = set(ville_d.arêtes())
+    toutes_les_arêtes = set(Arête.objects.all())
+    
+    ## nouvelles arêtes -> rajouter ville_d mais aussi les éventuelles anciennes villes.
     rel_àcréer = []
+    couples=set()  # juste pour débug
     for a_d in créées:
-        for z in union([zone_d], intersection(a_d.départ.zone.all(), a_d.arrivée.zone.all())):
-            rel = Arête.zone.through(arête_id=a_d.id, zone_id=z.id)
+        assert a_d not in toutes_les_arêtes, f"Arête déjà existente : {a_d}"
+        villes_de_a = tuple(intersection(a_d.départ.get_villes(), a_d.arrivée.get_villes()))
+        assert len(villes_de_a)==len(set(villes_de_a)), f"Villes en double pour l’arête {a_d} : {villes_de_a}"
+        if len(villes_de_a)>1: print(f"Plusieurs villes pour cette arête : {villes_de_a}")
+        for z in villes_de_a:
+            rel = Arête.villes.through(arête_id=a_d.id, ville_id=ville_d.id)
+            if (a_d,ville_d) not in couples:
+                couples.add((a_d, ville_d))
+            else:
+                raise RuntimeError(f"Rel déjà créée : {a_d, ville_d}")
             rel_àcréer.append(rel)
-    Arête.zone.through.objects.bulk_create(rel_àcréer)
-    ## anciennes arêtes mises à jour -> rajouter zone_d et ville_d si pas présente.
+    LOG(f"Enregistrement des {len(rel_àcréer)} relations pour les nouvelles arêtes.")
+    assert len(rel_àcréer)==len(set(couples)), "Des relations ont été créées en double"
+    Arête.villes.through.objects.bulk_create(rel_àcréer)
+    
+    ## anciennes arêtes mises à jour -> rajouter ville_d si pas présente.
+
+    nb = 0
     rel_àcréer = []
     for a_d in màj:
-        if zone_d not in a_d.zone.all():
-            rel = Arête.zone.through(arête_id=a_d.id, zone_id=zone_d.id)
+        if a not in arêtes_avec_la_ville:
+            rel = Arête.villes.through(arête_id=a_d.id, ville_id=ville_d.id)
             rel_àcréer.append(rel)
         nb += 1
         if nb%1000==0: print(f"    {nb} arêtes traités")
-    Arête.zone.through.objects.bulk_create(rel_àcréer)
+    LOG(f"Enregistrement des {len(rel_àcréer)} relations pour les anciennes arêtes.")
+    Arête.villes.through.objects.bulk_create(rel_àcréer)
+
 
 
 @transaction.atomic()

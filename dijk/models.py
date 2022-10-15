@@ -111,8 +111,8 @@ class Ville_Ville(models.Model):
     ville1 = models.ForeignKey(Ville, related_name="ville1", on_delete=models.CASCADE)
     ville2 = models.ForeignKey(Ville, related_name="ville2", on_delete=models.CASCADE)
     class Meta:
-        constraints=[
-            models.UniqueConstraint(fields=["ville1", "ville2"], name = "Pas de relation ville_ville en double."),
+        constraints = [
+            models.UniqueConstraint(fields=["ville1", "ville2"], name="Pas de relation ville_ville en double."),
         ]
 
         
@@ -125,7 +125,19 @@ class Zone(models.Model):
     
     def villes(self):
         return (rel.ville for rel in Ville_Zone.objects.filter(zone=self).prefetch_related("ville"))
-    
+
+    def arêtes(self):
+        """
+        Générateur des arêtes de self.
+        """
+        for v in self.villes():
+            for a in v.arête_set.all():
+                yield a
+
+    def ajoute_ville(self, ville):
+        rel = Ville_Zone(ville=ville, zone=self)
+        rel.save()
+                
     def __str__(self):
         return self.nom
     
@@ -150,7 +162,7 @@ class Sommet(models.Model):
     id_osm = models.BigIntegerField(unique=True)
     lon = models.FloatField()
     lat = models.FloatField()
-    zone = models.ManyToManyField(Zone)
+    villes = models.ManyToManyField(Ville)
     
     def __str__(self):
         return str(self.id_osm)
@@ -161,6 +173,9 @@ class Sommet(models.Model):
 
     def __hash__(self):
         return self.id_osm
+
+    def get_villes(self):
+        return self.villes.all()
 
     def voisins(self, p_détour):
         arêtes = Arête.objects.filter(départ=self).select_related("arrivée")
@@ -221,7 +236,7 @@ class Arête(models.Model):
         rue (Rue). Ce champ est-il utile ?
         geom (string). Couples lon,lat séparés par des ;
         nom (str)
-        zone (Zone ManyToMany)
+        villes ( ManyToMany)
         sensInterdit (BooleanField)
     """
     départ = models.ForeignKey(Sommet, related_name="sommet_départ", on_delete=models.CASCADE, db_index=True)
@@ -232,7 +247,8 @@ class Arête(models.Model):
     rue = models.ManyToManyField(Rue)
     geom = models.TextField()
     nom = models.CharField(max_length=200, blank=True, null=True, default=None)
-    zone = models.ManyToManyField(Zone)
+    #zone = models.ManyToManyField(Zone)
+    villes = models.ManyToManyField(Ville)
     sensInterdit = models.BooleanField(default=False)
 
     def __str__(self):
@@ -243,7 +259,9 @@ class Arête(models.Model):
         return self.id < autre
     def __gt__(self, autre):
         return self.id > autre
-    
+
+    def get_villes(self):
+        return self.villes.all()
 
     def géométrie(self):
         """
