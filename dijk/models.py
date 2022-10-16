@@ -409,6 +409,16 @@ class Chemin_d(models.Model):
             return False, None
 
         
+    def save(self):
+        """
+        Remplit les attributs début, fin, interdites_début et interdites_fin avant de sauvegarder.
+        """
+        self.début = self.étapes_texte[:min(len(self.étapes_texte), 255)]
+        self.interdites_début = self.interdites_texte[:min(len(self.étapes_texte), 255)]
+        self.fin = self.étapes_texte[-min(len(self.étapes_texte), 255):]
+        self.interdites_fin = self.interdites_texte[-min(len(self.étapes_texte), 255):]
+        super(Chemin_d, self).save()
+                                     
     def sauv(self):
         """
         Sauvegarde le chemin si pas déjà présent.

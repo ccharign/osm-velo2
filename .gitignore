@@ -5,6 +5,7 @@ cache
 __pycache__/
 données_inutiles
 .ipynb_*
+tmp.csv
 tmp/**
 !tmp/
 log
