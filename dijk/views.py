@@ -348,11 +348,10 @@ def confirme_nv_chemin(requête):
     """
     Traitement du formulaire d’enregistrement d’un nouveau chemin.
     """
-    nb_lectures = 50
+    nb_lectures = 20
 
     
     try:
-
         données = récup_données(requête.POST, forms.EnregistrerContrib)
         z_d, étapes, étapes_interdites, _ = z_é_i_d(g, données)
         AR = bool_of_checkbox(requête.POST, "AR")
@@ -433,6 +432,20 @@ def carte_cycla(requête, données):
 
 
 ### Gestion des chemins (admin) ###
+
+
+def sauv_chemins(requête):
+    """
+    Renvoie en téléchargement le csv de tous les chemins.
+    """
+    return HttpResponse(
+        Chemin_d.sauv_csv(),
+        headers={
+            'Content-Type': "text/csv",
+            'Content-Disposition': 'attachment; filename="chemins.csv"'
+        }
+    )
+    
 
 def affiche_chemins(requête):
     cs = Chemin_d.objects.all()

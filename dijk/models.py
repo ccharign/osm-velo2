@@ -1,8 +1,9 @@
 import json
 from pprint import pformat
+import os
 
 from django.db import models, close_old_connections
-from dijk.progs_python.params import LOG
+from dijk.progs_python.params import LOG, DONNÉES
 from dijk.progs_python.lecture_adresse.normalisation0 import partie_commune
 
 
@@ -99,6 +100,9 @@ class Ville(models.Model):
         rels = Ville_Ville.objects.filter(ville1=self).select_related("ville2")
         return tuple(r.ville2 for r in rels)
 
+    def zones(self):
+        return (rel.zone for rel in Ville_Zone.objects.filter(ville=self).prefetch_related("zone"))
+
     @classmethod
     def of_nom(cls, nom):
         """ Renvoie la ville telle que partie_commune(nom) = ville.nom_norm"""
@@ -157,6 +161,47 @@ class Zone(models.Model):
     
     def __hash__(self):
         return self.pk
+
+    
+    def sauv_csv(self, chemin_csv=DONNÉES) -> str:
+        """
+        Renvoie un csv contenant tous les chemins de la table.
+        """
+        res = ""
+        nb = 0
+        for c in Chemin_d.objects.filter(zone=self):
+            ligne = "|".join(map(str, (c.ar, c.p_détour, c.étapes_texte, c.interdites_texte, c.utilisateur, c.zone)))
+            res += ligne + "\n"
+            nb += 1
+        nom_fichier = os.path.join(chemin_csv, f"sauv_chemins_{self}")
+        with open(nom_fichier, "w", encoding="utf-8") as sortie:
+            sortie.write(res)
+        LOG(f"Les {nb} chemins de la zone {self} ont été sauvegardés dans {nom_fichier}")
+        return res
+
+    
+    def charge_csv(self, chemin=DONNÉES):
+        """
+        Charge le csv contenant les chemins
+        """
+        nom_fichier = os.path.join(chemin, f"sauv_chemins_{self}")
+        with open(nom_fichier, encoding="utf8") as entrée:
+            nb = 0
+            for ligne in entrée:
+                ar, p_détour, étapes_texte, interdites_texte, utilisateur, zone = ligne.strip().split("|")
+                ch = Chemin_d(
+                    ar = ar=="True",
+                    p_détour=float(p_détour),
+                    étapes_texte=étapes_texte,
+                    interdites_texte=interdites_texte,
+                    utilisateur=utilisateur,
+                    zone=Zone.objects.get(nom=zone)
+                )
+                if not ch.déjà_présent()[0]:
+                    ch.save()
+                nb += 1
+            LOG(f"{nb} chemins ont été chargés")
+        
 
 
 class Ville_Zone(models.Model):
@@ -324,10 +369,10 @@ class Chemin_d(models.Model):
         - dernier_p_modif (float) : nb d’arêtes modifiées / distance entre départ et arrivée lors du dernier apprentissage.
         - zone (Zone)
     """
-    ar=models.BooleanField(default=False)
-    p_détour=models.FloatField()
-    étapes_texte=models.TextField()
-    interdites_texte=models.TextField(default=None, blank=True, null=True)
+    ar = models.BooleanField(default=False)
+    p_détour = models.FloatField()
+    étapes_texte = models.TextField()
+    interdites_texte = models.TextField(default=None, blank=True, null=True)
     utilisateur = models.CharField(max_length=100, default=None, blank=True, null=True)
     dernier_p_modif = models.FloatField(default=None, blank=True, null=True)
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE)
@@ -351,25 +396,38 @@ class Chemin_d(models.Model):
     def __str__(self):
         return f"Étapes : {self.étapes_texte}\n Interdites : {self.interdites_texte}\n p_détour : {self.p_détour}"
 
+    def déjà_présent(self):
+        """
+        Renvoie le couple (self est déjà dans la base, la version de la base)
+        """
+        présents = Chemin_d.objects.filter(
+            p_détour=self.p_détour, ar=self.ar, étapes_texte=self.étapes_texte, interdites_texte=self.interdites_texte
+        )
+        if présents:
+            return True, présents.first()
+        else:
+            return False, None
+
+        
     def sauv(self):
         """
         Sauvegarde le chemin si pas déjà présent.
         Si déjà présent, et si un utilisateur est renseigné dans self, met à jour l’utisateur.
         """
-        présents = Chemin_d.objects.filter(p_détour=self.p_détour, ar=self.ar, étapes_texte=self.étapes_texte, interdites_texte=self.interdites_texte)
-        if présents.exists():
-            if self.utilisateur is not None:
-                c_d = présents.first()
-                c_d.utilisateur=self.utilisateur
-                c_d.save()
+        déjà_présent, c_d = self.déjà_présent
+        if déjà_présent and self.utilisateur:
+            c_d.utilisateur = self.utilisateur
+            c_d.save()
         else:
             self.save()
             
+            
     def étapes(self):
         return self.étapes_texte.split(";")
+
     
     def rues_interdites(self):
-        return [r for r in self.interdites_texte.split(";") if len(r)>0]
+        return [r for r in self.interdites_texte.split(";") if len(r) > 0]
     
     # @classmethod
     # def of_ligne_csv(cls, ligne, utilisateur=None):
@@ -379,17 +437,6 @@ class Chemin_d(models.Model):
     #     return cls(p_détour=p_détour, ar=AR, étapes_texte=étapes_t, interdites_texte=rues_interdites_t,utilisateur=utilisateur)
 
     
-    # @classmethod
-    # def sauv_csv(cls, chemin=CHEMIN_CHEMINS):
-    #     """
-    #     Enregistre les chemins de la base dans le csv indiqué.
-    #     Attention : pour l’instant cette fonction n’est pas compatible avec of_ligne_csv car elle rajoute les champs utilisateur et zone.
-    #     """
-    #     with open(chemin, "w") as sortie:
-    #         for c in cls.objects.all():
-    #             ligne = "|".join(map(str, (c.ar, c.p_détour, c.étapes_texte, c.interdites_texte, c.utilisateur, c.zone)))
-    #             sortie.write(ligne + "\n")
-
 
 class Cache_Adresse(models.Model):
     """

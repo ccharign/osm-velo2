@@ -340,9 +340,9 @@ class Chemin():
         """
         
         #rues interdites
-        if len(rues_interdites_t)>0:
+        if len(rues_interdites_t) > 0:
             noms_rues = rues_interdites_t.split(";")
-            étapes_interdites =  (Étape.of_texte(n, g, z_d, nv_cache=2) for n in noms_rues)
+            étapes_interdites = (Étape.of_texte(n, g, z_d, nv_cache=2) for n in noms_rues)
             interdites = arêtes_interdites(g, z_d, étapes_interdites, bavard=bavard)
         else:
             interdites = {}
@@ -350,7 +350,7 @@ class Chemin():
         # étapes
         noms_étapes = étapes_t.split(";")
         n_pb = 0
-        étapes=[]
+        étapes = []
         for c in noms_étapes:
         #    try:
                 étapes.append(Étape.of_texte(c.strip(), g, z_d, nv_cache=2, bavard=bavard-1))

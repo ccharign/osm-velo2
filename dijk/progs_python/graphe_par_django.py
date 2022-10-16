@@ -131,7 +131,6 @@ class Graphe_django():
 
             ## Sommets
             tic = perf_counter()
-            print("Chargement des sommets")
 
             for s in z_d.sommets():
                 self.dico_Sommet[s.id_osm] = s
@@ -140,8 +139,6 @@ class Graphe_django():
 
             
             ## Arêtes
-            print("Chargement des arêtes")
-
             d_arête_of_pk = {}  # Pour le chargement de l’arbre quad.
             arêtes_de_z = z_d.arêtes()
             
@@ -151,7 +148,7 @@ class Graphe_django():
                 d_arête_of_pk[a.pk] = a
                 if a.cyclabilité() > 0:  # ceci supprime les autoroutes actuellement
                     self.dico_voisins[s].append((t, a))
-            tic = chrono(tic, f"Chargement de dico_voisins depuis la base de données pour la zone {zone_t}.")
+            tic = chrono(tic, "Chargement des arêtes.")
 
             
             ## Arbre quad des arêtes:
@@ -159,13 +156,13 @@ class Graphe_django():
             tic = perf_counter()
             LOG(f"Chargement de l’arbre quad des arêtes depuis {chemin}", bavard=bavard)
             self.arbre_arêtes[z_d.nom] = QuadrArbreArête.of_fichier(chemin)
-            tic = chrono(tic, "Chargement de l’arbre quad des arêtes", bavard=bavard, force=True)
+            tic = chrono(tic, "Chargement de l’arbre quad des arêtes", force=True)
                 
                 
             ## Cycla min et max
             
             self.calcule_cycla_min_max(z_d)
-            chrono(tic, "Calcul des cycla min et max", bavard=bavard, force=True)
+            chrono(tic, "Calcul des cycla min et max", force=True)
             self.zones.append(z_d)
             
         else:

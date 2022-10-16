@@ -31,6 +31,7 @@ urlpatterns = [
     path("modif_chemin/", views.action_chemin, name="modif chemin"),
 
     path("fouine/", views.fouine, name="fouine"),
+    path("sauv_chemins/", views.sauv_chemins, name="sauve chemins"),
     
     path('ajax/recherche_rue/', views.pour_complétion, name="complète rue"),
     path('', views.choix_zone, name='index'),
