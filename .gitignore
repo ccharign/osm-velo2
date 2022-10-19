@@ -5,9 +5,8 @@ cache
 __pycache__/
 données_inutiles
 .ipynb_*
-tmp.csv
-tmp/**
-!tmp/
+**/tmp**
+tmp**
 log
 site_velo/dijk/tmp/**
 site_velo/dijk/templates/dijk/cycla**

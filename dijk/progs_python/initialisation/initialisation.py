@@ -102,16 +102,24 @@ def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
     return vd.transfert_graphe(g, ville_d, bavard=bavard-1, juste_arêtes=False, rapide=rapide)
 
 
-def charge_ville(nom, code, zone,
+def ajoute_ville(nom: str, code:int, nom_zone: str, pays="France"):
+    """
+    Ajoute la ville dans la zone indiquée.
+    """
+
+    zone_d = Zone.objects.get(nom=nom_zone)
+    ville_d = ville_of_nom_et_code_postal(nom, code)
+    charge_ville(ville_d, zone_d, pays=pays)
+
+
+def charge_ville(ville_d, zone_d,
                  force=False,
                  recalculer_arbre_arêtes_de_la_zone=True,
                  rajouter_les_lieux=True,
-                 ville_defaut=None, pays="France", bavard=2, rapide=0
+                 pays="France", bavard=2, rapide=0
                  ):
     """
-    Entrées : nom (str), nom de la ville à charger.
-              code (int)
-              zone (str)
+    Entrées :
     Effet :
        Rajoute la ville indiquée (après avoir chargé si besoin son graphe et ses lieux) à la zone indiquée. La zone est créée si elle nexistait pas, il faut alors préciser une ville par défaut.
 
@@ -129,19 +137,21 @@ def charge_ville(nom, code, zone,
                 2 -> si il y a quelque chose dans la base pour (s,t), ne rien faire.
         - recalculer_arbre_arêtes_de_la_zone (bool) : si vrai le fichier contenant l’arbre quad des arêtes de la zone est recalculé (~4s pour Pau_agglo)
     """
+
+    assert isinstance(ville_d, Ville) and isinstance(zone_d, Zone)
     
-    LOG(f"chargement de {nom}.\n")
+    LOG(f"chargement de {ville_d}.\n")
     close_old_connections()
     
     ## Création ou récupération de la zone
-    if ville_defaut is not None:
-        zone_d, créée = Zone.objects.get_or_create(nom=zone, ville_défaut=Ville.objects.get(nom_norm=partie_commune(ville_defaut)))
-        if créée:
-            zone_d.save()
-    else:
-        zone_d = Zone.objects.get(nom=zone)
+    # if ville_defaut is not None:
+    #     zone_d, créée = Zone.objects.get_or_create(nom=zone, ville_défaut=Ville.objects.get(nom_norm=partie_commune(ville_defaut)))
+    #     if créée:
+    #         zone_d.save()
+    # else:
+    #     zone_d = Zone.objects.get(nom=zone)
 
-    ville_d = Ville.objects.get(nom_norm=partie_commune(nom), code=code)
+    # ville_d = Ville.objects.get(nom_norm=partie_commune(nom), code=code)
     rel, créée = Ville_Zone.objects.get_or_create(ville=ville_d, zone=zone_d)
     if créée: rel.save()
 
@@ -202,7 +212,8 @@ def crée_tous_les_arbres_des_rues():
     "Artigueloutan": 64420,
     "Mazères-Lezons": 64110
 }.items()
-VDS_PAU = [Ville.objects.get(nom_norm=partie_commune(v)) for v, _ in À_RAJOUTER_PAU]
+
+#VDS_PAU = [Ville.objects.get(nom_norm=partie_commune(v)) for v, _ in À_RAJOUTER_PAU]
 
 ZONE_VOIRON = {
     "voiron": 38500,
@@ -221,7 +232,7 @@ ZONE_GRENOBLE = [
     ("Échirolles", 38130),
 ]
 
-VDS_GRE = [Ville.objects.get(nom_norm=partie_commune(v)) for v, _ in ZONE_GRENOBLE]
+#VDS_GRE = [Ville.objects.get(nom_norm=partie_commune(v)) for v, _ in ZONE_GRENOBLE]
 
 def ville_of_nom_et_code_postal(nom: str, code: int):
     """
@@ -305,9 +316,9 @@ def crée_zone(liste_villes_str, zone: str,
     # Chargement des villes :
     LOG(f"\nChargement des villes {liste_villes_d}", bavard=bavard)
     villes_modifiées = []
-    for nom, code in liste_villes_str:
-        v_d, données_ajoutées = charge_ville(
-            nom, code, zone,
+    for v_d in liste_villes_d:
+        _, données_ajoutées = charge_ville(
+            v_d, z_d,
             bavard=bavard, rapide=rapide, recalculer_arbre_arêtes_de_la_zone=False, rajouter_les_lieux=False
         )
         if données_ajoutées or force_lieux:
