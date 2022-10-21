@@ -46,7 +46,7 @@ def ajoute_code_postal(nom, code):
     Ajoute ou corrige le code postal de la ville.
     Sortie (models.Ville)
     """
-    essai = Ville.objects.filter(nom_norm = partie_commune(nom)).first()
+    essai = Ville.objects.filter(nom_norm=partie_commune(nom)).first()
     if essai:
         essai.code=code
         essai.save()
@@ -98,27 +98,53 @@ def liste_attributs(g):
     return res
 
 
+def tuple_valeurs(a, att):
+    """
+    Renvoie le tuple des valeurs de l’attribut att dans l’arête a.
+    """
+    if att in a:
+        if isinstance(a[att], list):
+            return tuple(a[att])
+        else:
+            return (a[att],)
+    else:
+        return ()
+
 def désoriente(g, bavard=0):
     """
     Entrée : g (Graphe_nx)
     Effet : rajoute les arêtes inverses si elles ne sont pas présentes, avec un attribut 'sens_interdit' en plus.
     """
     
-    def existe_inverse(s,t,a):
+    gx = g.multidigraphe
+
+    def géom_of_arête_nx(a):
         """
-        Indique si l’arête inverse de (s,t,a) est présente dans gx.
+        Sortie : sorted(a["geometry"].coords) si existe, None sinon.
+        """
+        if "geometry" in a:
+            return sorted(a["geometry"].coords)
+        else:
+            return None
+    
+    def existe_inverse(s, t, a):
+        """
+        Indique si l’arête inverse de (s, t, a) est présente dans gx.
         """
         if s not in gx[t]:
             return False
         else:
-            inverses_de_a = tuple(a_i for a_i in gx[t][s].values() if a.get("name",None)==a_i.get("name", None))
-            if len(inverses_de_a)==1:
+            inverses_de_a = tuple(a_i for a_i in gx[t][s].values() if a.get("name", None)==a_i.get("name", None))
+            if len(inverses_de_a) == 1:
                 return True
-            elif len(inverses_de_a)==0:
+            elif len(inverses_de_a) == 0:
                 return False
             else:
-                inverses_de_a = tuple(a_i for a_i in inverses_de_a if sorted(géom_texte(s,t,a,g) )==sorted(géom_texte(t,s,a_i,g)))
-                if len(inverses_de_a)==1:
+                inverses_de_a = tuple(
+                    a_i for a_i in inverses_de_a
+                    if géom_of_arête_nx(a_i) == géom_of_arête_nx(a)
+                )
+                if len(inverses_de_a) == 1:
                     return True
                 elif len(inverses_de_a) == 0:
                     return False
@@ -127,9 +153,8 @@ def désoriente(g, bavard=0):
                     return True
 
     
-    def ajoute_inverse(s,t,a):
-        if bavard>1:
-            print(f"ajout de l’arête inverse de {s}, {t}, {a}")
+    def ajoute_inverse(s, t, a):
+        LOG(f"ajout de l’arête inverse de {s}, {t}, {a}", bavard=bavard)
         a_i = {att: val for att, val in a.items()}
         if "maxspeed" in a and a["maxspeed"] in ["10", "20", "30"]:
             a_i["contresens cyclable"] = True
@@ -138,7 +163,6 @@ def désoriente(g, bavard=0):
         gx.add_edge(t, s, **a_i)
 
         
-    gx = g.multidigraphe
     for s in gx.nodes:
         for t in gx[s].keys():
             if t != s:  # Il semble qu’il y ait des doublons dans les boucles dans les graphes venant de osmnx
@@ -156,112 +180,29 @@ def sauv_données(à_sauver):
         o.save()
     LOG("fin de sauv_données")
 
-    
-def géom_texte(s, t, a, g):
-    """
-    Entrée : a (dico), arête de nx.
-             s_d, t_d (Sommet, Sommet), sommets de départ et d’arrivée de a
-    Sortie : str adéquat pour le champ geom d'un objet Arête.
-    """
-    if "geometry" in a:
-        geom = a["geometry"].coords
-    else:
-        geom = (g.coords_of_nœud(s), g.coords_of_nœud(t))
-    coords_texte = (f"{lon},{lat}" for lon, lat in geom)
-    return ";".join(coords_texte)
 
 
-
-def cycla_défaut(a, sens_interdit=False, pas=1.1):
-    """
-    Entrée : a, arête d'un graphe nx.
-    Sortie (float) : cycla_défaut
-    Paramètres:
-        pas : pour chaque point de bonus, on multiplie la cycla par pas
-        sens_interdit : si Vrai, bonus de -2
-    Les critères pour attribuer des bonus en fonction des données osm sont définis à l’intérieur de cette fonction.
-    """
-    # disponible dans le graphe venant de osmnx :
-    # maxspeed, highway, lanes, oneway, access, width
-    critères= {
-        #att : {val: bonus}
-        "highway": {
-            "residential":1,
-            "cycleway":3,
-            "step":-10,
-            "pedestrian":1,
-            "tertiary":1,
-            "living_street":1,
-            "footway":1,
-        },
-        "maxspeed": {
-            "10":3,
-            "20":2,
-            "30":1,
-            "70":-2,
-            "90":-4,
-            "130":-float("inf")
-        },
-        "sens_interdit":{True:-5}
-    }
-    bonus = 0
-    for att in critères:
-        if att in a:
-            val_s = a[att]
-            if isinstance(val_s, str) and val_s in critères[att]:
-                bonus+=critères[att][val_s]
-            elif isinstance(val_s, list):
-                for v in val_s:
-                    if v in critères[att]:
-                        bonus+= critères[att][v]
-
-    return pas**bonus
-
-
-def a_la_valeur(a, att, val):
-    """
-    Entrée : a (arête nx)
-             att
-             val
-    Indique si l’arête a à la valeur val pour l’attribut att
-    """
-    if att in a:
-        if isinstance(a[att], str):
-            return a[att]==val
-        elif isinstance(a[att], list):
-            return val in a[att]
-        else:
-            print(f"Avertissement : l’attribut {att} pour l’arête {a} n’était ni un str ni un list.")
-            return False
-    else:
-        return False
+# def a_la_valeur(a, att, val):
+#     """
+#     Entrée : a (arête nx)
+#              att
+#              val
+#     Indique si l’arête a à la valeur val pour l’attribut att
+#     """
+#     if att in a:
+#         if isinstance(a[att], str):
+#             return a[att]==val
+#         elif isinstance(a[att], list):
+#             return val in a[att]
+#         else:
+#             print(f"Avertissement : l’attribut {att} pour l’arête {a} n’était ni un str ni un list.")
+#             return False
+#     else:
+#         return False
 
     
-def tuple_valeurs(a, att):
-    """
-    Renvoie le tuple des valeurs de l’attribut att dans l’arête a.
-    """
-    if att in a:
-        if isinstance(a[att], list):
-            return tuple(a[att])
-        else:
-            return (a[att],)
-    else:
-        return ()
 
 
-def longueur_arête(s, t, a, g):
-    """
-    Entrées : a (dic), arête de nx
-              g (graphe_par_django)
-    Sortie : min(a["length"], d_euc(s,t))
-    """
-    deuc = distance_euc(g.coords_of_nœud(s), g.coords_of_nœud(t))
-    if a["length"]<deuc:
-        print(f"Distance euc ({deuc}) > a['length'] ({a['length']}) pour l’arête {a} de {s} à {t}")
-        return deuc
-    else:
-        return a["length"]
 
 @transaction.atomic
 def supprime_tout(à_supprimer):
@@ -273,7 +214,10 @@ def supprime_tout(à_supprimer):
         x.delete()
     
     
-def transfert_graphe(g, ville_d, bavard=0, rapide=1, juste_arêtes=False):
+def transfert_graphe(g, ville_d,
+                     bavard=0, rapide=1, juste_arêtes=False,
+                     champs_arêtes_à_màj=[]
+                     ):
     """
     Entrée : g (Graphe_nx)
              ville_d (instance de Zone)
@@ -281,7 +225,7 @@ def transfert_graphe(g, ville_d, bavard=0, rapide=1, juste_arêtes=False):
     Effet : transfert le graphe dans la base Django.
     La longueur des arêtes est mise à min(champ "length", d_euc de ses sommets).
     
-    Sortie : arêtes créées, arêtes mises à jour
+    Sortie : arêtes créées, arêtes mises à jour ou conservées
     
     Paramètres:
         rapide (int) : pour tout  (s,t) sommets voisins dans g,
@@ -290,6 +234,7 @@ def transfert_graphe(g, ville_d, bavard=0, rapide=1, juste_arêtes=False):
                         « correspondent » signifie : même nombre et mêmes noms.
                             2 -> si il y a quelque chose dans la base pour (s,t), ne rien faire.
         juste_arêtes (bool) : si vrai, ne recharge pas les sommets.
+        champs_arêtes_à_màj : la valeur de ces champs sera mise à jour pour les arêtes déjà présentes.
     """
     assert isinstance(ville_d, Ville), f"transfert_graphe attend une ville et a reçu {ville_d}"
     gx = g.multidigraphe
@@ -304,7 +249,7 @@ def transfert_graphe(g, ville_d, bavard=0, rapide=1, juste_arêtes=False):
         à_màj = []
         nb = 0
         for s in g.multidigraphe.nodes:
-            if nb%100==0: print(f"    {nb} sommets vus")
+            if nb%500==0: print(f"    {nb} sommets vus")
             nb += 1
             lon, lat = g.coords_of_nœud(s)
             essai = Sommet.objects.filter(id_osm=s).first()
@@ -352,13 +297,15 @@ def transfert_graphe(g, ville_d, bavard=0, rapide=1, juste_arêtes=False):
     for a in toutes_les_arêtes:
         s = a.départ#.id_osm
         t = a.arrivée#e.id_osm
-        if s not in dico_voisins: dico_voisins[s] = []
+        if s not in dico_voisins:
+            dico_voisins[s] = []
         dico_voisins[s].append((t, a))
 
     #@mesure_temps("récup_nom", temps, nb_appels)
-    def récup_noms(arêtes_d, nom):
-        """ Renvoie le tuple des a∈arêtes_d qui ont pour nom 'nom'"""
-        return [a_d for a_d in arêtes_d if nom == a_d.nom]
+    # def récup_noms(arêtes_d, nom):
+    #     """ Renvoie le tuple des a∈arêtes_d qui ont pour nom 'nom'"""
+    #     return [a_d for a_d in arêtes_d if nom == a_d.nom]
+
     
     #@mesure_temps("correspondance", temps, nb_appels)
     def correspondance(s_d, t_d, gx):
@@ -366,79 +313,90 @@ def transfert_graphe(g, ville_d, bavard=0, rapide=1, juste_arêtes=False):
         Entrées:
             - s_d, t_d (Sommet)
             - gx (multidigraph)
-        Sortie ( bool × (Arête list) × (dico list)) : le triplet ( les arêtes correspondent à celles dans la base, arêtes de la bases, arêtes de gx)
-        Dans le cas où il y a correspondance, les deux listes renvoyées contiennent les arêtes dans le même ordre.
+
+        Sortie (Arête list × Arête list × Arête list × Arête list) :
+            (à_supprimer, à_créer, à_màj, à_garder)
+
         Ne prend en compte que les arêtes de s_d vers t_d.
-        « Correspondent » signifie ici même nombre, et mêmes noms. En cas de plusieurs arêtes de même nom, le résultat sera Faux dans tous les cas.
+        Deux arêtes sont considérées égales quand elles ont même géom.
         """
+        
+        s, t = s_d.id_osm, t_d.id_osm
         vieilles_arêtes = [a_d for (v, a_d) in dico_voisins.get(s, []) if v==t_d]
-        if t_d.id_osm not in gx[s_d.id_osm]:
-            return False, vieilles_arêtes, []
+        
+        if t not in gx[s]:
+            return vieilles_arêtes, [], [], []
+        
         else:
-            arêtes_x = gx[s_d.id_osm][t_d.id_osm].values()
-            noms = [ a.get("name", None) for a in arêtes_x ]
-            if len(noms) != len(vieilles_arêtes):
-                return False, vieilles_arêtes, arêtes_x
-            else:
-                arêtes_ordre = []
-                for a in arêtes_x:
-                    essai_a_d = récup_noms(vieilles_arêtes, a.get("name", None))
-                    if len(essai_a_d) != 1:
-                        #if vieilles_arêtes.filter(nom=a.get("name", None)).count()!=1:
-                        return False, vieilles_arêtes, arêtes_x
-                    else:
-                        arêtes_ordre.append(essai_a_d[0])
-                    
-                return True, arêtes_ordre, arêtes_x
+            nouvelles_arêtes = [Arête.of_arête_nx(s_d, t_d, ax) for ax in gx[s][t].values()]
+            à_màj = []
+            à_supprimer = []
+
+            def récup_arête(va):
+                """
+                Entrée : une vieille arête
+                Effet :
+                    Si elle est dans les nouvelles, elle est mise dans à_màj avec sa binôme, qui est supprimée de nouvelles_arêtes.
+                    Sinon elle est mise dans à_supprimer
+                """
+                for (i, na) in enumerate(nouvelles_arêtes):
+                    if na == va:  # NB: le __eq__ se base sur la géom.
+                        à_màj.append((va, na))
+                        nouvelles_arêtes.pop(i)
+                        break
+                à_supprimer.append(va)
+
+                
+            for va in vieilles_arêtes:
+                récup_arête(va)
+                
+            à_créer = nouvelles_arêtes
+            à_màj, à_garder = màj_arêtes(à_màj)
+
+            return (à_supprimer, à_créer, à_màj, à_garder)
 
     
     #@mesure_temps("màj_arêtes", temps, nb_appels)
-    def màj_arêtes(arêtes_d, arêtes_x):
+    def màj_arêtes(arêtes_vn):
         """
         Entrées:
-            - arêtes_d (Arête list) : arêtes de la base
-            - arêtes_x (dico list) : arêtes de gx
-        Précondition : les deux listes représentent les mêmes arêtes, et dans le même ordre
+            - arêtes_vn (Arête×Arête list) : liste de couples (arête de la base, nouvelle arête)
         Effet:
-            Met à jour le champ cycla_défaut avec les données des arête_nx.
-        Sortie : les arêtes modifiées. Il faudra encore un Arête.bulk_update.
+            Met à jour les champs indiquées dans champs_arêtes_à_màj de l’arête de la base.
+        Sortie : (les arêtes modifiées, arêtes pas modifiées). Il faudra encore un Arête.bulk_update sur la première liste.
         """
-        res = []
-        for a_d, a_x in zip(arêtes_d, arêtes_x):
-            #a_d.geom = géom_texte(s, t, a_x, g)
-            a_d.cycla_défaut = cycla_défaut(a_x)
-            res.append(a_d)
-        return res
+        à_màj, à_garder = [], []
+        for va, na in arêtes_vn:
+            modif = False
+            for champ in champs_arêtes_à_màj:
+                if va.__getattribute__(champ) != na.__getattribute__(champ):
+                    modif = True
+                    va.__setattribute__(champ, na.__getattribute__(champ))
+            if modif:
+                à_màj.append(va)
+            else:
+                à_garder.append(va)
+        return à_màj, à_garder
+    
 
     #@mesure_temps("remplace_arêtes", temps, nb_appels)
-    def remplace_arêtes(s_d, t_d, arêtes_d, arêtes_x, bavard=0):
-        """
-        Supprime les arêtes de arêtes_d, et crée à la place celles venant de gx[s][t].
-        Sortie (Arête list × Arête list): (arêtes à supprimer, arêtes à créer)
-        Effet : les arêtes à créer sont ajoutées dans à_créer.
-        """
-        à_supprimer = []
-        for a in arêtes_d:
-            LOG(f"arête à supprimer : {a} -> {a.départ, a.arrivée, a.nom}\n à remplacer par {arêtes_x} -> {list(arêtes_x)[0].get('name')}.", bavard=bavard-1)
-            à_supprimer.append(a)
-        
-        à_créer = []
-        for a_nx in arêtes_x:
-            a_d = Arête(départ=s_d,
-                        arrivée=t_d,
-                        nom=a_nx.get("name", None),
-                        longueur=longueur_arête(s, t, a_nx, g),
-                        cycla_défaut=cycla_défaut(a_nx),
-                        geom=géom_texte(s, t, a_nx, g)
-                        )
-            à_créer.append(a_d)
-        return à_supprimer, à_créer
+    # def nelles_arêtes(s_d, t_d, arêtes_x, bavard=0):
+    #     """
+    #     Sortie (Arête list): Arêtes django correspondant aux arêtes nx passées en arg.
+    #     Effet : les arêtes à créer sont ajoutées dans à_créer.
+    #     """
+    #     à_créer = []
+    #     for a_nx in arêtes_x:
+    #         a_d = Arête.of_arête_nx(s_d, t_d, a_nx)
+    #         à_créer.append(a_d)
+    #     return à_créer
 
     LOG("Chargement des arêtes depuis le graphe osmnx", bavard)
     nb = 0
     à_créer = []
     à_màj = []
     à_supprimer = []
+    à_garder = []
     with transaction.atomic():  # Utile pour les suppressions d’anciennes arêtes.
         for s in gx.nodes:
             s_d = tous_les_sommets.get(id_osm=s)
@@ -448,22 +406,25 @@ def transfert_graphe(g, ville_d, bavard=0, rapide=1, juste_arêtes=False):
                     if nb%500==0: print(f"    {nb} arêtes traitées\n ")  #{temps}\n{nb_appels}\n")
                     t_d = tous_les_sommets.get(id_osm=t)
                     if rapide < 2:
-                        correspondent, arêtes_d, arêtes_x = correspondance(s_d, t_d, gx)
-                        if rapide == 0 or not correspondent:
-                            à_s, à_c = remplace_arêtes(s_d, t_d, arêtes_d, arêtes_x, bavard=bavard-1)
-                            à_supprimer.extend(à_s)
-                            à_créer.extend(à_c)
-                        else:
-                            à_màj.extend(màj_arêtes(s_d, t_d, arêtes_d, arêtes_x))
+                        à_s, à_c, à_m, à_g = correspondance(s_d, t_d, gx)
+                        à_supprimer.extend(à_s)
+                        à_créer.extend(à_c)
+                        à_màj.extend(à_m)
+                        à_garder.extend(à_g)
 
     LOG(f"Suppression de {len(à_supprimer)} arêtes.", bavard=bavard)
     supprime_tout(à_supprimer)
     LOG(f"Ajout des {len(à_créer)} nouvelles arêtes dans la base", bavard=bavard)
     sauv_données(à_créer)  # bulk_create pas possible
-    LOG(f"Mise à jour des {len(à_màj)} anciennes arêtes", bavard=bavard)
-    Arête.objects.bulk_update(à_màj, ["cycla_défaut"])
+    
+    if à_màj:
+        LOG(f"Mise à jour des {len(à_màj)} anciennes arêtes", bavard=bavard)
+        Arête.objects.bulk_update(à_màj, champs_arêtes_à_màj)
+    else:
+        LOG("Pas d’arête à mettre à jour", bavard=bavard)
+    LOG(f"{len(à_garder)} arêtes conservées")
 
-    return à_créer, à_màj
+    return à_créer, à_màj+à_garder
     
 
 # def ajoute_zone_des_arêtes(zone_d, créées, màj):
@@ -501,8 +462,8 @@ def ajoute_arêtes_de_ville(ville_d, créées, màj, bavard=0):
     
     ## nouvelles arêtes -> rajouter ville_d mais aussi les éventuelles anciennes villes.
     rel_àcréer = []
-    couples=set()  # juste pour débug
-    n=1
+    couples = set()  # juste pour débug
+    n = 1
     for a_d in créées:
         villes_de_a = tuple(intersection(a_d.départ.get_villes(), a_d.arrivée.get_villes()))
         for v in villes_de_a:
@@ -512,14 +473,14 @@ def ajoute_arêtes_de_ville(ville_d, créées, màj, bavard=0):
             else:
                 raise RuntimeError(f"Rel déjà créée : {a_d, v}. Ville de l’arête : {villes_de_a}. L’arête était la {n}ième traitée")
             rel_àcréer.append(rel)
-            n+=1
+            n += 1
+        assert (a_d, ville_d) in couples
             
     LOG(f"Enregistrement des {len(rel_àcréer)} relations pour les nouvelles arêtes.")
-    assert len(rel_àcréer)==len(set(couples)), "Des relations ont été créées en double"
-    Arête.villes.through.objects.bulk_create(rel_àcréer)
+    assert len(rel_àcréer) == len(set(couples)), "Des relations ont été créées en double"
+    Arête.villes.through.objects.bulk_create(rel_àcréer, batch_size=2000)
     
     ## anciennes arêtes mises à jour -> rajouter ville_d si pas présente.
-
     nb = 0
     rel_àcréer = []
     for a_d in màj:
@@ -529,7 +490,7 @@ def ajoute_arêtes_de_ville(ville_d, créées, màj, bavard=0):
         nb += 1
         if nb%1000==0: print(f"    {nb} arêtes traités")
     LOG(f"Enregistrement des {len(rel_àcréer)} relations pour les anciennes arêtes.")
-    Arête.villes.through.objects.bulk_create(rel_àcréer)
+    Arête.villes.through.objects.bulk_create(rel_àcréer, batch_size=2000)
 
 
 

@@ -42,7 +42,7 @@ def quadArbreAretesDeZone(z_d, sauv=True, bavard=0):
     """
     
     l = list(z_d.arêtes())
-    LOG(f"Villes de la zone {z_d} : {z_d.villes()}\n {len(l)} arêtes.")
+    LOG(f"Villes de la zone {z_d} : {tuple(z_d.villes())}\n {len(l)} arêtes.")
     tic = perf_counter()
     res = QuadrArbreArête.of_list_darêtes_d(l)
     if sauv:
@@ -138,7 +138,7 @@ def charge_ville(ville_d, zone_d,
     """
     Entrées :
     Effet :
-       Rajoute la ville indiquée (après avoir chargé si besoin son graphe et ses lieux) à la zone indiquée. La zone est créée si elle nexistait pas, il faut alors préciser une ville par défaut.
+       Rajoute la ville indiquée (après avoir chargé si besoin son graphe et ses lieux) à la zone indiquée.
 
     Sortie (Ville×bool): (l’objet Ville, données ajoutées)
 
@@ -160,17 +160,9 @@ def charge_ville(ville_d, zone_d,
     LOG(f"chargement de {ville_d}.\n")
     close_old_connections()
     
-    ## Création ou récupération de la zone
-    # if ville_defaut is not None:
-    #     zone_d, créée = Zone.objects.get_or_create(nom=zone, ville_défaut=Ville.objects.get(nom_norm=partie_commune(ville_defaut)))
-    #     if créée:
-    #         zone_d.save()
-    # else:
-    #     zone_d = Zone.objects.get(nom=zone)
-
-    # ville_d = Ville.objects.get(nom_norm=partie_commune(nom), code=code)
     rel, créée = Ville_Zone.objects.get_or_create(ville=ville_d, zone=zone_d)
-    if créée: rel.save()
+    if créée:
+        rel.save()
 
     modif = False
     
@@ -190,10 +182,9 @@ def charge_ville(ville_d, zone_d,
         charge_lieux_of_ville(ville_d, arbre_a=arbre_a)
         modif = True
     
-    
     ville_d.données_présentes = True
     ville_d.save()
-    return ville_d, True
+    return ville_d, modif
 
 
 def crée_tous_les_arbres_des_rues():

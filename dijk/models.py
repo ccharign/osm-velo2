@@ -6,6 +6,7 @@ from django.db import models, close_old_connections
 from dijk.progs_python.params import LOG, DONNÉES
 from dijk.progs_python.lecture_adresse.normalisation0 import partie_commune
 
+from petites_fonctions import distance_euc
 
 
 def objet_of_dico(
@@ -284,6 +285,81 @@ def formule_pour_correction_longueur(l, cy, p_détour):
     return l / cy**(p_détour*1.5)
 
 
+def géom_texte(s_d, t_d, ax):
+    """
+    Entrée : a (dico), arête de nx.
+             s_d, t_d (Sommet, Sommet), sommets de départ et d’arrivée de a
+             g (Graphe)
+    Sortie : str adéquat pour le champ geom d'un objet Arête.
+    """
+    if "geometry" in ax:
+        geom = ax["geometry"].coords
+    else:
+        geom = (s_d.coords(), t_d.coords())
+    coords_texte = (f"{lon},{lat}" for lon, lat in geom)
+    return ";".join(coords_texte)
+
+
+def cycla_défaut(a, sens_interdit=False, pas=1.1):
+    """
+    Entrée : a, arête d'un graphe nx.
+    Sortie (float) : cycla_défaut
+    Paramètres:
+        pas : pour chaque point de bonus, on multiplie la cycla par pas
+        sens_interdit : si Vrai, bonus de -2
+    Les critères pour attribuer des bonus en fonction des données osm sont définis à l’intérieur de cette fonction.
+    """
+    # disponible dans le graphe venant de osmnx :
+    # maxspeed, highway, lanes, oneway, access, width
+    critères = {
+        # att : {val: bonus}
+        "highway": {
+            "residential": 1,
+            "cycleway": 3,
+            "step": -10,
+            "pedestrian": 1,
+            "tertiary": 1,
+            "living_street": 1,
+            "footway": 1,
+        },
+        "maxspeed": {
+            "10": 3,
+            "20": 2,
+            "30": 1,
+            "70": -2,
+            "90": -4,
+            "130": -float("inf")
+        },
+        "sens_interdit": {True: -5}
+    }
+    bonus = 0
+    for att in critères:
+        if att in a:
+            val_s = a[att]
+            if isinstance(val_s, str) and val_s in critères[att]:
+                bonus += critères[att][val_s]
+            elif isinstance(val_s, list):
+                for v in val_s:
+                    if v in critères[att]:
+                        bonus += critères[att][v]
+    return pas**bonus
+
+
+
+def longueur_arête(s_d, t_d, a):
+    """
+    Entrées : a (dic), arête de nx
+              g (graphe_par_django)
+    Sortie : min(a["length"], d_euc(s,t))
+    """
+    deuc = distance_euc(s_d.coords(), t_d.coords())
+    if a["length"] < deuc:
+        print(f"Distance euc ({deuc}) > a['length'] ({a['length']}) pour l’arête {a} de {s_d} à {t_d}")
+        return deuc
+    else:
+        return a["length"]
+
+
 class Arête(models.Model):
     """
     Attributs:
@@ -306,27 +382,41 @@ class Arête(models.Model):
     rue = models.ManyToManyField(Rue)
     geom = models.TextField()
     nom = models.CharField(max_length=200, blank=True, null=True, default=None)
-    #zone = models.ManyToManyField(Zone)
     villes = models.ManyToManyField(Ville)
     sensInterdit = models.BooleanField(default=False)
 
     def __eq__(self, autre):
         return self.geom == autre.geom
-
+    
+    # Sert dans meilleure_arête en cas d’égalité des longueurs
+    def __lt__(self, autre):
+        return self.id < autre
+    def __gt__(self, autre):
+        return self.id > autre
+    
     def __hash__(self):
         return self.pk
     
     def __str__(self):
         return f"{self.id} : ({self.départ}, {self.arrivée}, longueur : {self.longueur}, géom : {self.geom}, nom : {self.nom})"
 
-    # Sert dans meilleure_arête en cas d’égalité des longueurs
-    def __lt__(self, autre):
-        return self.id < autre
-    def __gt__(self, autre):
-        return self.id > autre
 
     def get_villes(self):
         return self.villes.all()
+
+    @classmethod
+    def of_arête_nx(cls, s_d: Sommet, t_d: Sommet, a_nx):
+        """
+        Entrées:
+            a_nx, arête d’un multidigraph netwokx
+        """
+        return cls(départ=s_d,
+                   arrivée=t_d,
+                   nom=a_nx.get("name", None),
+                   longueur=longueur_arête(s_d, t_d, a_nx),
+                   cycla_défaut=cycla_défaut(a_nx),
+                   geom=géom_texte(s_d, t_d, a_nx)
+                   )
 
     def géométrie(self):
         """
