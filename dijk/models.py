@@ -310,6 +310,12 @@ class Arête(models.Model):
     villes = models.ManyToManyField(Ville)
     sensInterdit = models.BooleanField(default=False)
 
+    def __eq__(self, autre):
+        return self.geom == autre.geom
+
+    def __hash__(self):
+        return self.pk
+    
     def __str__(self):
         return f"{self.id} : ({self.départ}, {self.arrivée}, longueur : {self.longueur}, géom : {self.geom}, nom : {self.nom})"
 

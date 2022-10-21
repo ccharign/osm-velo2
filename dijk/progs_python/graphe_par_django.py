@@ -150,6 +150,12 @@ class Graphe_django():
                     self.dico_voisins[s].append((t, a))
             tic = chrono(tic, "Chargement des arêtes.")
 
+            ## Vérif que les sommets d’arrivée sont dans le dico des sommets
+            print("Vérif que les sommets darrivée sont connus")
+            for l in self.dico_voisins.values():
+                for s, _ in l:
+                    assert t in self.dico_Sommet
+            print("C’est bon")
             
             ## Arbre quad des arêtes:
             chemin = os.path.join(dossier_données, f"arbre_arêtes_{z_d}")

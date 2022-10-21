@@ -15,7 +15,7 @@ from dijk.progs_python.params import DONNÉES, RACINE_PROJET
 from initialisation.noeuds_des_rues import extrait_nœuds_des_rues
 from lecture_adresse.normalisation import arbre_rue_dune_ville, partie_commune, prétraitement_rue, normalise_rue
 from graphe_par_networkx import Graphe_nx
-from petites_fonctions import chrono, LOG
+from petites_fonctions import chrono, LOG, supprime_objets_par_lots
 
 import initialisation.vers_django as vd
 from quadrarbres import QuadrArbreSommet, QuadrArbreArête
@@ -54,6 +54,25 @@ def quadArbreAretesDeZone(z_d, sauv=True, bavard=0):
     return res
 
 
+def supprime_arêtes_en_double():
+    """
+    Inutile normalement. Supprime les arêtes ayant même géom qu’une autre.
+    """
+    déjà_vue = set()  # geom des arêtes déjà vues
+    à_supprimer = []
+    n = 0
+    for a in Arête.objects.all():
+        if a.geom in déjà_vue:
+            à_supprimer.append(a)
+        else:
+            déjà_vue.add(a.geom)
+        n+=1
+        if not n%1000: print(f"{n} arêtes vues")
+    print(f"Suppression de {len(à_supprimer)} arêtes")
+    supprime_objets_par_lots(à_supprimer)
+
+    
+
 def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
     ## Récup des graphe via osmnx
     print(f"\nRécupération du graphe pour « {ville_d.code} {ville_d.nom_complet}, {pays} » avec une marge :\n")
@@ -71,9 +90,7 @@ def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
 
     g = Graphe_nx(gr_avec_marge)
 
-    
-    ## Noms des villes ajouté dans g (Graphe_nx)
-    print("\n\nAjout du nom de ville.")
+    ## Noms des villes ajouté dans g
     for n in gr_strict:
         g.villes_of_nœud[n] = [ville_d.nom_complet]
 
@@ -102,7 +119,7 @@ def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
     return vd.transfert_graphe(g, ville_d, bavard=bavard-1, juste_arêtes=False, rapide=rapide)
 
 
-def ajoute_ville(nom: str, code:int, nom_zone: str, pays="France"):
+def ajoute_ville(nom: str, code: int, nom_zone: str, pays="France"):
     """
     Ajoute la ville dans la zone indiquée.
     """
@@ -241,9 +258,9 @@ def ville_of_nom_et_code_postal(nom: str, code: int):
     """
 
     essai1 = Ville.objects.filter(nom_norm=partie_commune(nom))
-    if len(essai1)==1:
+    if len(essai1) == 1:
         return essai1.first()
-    elif len(essai1)==0:
+    elif len(essai1) == 0:
         raise RuntimeError("Ville pas trouvée. Avez-vous chargé la liste des villes avec communes.charge_villes() ?")
     else:
         return Ville.objects.get(nom_norm=partie_commune(nom), code=code)

@@ -301,11 +301,11 @@ def transfert_graphe(g, ville_d, bavard=0, rapide=1, juste_arêtes=False):
     if not juste_arêtes:
         LOG("Chargement des sommets")
         à_créer = []
-        à_màj=[]
-        nb=0
+        à_màj = []
+        nb = 0
         for s in g.multidigraphe.nodes:
             if nb%100==0: print(f"    {nb} sommets vus")
-            nb+=1
+            nb += 1
             lon, lat = g.coords_of_nœud(s)
             essai = Sommet.objects.filter(id_osm=s).first()
             if essai is None:
@@ -343,8 +343,8 @@ def transfert_graphe(g, ville_d, bavard=0, rapide=1, juste_arêtes=False):
     ### Arêtes ###
 
     # pour profiling
-    temps = {"correspondance":0., "remplace_arêtes":0., "màj_arêtes":0., "récup_nom":0.}
-    nb_appels = {"correspondance":0, "remplace_arêtes":0, "màj_arêtes":0, "récup_nom":0}
+    # temps = {"correspondance":0., "remplace_arêtes":0., "màj_arêtes":0., "récup_nom":0.}
+    # nb_appels = {"correspondance":0, "remplace_arêtes":0, "màj_arêtes":0, "récup_nom":0}
 
     # Création du dico sommet -> liste de (voisin, arête) pour les arêtes déjà existantes dans la base.
     dico_voisins = {}
@@ -400,13 +400,12 @@ def transfert_graphe(g, ville_d, bavard=0, rapide=1, juste_arêtes=False):
             - arêtes_x (dico list) : arêtes de gx
         Précondition : les deux listes représentent les mêmes arêtes, et dans le même ordre
         Effet:
-            Met à jour les champs cycla_défaut, zone, géométrie des arêtes_d avec les données des arête_nx.
+            Met à jour le champ cycla_défaut avec les données des arête_nx.
         Sortie : les arêtes modifiées. Il faudra encore un Arête.bulk_update.
         """
         res = []
         for a_d, a_x in zip(arêtes_d, arêtes_x):
             #a_d.geom = géom_texte(s, t, a_x, g)
-            #a_d.zone.add(zone_d)
             a_d.cycla_défaut = cycla_défaut(a_x)
             res.append(a_d)
         return res

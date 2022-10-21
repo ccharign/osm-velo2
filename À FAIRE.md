@@ -1,7 +1,9 @@
 
 À FAIRE :
 
-Y-a-t-il encore des requête overpass dans la lecture des chemins ?
+Supprimer folium de carte_cycla pour pouvoir le supprimer définitivement.
+
+Y-a-t-il encore des requête overpass dans la lecture des étapes ?
 
 Améliorer l’initialisation des lieux
 	- Ne pas faire une recherche ds la base pour récupérer le type de lieu dans Lieu.of_dico. Passer type_lieu en arg.

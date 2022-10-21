@@ -13,6 +13,8 @@ import shutil
 import os
 import datetime
 import re
+
+import django.db.transaction as transaction
 # import geopy
 # import geopy.distance
 from params import D_MAX_POUR_NŒUD_LE_PLUS_PROCHE, LOG
@@ -139,6 +141,15 @@ def morceaux_tableaux(t, taille):
         yield t[i-taille: i]
     yield t[i:]
 
+            
+def supprime_objets_par_lots(l, taille_lots=1000):
+    n = 0
+    for lot in morceaux_tableaux(l, taille_lots):
+        with transaction.atomic():
+            for x in lot:
+                x.delete()
+        n += taille_lots
+        print(f"{n} objets supprimés")
 
 
             
@@ -154,7 +165,7 @@ def chrono(tic, tâche, bavard=1, force=False):
              force, bool
     Effet : log (time.perf_counter()-tic) pour la tâche précisée
             Si force est faux, ne log que pour un temps>.1s
-    Sortie : instant où a été lancé cette fonction. 
+    Sortie : instant où a été lancé cette fonction.
     """
     tac = time.perf_counter()
     temps = tac-tic

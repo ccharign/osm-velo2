@@ -28,7 +28,7 @@ def heuristique(g, s, arrivée, correction_max):
 ##############################################################################
 
 
-def chemin(g, départ: int, arrivée: int, p_détour: float, bavard=0):
+def itinéraire(g, départ: int, arrivée: int, p_détour: float, bavard=0):
     """
     Entrée :
         - g (graphe) Nécessite une méthode « voisins » qui prend un sommet s et le pourcentage de détour p_détour et renvoie un itérable de (point, longueur de l'arrête corrigée)
@@ -81,8 +81,8 @@ def arêtesDoubles(g, s, p_détour, interdites):
     """ Itérateur sur les chemins de longueur 2 issus de s"""
     for v1, d1 in g.voisins(s, p_détour, interdites=interdites):
         for v2, d2 in g.voisins(v1, p_détour, interdites=interdites):
-            if v2!=s:
-                yield ((v1,d1), (v2,d2))
+            if v2 != s:
+                yield ((v1, d1), (v2, d2))
 
 
 
@@ -115,16 +115,16 @@ def vers_une_étape(g, départ, arrivée, p_détour, dist, pred, première_étap
         heappush(àVisiter, (d+heuristique(g, s, arrivée, correction_max), s))
         
     for (s, d) in dist.items():
-        entasse(s,d)
+        entasse(s, d)
 
     fini = False
     sommetsFinalsTraités = set()
 
     def boucle_par_arêtes_doubles(s):
-        for ((v1,d1), (v2, d2)) in arêtesDoubles(g, s, p_détour, interdites):
+        for ((v1, d1), (v2, d2)) in arêtesDoubles(g, s, p_détour, interdites):
             if v1 in départ and (v2 not in dist or dist[s]+d1+d2 < dist[v2]):  # Passer par v1,v2 vaut le coup
                 dist[v2] = dist[s]+d1+d2
-                pred[v2] = (v1,s)
+                pred[v2] = (v1, s)
                 entasse(v2, dist[v2])
 
     def boucle_simple(s):
@@ -148,11 +148,11 @@ def vers_une_étape(g, départ, arrivée, p_détour, dist, pred, première_étap
             boucle_simple(s)
             
 
-    if len(sommetsFinalsTraités)==0:
+    if len(sommetsFinalsTraités) == 0:
         _, plus_proche = min((heuristique(g, s, arrivée, correction_max), s) for s in dist.keys())
         chemin = [plus_proche]
         reconstruction(chemin, pred, départ)
-        raise PasDeChemin(f"Pas réussi à atteindre l’étape {arrivée}. Le sommet atteint le plus proche est {plus_proche}, le chemin pour y aller est {chemin}.")
+        raise PasDeChemin(f"Pas réussi à atteindre l’étape {arrivée}.\n Le sommet atteint le plus proche est {plus_proche}, le chemin pour y aller est :\n {chemin}.")
     if not fini:
         LOG_PB(f"Avertissement : je n’ai pas réussi à atteindre tous les sommets de {arrivée}.\n Sommets non atteints:{[s for s in arrivée if s not in sommetsFinalsTraités]}.")
 
@@ -162,7 +162,7 @@ def reconstruction(chemin, pred, départ):
                   - départ, sommets de départ de l’étape (structure permettant un «in»)
                   - pred, le dictionnaire (sommet -> sommet ou couple de sommets précédents), créé par Dijkstra.
         Effet : remplit chemin avec un plus court trajet de chemin[-1] vers un sommet de départ.
-    """ 
+    """
     s = chemin[-1]
     while s not in départ:
         if isinstance(pred[s], int):
