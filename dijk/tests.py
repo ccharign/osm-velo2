@@ -7,7 +7,7 @@ import dijk.pour_shell as sh
 
 import dijk.progs_python.initialisation.amenities as amen
 from dijk.progs_python.initialisation.communes import charge_villes
-from dijk.progs_python.initialisation.initialisation import À_RAJOUTER_PAU, charge_zone, ZONE_GRENOBLE
+from dijk.progs_python.initialisation.initialisation import À_RAJOUTER_PAU, crée_zone, ZONE_GRENOBLE, charge_ville
 
 import dijk.progs_python.utils as utils
 
@@ -20,6 +20,8 @@ import dijk.progs_python.initialisation.communes as communes
 import dijk.progs_python.recup_donnees as rd
 
 gre = sh.mo.Ville.objects.get(nom_complet="Grenoble")
+pau = sh.mo.Ville.objects.get(nom_complet="Pau")
+pag = sh.mo.Zone.objects.get(nom="Pau_agglo")
 ousse = sh.mo.Ville.objects.get(nom_complet="Ousse")
 
 
@@ -50,3 +52,6 @@ def entrainement():
     v.g.charge_zone("Pau_agglo")
     v.g.charge_zone("Grenoble")
     utils.lecture_tous_les_chemins(sh.v.g, bavard=6)
+
+
+arêtes_pb = mo.Arête.objects.filter(départ__id_osm=3206065247, arrivée__id_osm=7972899167)

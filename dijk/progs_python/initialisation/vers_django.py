@@ -8,6 +8,7 @@
 
 import re
 import json
+from pprint import pformat, pprint
 
 from django.db import transaction, close_old_connections
 from django.db.models import Q
@@ -15,7 +16,7 @@ from django.db.models import Q
 from dijk.models import Ville, Rue, Sommet, Arête, Chemin_d, Ville_Zone, Zone
 from dijk.progs_python.lecture_adresse.normalisation import prétraitement_rue, partie_commune
 from params import LOG
-from petites_fonctions import union, intersection, distance_euc
+from petites_fonctions import union, intersection, distance_euc, sauv_objets_par_lots
 from lecture_adresse.arbresLex import ArbreLex
 
 # L’arbre contient les f"{nom_norm}|{code}"
@@ -169,16 +170,17 @@ def désoriente(g, bavard=0):
                 for a in gx[s][t].values():
                     if a["highway"] != "cycleway" and not any("rond point" in c for c in map(partie_commune, tuple_valeurs(a, "name"))) and not existe_inverse(s, t, a):
                         ajoute_inverse(s, t, a)
-                    
-@transaction.atomic
-def sauv_données(à_sauver):
-    """
-    Sauvegarde les objets en une seule transaction.
-    Pour remplacer bulk_create si besoin du champ id nouvellement créé.
-    """
-    for o in à_sauver:
-        o.save()
-    LOG("fin de sauv_données")
+
+
+# @transaction.atomic
+# def sauv_données(à_sauver):
+#     """
+#     Sauvegarde les objets en une seule transaction.
+#     Pour remplacer bulk_create si besoin du champ id nouvellement créé.
+#     """
+#     for o in à_sauver:
+#         o.save()
+#     LOG("fin de sauv_données")
 
 
 
@@ -230,7 +232,7 @@ def transfert_graphe(g, ville_d,
     Paramètres:
         rapide (int) : pour tout  (s,t) sommets voisins dans g,
                             0 -> efface toutes les arêtes de s vers t et remplace par celles de g
-                            1 -> regarde si les arête entre s et t dans g correspondent à celles dans la base, et dans ce cas ne rien faire.
+                            1 -> regarder si les arête entre s et t dans g correspondent à celles dans la base, et dans ce cas ne rien faire.
                         « correspondent » signifie : même nombre et mêmes noms.
                             2 -> si il y a quelque chose dans la base pour (s,t), ne rien faire.
         juste_arêtes (bool) : si vrai, ne recharge pas les sommets.
@@ -322,8 +324,8 @@ def transfert_graphe(g, ville_d,
         """
         
         s, t = s_d.id_osm, t_d.id_osm
-        vieilles_arêtes = [a_d for (v, a_d) in dico_voisins.get(s, []) if v==t_d]
-        
+        vieilles_arêtes = [a_d for (v, a_d) in dico_voisins.get(s_d, []) if v==t_d]
+                    
         if t not in gx[s]:
             return vieilles_arêtes, [], [], []
         
@@ -339,11 +341,19 @@ def transfert_graphe(g, ville_d,
                     Si elle est dans les nouvelles, elle est mise dans à_màj avec sa binôme, qui est supprimée de nouvelles_arêtes.
                     Sinon elle est mise dans à_supprimer
                 """
+                
+                if va.départ.id_osm == 3206065247 and va.arrivée.id_osm == 7972899167:
+                    print(f"récup_arête lancé sur l’arête {va}.\n nouvelles arêtes: {pformat(nouvelles_arêtes)}.\n Géométrie : {va.geom}, {[a.geom for a in nouvelles_arêtes]}")
+                    
+                    
                 for (i, na) in enumerate(nouvelles_arêtes):
                     if na == va:  # NB: le __eq__ se base sur la géom.
                         à_màj.append((va, na))
                         nouvelles_arêtes.pop(i)
-                        break
+                        if va.départ.id_osm == 3206065247 and va.arrivée.id_osm == 7972899167:
+                            print(f"Arête reconnue. nouvelles_arêtes={pformat(nouvelles_arêtes)}")
+
+                        return None
                 à_supprimer.append(va)
 
                 
@@ -397,8 +407,8 @@ def transfert_graphe(g, ville_d,
     à_màj = []
     à_supprimer = []
     à_garder = []
-    with transaction.atomic():  # Utile pour les suppressions d’anciennes arêtes.
-        for s in gx.nodes:
+    #with transaction.atomic():  # Utile pour les suppressions d’anciennes arêtes.
+    for s in gx.nodes:
             s_d = tous_les_sommets.get(id_osm=s)
             for t, _ in gx[s].items():
                 if t != s:  # Suppression des boucles
@@ -407,6 +417,9 @@ def transfert_graphe(g, ville_d,
                     t_d = tous_les_sommets.get(id_osm=t)
                     if rapide < 2:
                         à_s, à_c, à_m, à_g = correspondance(s_d, t_d, gx)
+                        if s_d.id_osm == 3206065247 and t_d.id_osm == 7972899167:
+                            print(f"Arête problématique ! {à_s, à_c, à_m, à_g}")
+                            input("")
                         à_supprimer.extend(à_s)
                         à_créer.extend(à_c)
                         à_màj.extend(à_m)
@@ -415,7 +428,18 @@ def transfert_graphe(g, ville_d,
     LOG(f"Suppression de {len(à_supprimer)} arêtes.", bavard=bavard)
     supprime_tout(à_supprimer)
     LOG(f"Ajout des {len(à_créer)} nouvelles arêtes dans la base", bavard=bavard)
-    sauv_données(à_créer)  # bulk_create pas possible
+
+    # debug
+    # las = Arête.objects.filter(départ__id_osm=3206065247, arrivée__id_osm=7972899167)
+    # print(f"Avant sauv_données : {pformat(tuple(las))}")
+    # input("")
+    
+    sauv_objets_par_lots(à_créer)  # bulk_create pas possible
+
+    # debug
+    # las = Arête.objects.filter(départ__id_osm=3206065247, arrivée__id_osm=7972899167)
+    # print(f"Après sauv_données : {pformat(tuple(las))}")
+    # input("")
     
     if à_màj:
         LOG(f"Mise à jour des {len(à_màj)} anciennes arêtes", bavard=bavard)
@@ -424,6 +448,10 @@ def transfert_graphe(g, ville_d,
         LOG("Pas d’arête à mettre à jour", bavard=bavard)
     LOG(f"{len(à_garder)} arêtes conservées")
 
+    #    print(f"{}")
+    # ex d’arête sans sa ville : (3206065247, 7972899167) (id_osm des sommets)
+
+    
     return à_créer, à_màj+à_garder
     
 
@@ -454,11 +482,9 @@ def ajoute_arêtes_de_ville(ville_d, créées, màj, bavard=0):
     """
     Ajoute les arêtes indiquées à la ville.
     """
-    assert isinstance(ville_d, Ville)
     
+    assert isinstance(ville_d, Ville)
     LOG(f"Ajout des arêtes à la ville {ville_d}")
-
-    arêtes_avec_la_ville = set(ville_d.arête_set.all())
     
     ## nouvelles arêtes -> rajouter ville_d mais aussi les éventuelles anciennes villes.
     rel_àcréer = []
@@ -475,16 +501,20 @@ def ajoute_arêtes_de_ville(ville_d, créées, màj, bavard=0):
             rel_àcréer.append(rel)
             n += 1
         assert (a_d, ville_d) in couples
-            
+        # if a_d.départ.id_osm == 3206065247 and a_d.arrivée.id_osm == 7972899167:
+        #     print(f"Arête problématique {a_d} !\n villes : {tuple(villes_de_a)}")
+        #     input("")
     LOG(f"Enregistrement des {len(rel_àcréer)} relations pour les nouvelles arêtes.")
     assert len(rel_àcréer) == len(set(couples)), "Des relations ont été créées en double"
+    # pprint(tuple(couples[:10])); input("")
     Arête.villes.through.objects.bulk_create(rel_àcréer, batch_size=2000)
     
     ## anciennes arêtes mises à jour -> rajouter ville_d si pas présente.
+    arêtes_avec_la_ville = set(ville_d.arête_set.all())
     nb = 0
     rel_àcréer = []
     for a_d in màj:
-        if a not in arêtes_avec_la_ville:
+        if a_d not in arêtes_avec_la_ville:
             rel = Arête.villes.through(arête_id=a_d.id, ville_id=ville_d.id)
             rel_àcréer.append(rel)
         nb += 1

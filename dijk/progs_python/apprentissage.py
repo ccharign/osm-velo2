@@ -40,7 +40,7 @@ def lecture_meilleur_chemin(g, chemin, bavard=0):
     # Pour vieux chemin, je prends le chemin qui utilise le même nœud de départ et d’arrivée que chemin_complet (pour éviter de biaiser l’apprentissage dans le cas de gros ensembles)
     s_départ = iti_complet[0]
     s_arrivée = iti_complet[-1]
-    vieux_iti, longueur = dijkstra.chemin(g, s_départ, s_arrivée, chemin.p_détour, bavard=bavard-1)
+    vieux_iti, longueur = dijkstra.itinéraire(g, s_départ, s_arrivée, chemin.p_détour, bavard=bavard-1)
     LOG(f"Vieil itinéraire :\n {vieux_iti}", bavard=bavard)
     arêtes_chemin = dico_arêtes(iti_complet)
     arêtes_vieux_chemin = dico_arêtes(vieux_iti)

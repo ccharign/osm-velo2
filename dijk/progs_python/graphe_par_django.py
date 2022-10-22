@@ -84,19 +84,19 @@ class Graphe_django():
     """
     
     def __init__(self):
-        self.dico_voisins={}
-        self.cycla_max=1.
-        self.cycla_min=1.
-        self.arbre_villes=ArbreLex()
-        self.dico_Sommet={}
-        self.dico_voisins={}
-        self.arbres_des_rues={}
-        self.zones=[]
-        self.cycla_max={}
-        self.cycla_min={}
-        self.arbre_cache={}
-        self.arbre_arêtes={}
-        self.arbre_lex_zone={}
+        self.dico_voisins = {}
+        self.cycla_max = {}
+        self.cycla_min = {}
+        self.arbre_villes = ArbreLex()
+        self.dico_Sommet = {}
+        self.dico_voisins = {}
+        self.arbres_des_rues = {}
+        self.zones = []
+        self.cycla_max = {}
+        self.cycla_min = {}
+        self.arbre_cache = {}
+        self.arbre_arêtes = {}
+        self.arbre_lex_zone = {}
     
         
     def charge_zone(self, zone_t, bavard=0):
@@ -141,8 +141,11 @@ class Graphe_django():
             ## Arêtes
             d_arête_of_pk = {}  # Pour le chargement de l’arbre quad.
             arêtes_de_z = z_d.arêtes()
-            
+            cyclaMin = float("inf")
+            cyclaMax = 0.
             for a in arêtes_de_z:
+                cyclaMax = max(cyclaMax, a.cyclabilité())
+                cyclaMin = min(cyclaMin, a.cyclabilité())
                 s = a.départ.id_osm
                 t = a.arrivée.id_osm
                 d_arête_of_pk[a.pk] = a
@@ -166,9 +169,11 @@ class Graphe_django():
                 
                 
             ## Cycla min et max
+            self.cycla_max[z_d] = cyclaMax
+            self.cycla_min[z_d] = cyclaMin
+            # self.calcule_cycla_min_max(z_d)
+            # chrono(tic, "Calcul des cycla min et max", force=True)
             
-            self.calcule_cycla_min_max(z_d)
-            chrono(tic, "Calcul des cycla min et max", force=True)
             self.zones.append(z_d)
             
         else:
@@ -277,7 +282,7 @@ class Graphe_django():
 
         
     def calcule_cycla_min_max(self, z_d, arêtes=None):
-        
+        assert False, "déprécié"
         if not arêtes:
             arêtes = z_d.arêtes()
             

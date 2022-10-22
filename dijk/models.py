@@ -1,6 +1,7 @@
 import json
 from pprint import pformat
 import os
+from itertools import chain
 
 from django.db import models, close_old_connections
 from dijk.progs_python.params import LOG, DONNÉES
@@ -134,6 +135,7 @@ class Zone(models.Model):
     # def arêtes(self):
     #     """
     #     Générateur des arêtes de self.
+    #     Beaucoup trop lent !
     #     """
     #     for v in self.villes():
     #         for a in v.arête_set.all():
@@ -143,7 +145,8 @@ class Zone(models.Model):
         """
         Sortie (queryset) : les arêtes des villes de la zone
         """
-        return Arête.objects.filter(villes__zone=self).prefetch_related("départ", "arrivée")
+        villes = self.villes()
+        return Arête.objects.filter(villes__in=villes).prefetch_related("départ", "arrivée")
         
     def sommets(self):
         """
@@ -333,6 +336,8 @@ def cycla_défaut(a, sens_interdit=False, pas=1.1):
         "sens_interdit": {True: -5}
     }
     bonus = 0
+    if sens_interdit:
+        bonus += critères["sens_interdit"][True]
     for att in critères:
         if att in a:
             val_s = a[att]

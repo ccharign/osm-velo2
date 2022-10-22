@@ -35,10 +35,10 @@ class Graphe_nx():
         #chrono(tic, "conversion en digraph simple.")
 
         # Anciennement dans la classe Graphe:
-        self.villes_of_nœud={}
+        self.villes_of_nœud = {}
         self.cyclabilité = {}
-        self.cache_lieu = {} # le cache chaîne de car tapée -> nœuds
-        self.nœuds = {} # donne les nœuds de chaque rue
+        self.cache_lieu = {}  # le cache chaîne de car tapée -> nœuds
+        self.nœuds = {}  # donne les nœuds de chaque rue
 
     def __contains__(self, n):
         """ Indique si le nœud n est dans g"""
@@ -57,7 +57,7 @@ class Graphe_nx():
         return sum(len(self.digraphe[s]) for s in self.digraphe.nodes)
 
     
-    def geom_arête(self,s,t):
+    def geom_arête(self, s, t):
         """
         Entrée : deux sommets s et t tels que (s, t) est une arête
         Sortie : (liste des coordonnées décrivant la géométrie de l’arête la plus courte de s à t, nom de l’arête).

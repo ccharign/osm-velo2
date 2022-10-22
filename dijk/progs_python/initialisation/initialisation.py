@@ -5,7 +5,7 @@ import os
 import osmnx
 
 from time import perf_counter
-from pprint import pprint
+from pprint import pprint, pformat
 
 from django.db import close_old_connections, transaction
 
@@ -74,6 +74,7 @@ def supprime_arêtes_en_double():
     
 
 def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
+
     ## Récup des graphe via osmnx
     print(f"\nRécupération du graphe pour « {ville_d.code} {ville_d.nom_complet}, {pays} » avec une marge :\n")
     gr_avec_marge = osmnx.graph_from_place(
@@ -87,22 +88,21 @@ def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
         {"city": f"{ville_d.nom_complet}", "postcode": ville_d.code, "country": pays},
         network_type="all", retain_all="True"
     )
-
     g = Graphe_nx(gr_avec_marge)
 
     ## Noms des villes ajouté dans g
     for n in gr_strict:
         g.villes_of_nœud[n] = [ville_d.nom_complet]
 
-        
     ## Nœuds des rues
     print("\n\nCalcul des nœuds de chaque rue")
     dico_rues, places_piétonnes = extrait_nœuds_des_rues(g, bavard=bavard-1)  # dico ville -> rue_n -> (rue, liste nœuds) # Seules les rues avec nom de ville, donc dans g_strict seront calculées.
+    print(f"\nPlaces piétonnes trouvées : {places_piétonnes}\n")
     print("Écriture des nœuds des rues dans la base.")
     close_old_connections()
     vd.charge_dico_rues_nœuds(ville_d, dico_rues[ville_d.nom_complet])
-    print(f"\nPlaces piétonnes trouvées : {places_piétonnes}\n")
-    
+
+    ## Arbrex lex des rues
     print("Création de l'arbre lexicographique")
     arbre_rue_dune_ville(
         ville_d,
@@ -152,7 +152,7 @@ def charge_ville(ville_d, zone_d,
                 1 -> regarde si les arête entre s et t dans g correspondent à celles dans la base, et dans ce cas ne rien faire.
                         « correspondent » signifie : même nombre et mêmes noms.
                 2 -> si il y a quelque chose dans la base pour (s,t), ne rien faire.
-        - recalculer_arbre_arêtes_de_la_zone (bool) : si vrai le fichier contenant l’arbre quad des arêtes de la zone est recalculé (~4s pour Pau_agglo)
+        - recalculer_arbre_arêtes_de_la_zone (bool) : si vrai le fichier contenant l’arbre quad des arêtes de la zone est recalculé (~4s pour Pau_agglo sur ma vieille machine)
     """
 
     assert isinstance(ville_d, Ville) and isinstance(zone_d, Zone)
@@ -172,13 +172,23 @@ def charge_ville(ville_d, zone_d,
         vd.ajoute_arêtes_de_ville(ville_d, arêtes_créées, arêtes_màj)
         modif = True
 
+        # debug
+        #las = Arête.objects.filter(départ__id_osm=3206065247, arrivée__id_osm=7972899167)
+        # print(f"Après ajoute_arêtes_de_ville : {pformat(tuple(las))}")
+        # for a in las:
+        #     pprint(tuple(a.villes.get_queryset()))
+        # input("")
+
+        
     ## Arbre q des arêtes
     if modif and (recalculer_arbre_arêtes_de_la_zone or rajouter_les_lieux):  # Pour rajouter les lieux il faut être sûr que l’arbre des arêtes est à jour
+        # Si recalculer_arbre_arêtes_de_la_zone est Faux, c’est que le calcul de l’arbre des arêtes sera lancé par crée_zone.
         arbre_a = crée_les_arbres_darêtes([ville_d], bavard=bavard-1)[zone_d]
         modif = True
         
     ## Lieux
     if rajouter_les_lieux:
+        # De même, si rajouter_les_lieux est faux, c’est que c’est crée_zone qui s’en charge (pour éviter de recalculer l’arbre des arêtes à chaque ville.)
         charge_lieux_of_ville(ville_d, arbre_a=arbre_a)
         modif = True
     
@@ -333,7 +343,7 @@ def crée_zone(liste_villes_str, zone: str,
             villes_modifiées.append(v_d)
 
     # Arbre quad des arêtes
-    arbre_a = crée_les_arbres_darêtes(villes_modifiées, bavard=bavard-1)[z_d]
+    arbre_a = quadArbreAretesDeZone(z_d, sauv=True)
     
 
     # Lieux (besoin de l’arbre des arêtes)

@@ -141,8 +141,8 @@ def morceaux_tableaux(t, taille):
         yield t[i-taille: i]
     yield t[i:]
 
-            
-def supprime_objets_par_lots(l, taille_lots=1000):
+
+def supprime_objets_par_lots(l, taille_lots=2000):
     n = 0
     for lot in morceaux_tableaux(l, taille_lots):
         with transaction.atomic():
@@ -150,6 +150,16 @@ def supprime_objets_par_lots(l, taille_lots=1000):
                 x.delete()
         n += taille_lots
         print(f"{n} objets supprimés")
+
+
+def sauv_objets_par_lots(l, taille_lots=2000):
+    n = 0
+    for lot in morceaux_tableaux(l, taille_lots):
+        with transaction.atomic():
+            for x in lot:
+                x.save()
+        n += taille_lots
+        print(f"{n} objets sauvegardés")
 
 
             
