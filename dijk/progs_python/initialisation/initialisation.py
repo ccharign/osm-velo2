@@ -326,7 +326,7 @@ def crée_zone(liste_villes_str, zone: str,
             v.données_présentes = False
             v.save()
             print(f"J’ai mis données présentes à False pour {v}")
-            Sommet.objects.filter(villes=v).delete()
+            supprime_objets_par_lots(list(Sommet.objects.filter(villes=v)))
         Cache_Adresse.objects.all().delete()
 
     # Vidage du cache d’osmnx ?

@@ -424,7 +424,7 @@ def carte_cycla(requête, données):
     nom = f"dijk/cycla{z_d}.html"
     print(nom)
     if not os.path.exists("dijk/templates/"+nom) or données["force_calcul"]:
-        if z_d.nom not in g.zones: g.charge_zone(z_d.nom)
+        g.charge_zone(z_d.nom)
     
         dessine_cycla(g, z_d, où_enregistrer="dijk/templates/"+nom, bavard=1)
     return render(requête, nom)

@@ -267,7 +267,7 @@ def transfert_graphe(g, ville_d,
 
         ## Création/màj des sommets
         LOG(f"Ajout des {len(à_créer)} nouveaux sommets dans la base")
-        sauv_données(à_créer)
+        sauv_objets_par_lots(à_créer)
         LOG(f"Mise à jour des {len(à_màj)} sommets modifiés")
         Sommet.objects.bulk_update(à_màj, ["lon", "lat"])
 
