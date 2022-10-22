@@ -350,8 +350,8 @@ def transfert_graphe(g, ville_d,
                     if na == va:  # NB: le __eq__ se base sur la géom.
                         à_màj.append((va, na))
                         nouvelles_arêtes.pop(i)
-                        if va.départ.id_osm == 3206065247 and va.arrivée.id_osm == 7972899167:
-                            print(f"Arête reconnue. nouvelles_arêtes={pformat(nouvelles_arêtes)}")
+                        # if va.départ.id_osm == 3206065247 and va.arrivée.id_osm == 7972899167:
+                        #     print(f"Arête reconnue. nouvelles_arêtes={pformat(nouvelles_arêtes)}")
 
                         return None
                 à_supprimer.append(va)
@@ -417,9 +417,9 @@ def transfert_graphe(g, ville_d,
                     t_d = tous_les_sommets.get(id_osm=t)
                     if rapide < 2:
                         à_s, à_c, à_m, à_g = correspondance(s_d, t_d, gx)
-                        if s_d.id_osm == 3206065247 and t_d.id_osm == 7972899167:
-                            print(f"Arête problématique ! {à_s, à_c, à_m, à_g}")
-                            input("")
+                        # if s_d.id_osm == 3206065247 and t_d.id_osm == 7972899167:
+                        #     print(f"Arête problématique ! {à_s, à_c, à_m, à_g}")
+                        #     input("")
                         à_supprimer.extend(à_s)
                         à_créer.extend(à_c)
                         à_màj.extend(à_m)
@@ -488,24 +488,24 @@ def ajoute_arêtes_de_ville(ville_d, créées, màj, bavard=0):
     
     ## nouvelles arêtes -> rajouter ville_d mais aussi les éventuelles anciennes villes.
     rel_àcréer = []
-    couples = set()  # juste pour débug
+    #couples = set()  # juste pour débug
     n = 1
     for a_d in créées:
         villes_de_a = tuple(intersection(a_d.départ.get_villes(), a_d.arrivée.get_villes()))
         for v in villes_de_a:
             rel = Arête.villes.through(arête_id=a_d.id, ville_id=v.id)
-            if (a_d, v) not in couples:
-                couples.add((a_d, v))
-            else:
-                raise RuntimeError(f"Rel déjà créée : {a_d, v}. Ville de l’arête : {villes_de_a}. L’arête était la {n}ième traitée")
+            # if (a_d, v) not in couples:
+            #     couples.add((a_d, v))
+            # else:
+            #     raise RuntimeError(f"Rel déjà créée : {a_d, v}. Ville de l’arête : {villes_de_a}. L’arête était la {n}ième traitée")
             rel_àcréer.append(rel)
             n += 1
-        assert (a_d, ville_d) in couples
+        #assert (a_d, ville_d) in couples
         # if a_d.départ.id_osm == 3206065247 and a_d.arrivée.id_osm == 7972899167:
         #     print(f"Arête problématique {a_d} !\n villes : {tuple(villes_de_a)}")
         #     input("")
     LOG(f"Enregistrement des {len(rel_àcréer)} relations pour les nouvelles arêtes.")
-    assert len(rel_àcréer) == len(set(couples)), "Des relations ont été créées en double"
+    #assert len(rel_àcréer) == len(set(couples)), "Des relations ont été créées en double"
     # pprint(tuple(couples[:10])); input("")
     Arête.villes.through.objects.bulk_create(rel_àcréer, batch_size=2000)
     
