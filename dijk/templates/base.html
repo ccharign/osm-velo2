@@ -1,26 +1,29 @@
 <!DOCTYPE html>
 <html lang="fr">
   {% load static %}
+
+  
   
   <head>
     <meta charset="utf-8">
 
-    <!-- jQuery library -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.js"></script>
 
     <!-- Bootstrap -->
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"/>
 
 
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"> -->
+    <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> -->
 
     
 
     
-  
+    <!-- jquery, pour l’autocomplétion -->
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.0/themes/smoothness/jquery-ui.css">
+    <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.js'> </script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.0/jquery-ui.js"></script>
 
-    
+
     <!-- Chargement de leaflet 1.8 -->
     <!-- le css -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
@@ -42,7 +45,8 @@
     
     <!-- Mes fonctions javascript -->
     <script src="{% static 'dijk/pour_leaflet.js'%}?version=5" type="text/javascript"> </script>
-    <script src="{% static 'dijk/fonctions.js'%}?version=16" type="text/javascript"> </script>
+    <script src="{% static 'dijk/fonctions.js'%}?version=17" type="text/javascript"> </script>
+    <script src="{% static 'dijk/autoComplete.js'%}?version=2" type="text/javascript"> </script>
 
     <!-- Ma feuille de style -->
     <link rel="stylesheet" media="screen" href="{% static 'dijk/styles.css' %}?version=4" type="text/css"/>
@@ -53,9 +57,10 @@
     <!-- Pour d’autres params -->
     {% block head_début %} {% endblock %}
 
-    <!-- Pour autocomplétion : jquery-ui -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.0/jquery-ui.js"> </script>
-    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.0/themes/smoothness/jquery-ui.css">
+   
+    <!-- Bootstrap 5.2.1-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.bundle.min.js"></script>
 
   </head>
 
@@ -63,105 +68,66 @@
 
   <body>
 
-    {% load bootstrap3 %}
+
+
+        
+    <!-- Nav -->
     
-    <script>
-      $(document).ready(  function(){
+      <nav class="navbar navbar-expand-sm bg-light">
+        <div class="container-fluid">
 
-	  //Autoriser les popover
-	  $('[data-toggle="popover"]').popover();
+       	  <!-- Le bouton pour petit écran -->
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#aCacher">
+            <span class="navbar-toggler-icon"></span>
+          </button>
 
+          <div class="collapse navbar-collapse" id="aCacher"> <!-- Ce div contient ce qui va disparaître sur petit écran -->
 
-	  // autocomplétion
-	  $(function () {
+       	    <ul class="navbar-nav"> 
 
-	      $("#id_départ").autocomplete({
-		  source: "{% url 'complète rue' %}",
-		  minLength: 3,
-		  select: (e, ui) =>
-		  //(
-		      // ui.item : le dico renvoyé par le serveur
-		      // form = document.getElementById("recherche");
-		      // lieu = ui.item;
-		      // coords = lieu.lon+","+lieu.lat;
-		      // form.elements["coords_départ"].value=coords;
-		      //)
-		      onSelect(e, ui, document.getElementById("recherche"), "coords_départ")
-		  
-	      });
+       	      {% if zone_t %} 
+       	      <li class="nav-item"><a class="nav-link" href="{% url 'recherche' zone_t %}"> Nouvelle recherche </a></li>
+       	      {% endif %}
+
+       	      <li class="nav-item"><a class="nav-link" href="{% url 'index' %}">Entrée</a></li> 
+
+              <li class="nav-item"> <a class="nav-link" href="{% url 'autour de moi'%}"> Autour de moi</a></li>
 	      
-	      
-	      $("#id_arrivée").autocomplete({
-		  source: "{% url 'complète rue' %}",
-		  minLength: 4,
-		  select: (e, ui) => onSelect(e, ui, document.getElementById("recherche"), "coords_arrivée")
-	      });
-	      
-	      $("#rues_interdites").autocomplete({
-		  source: "{% url 'complète rue' %}",
-		  minLength: 4,
-	      });
+              <!-- Menu déroulant « comment ça marche? »-->
+       	      <li class="nav-item dropdown">
+       		      <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#"> 
+       		        Comment ça marche
+                </a>
+             		<ul class="dropdown-menu" role="menu">
+             		  <li> <a class="dropdown-item" href="{% url 'mode d’emploi' %}"> Mode d’emploi </a></li>
+                  <li><a class="dropdown-item" href="{% url 'limitations'%}"> Problèmes connus </a> </li>
+             		  <li><a class="dropdown-item" href="{% url 'sous le capot'%}"> Sous le capot </a> </li>
+             		  <li><a class="dropdown-item" href="{% url 'bug'%}"> Signaler un bug ou proposer une amélioration </a> </li>
+             		</ul>
+       	      </li> 
 
-	      $("#étapes").autocomplete({
-		source: "{% url 'complète rue' %}",
-		minLength: 4,
-	      });
-	      
-	  });
+              <!-- Menu déroulant « stats » -->
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">
+                  Statistiques
+                </a>
+                <ul class="dropdown-menu" role="menu">
+                  <li> <a class="dropdown-item" href="{% url 'cycla'%}"> Cartes de cyclabilité </a></li>
+                  <li><a class="dropdown-item" href="{% url 'recherche pourcentages' %}"> Pourcentages de rues piétonnes / cyclables </a>
+                </ul>
+              </li>
 
-      });
-    </script>
-
-
-    
-    <!-- <header> -->
-      <nav class="navbar navbar-default">
-	<div class="container-fluid">
-
-	  <div class="navbar-header">
-	    <!-- Remplacer le menu par un seul bouton si petit écran -->
-	    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
-              <span class="icon-bar"></span>
-              <span class="icon-bar"></span>
-              <span class="icon-bar"></span>
-	    </button>
-	    <!-- <a class="navbar-brand" href="{% url 'index'%}"> Itinéraires cyclistes </a> -->
-	  </div>
-
-	  <div class="collapse navbar-collapse" id="myNavbar">
-	    <ul class="nav navbar-nav">
-
-	      {% if zone_t %}
-	      <li><a href="{% url 'recherche' zone_t %}"> Nouvelle recherche </a></li>
-	      {% endif %}
-
-	      <li><a href="{% url 'index' %}">Entrée</a></li>
-	      
-	      <li class="dropdown">
-		<a class="dropdown-toggle" data-toggle="dropdown" href="#">
-		  Comment ça marche
-		  <span class="caret"></span></a>
-		<ul class="dropdown-menu" role="menu">
-		  <li> <a href="{% url 'mode d’emploi' %}"> Mode d’emploi </a></li>
-		  <!-- <li><a href="{% url 'limitations'%}"> Problèmes connus </a> </li> -->
-		  <li><a href="{% url 'sous le capot'%}"> Sous le capot </a> </li>
-		  <li><a href="{% url 'bug'%}"> Signaler un bug ou proposer une amélioration </a> </li>
-		</ul>
-	      </li>
-	      <li> <a href="{% url 'autour de moi'%}"> Autour de moi</a>	      
-	      <li> <a href="{% url 'cycla'%}"> Cartes de cyclabilité </a>
+       	      
+       	      
 		
-	      <li><a href="{% url 'contribution' %}"> Contribution </a>
-	    </ul>
+       	      <li class="nav-item"><a class="nav-link" href="{% url 'contribution' %}"> Contribuer </a> </li>
 
-	    <ul class="nav navbar-nav navbar-right">
-	      <li><a href="{% url 'recherche pourcentages' %}"> Pourcentages de rues piétonnes / cyclables </a>
-	    </ul>
+       	    </ul> 
 	    
-	  </div>
-	</div>
+       	  </div>
+        </div>
       </nav>
-      <!-- </header> -->
+    
 
     <div class="container-fluid">
       {% block contenu %} {% endblock %}
