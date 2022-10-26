@@ -19,6 +19,20 @@ from params import LOG
 from petites_fonctions import union, intersection, distance_euc, sauv_objets_par_lots
 from lecture_adresse.arbresLex import ArbreLex
 
+
+
+
+
+#################################
+###    Pour vérifications     ###
+#################################
+
+# À faire...
+
+
+
+
+
 # L’arbre contient les f"{nom_norm}|{code}"
 def à_mettre_dans_arbre(nom_n, code):
     return f"{nom_n}|{code}"

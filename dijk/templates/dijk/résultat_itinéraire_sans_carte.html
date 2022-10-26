@@ -1,7 +1,7 @@
 {% extends "dijk/résultat_itinéraire_base.html" %}
 
 
-{% load bootstrap3 %}
+{% load bootstrap5 %}
 {# Display django.contrib.messages as Bootstrap alerts #}
 {% bootstrap_messages %}
 
@@ -61,8 +61,8 @@
     </ul>
 
       {% bootstrap_form enregistrer_contrib %}
-    <input type="submit" class="btn btn-default" value="Enregistrer">
-    
+    <!-- <input type="submit" class="btn btn-default" value="Enregistrer"> -->
+          {% buttons submit='Enregistrer' %}{% endbuttons %}
   </form>
 </p>
 {% endblock %}
@@ -158,9 +158,7 @@
 (Ou formulaire complet en bas de page.)
   {% bootstrap_form relance_rapide %}
 
-  {% buttons %}
-  <button type="submit" class="btn btn-primary">Recalculer</button>
-  {% endbuttons %}
+  {% buttons submit='Recalculer' %}{% endbuttons %}
 </form>
 {% endblock %}
 <!-- fin relance rapide -->
@@ -171,9 +169,7 @@
 {% block retour %}
 <form action = "{% url 'retour' %}" method="get">
   {% bootstrap_form trajet_retour %}
-  {% buttons %}
-  <button type="submit" class="btn btn-primary">Trajet retour</button>
-  {% endbuttons %}
+  {% buttons submit='Trajet retour' %}{% endbuttons %}
 </form>
 {% endblock %}
 <!-- fin trajet retour -->

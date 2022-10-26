@@ -6,29 +6,15 @@
   
   <head>
     <meta charset="utf-8">
-
-
-    <!-- Bootstrap -->
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"/>
-
-
-    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"> -->
-    <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> -->
-
-    
-
-    
-    <!-- jquery, pour l’autocomplétion -->
-    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.0/themes/smoothness/jquery-ui.css">
-    <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.js'> </script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.0/jquery-ui.js"></script>
 
 
     <!-- Chargement de leaflet 1.8 -->
     <!-- le css -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
-	  integrity="sha512-hoalWLoI8r4UszCkZ5kL8vayOGVae1oxXe/2A4AO6J9+580uKHDO3JdHb7NzwwzK5xr/Fs0W40kiNHxM9vyTtQ=="
-	  crossorigin="" />
+	    integrity="sha512-hoalWLoI8r4UszCkZ5kL8vayOGVae1oxXe/2A4AO6J9+580uKHDO3JdHb7NzwwzK5xr/Fs0W40kiNHxM9vyTtQ=="
+	    crossorigin="" 
+    />
     <!-- le js -->
     <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"
 	    integrity="sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ=="
@@ -46,11 +32,16 @@
     <!-- Mes fonctions javascript -->
     <script src="{% static 'dijk/pour_leaflet.js'%}?version=5" type="text/javascript"> </script>
     <script src="{% static 'dijk/fonctions.js'%}?version=17" type="text/javascript"> </script>
-    <script src="{% static 'dijk/autoComplete.js'%}?version=2" type="text/javascript"> </script>
+    <script src="{% static 'dijk/autoComplete.js'%}?version=3" type="text/javascript"> </script>
 
     <!-- Ma feuille de style -->
     <link rel="stylesheet" media="screen" href="{% static 'dijk/styles.css' %}?version=4" type="text/css"/>
   
+        <!-- jquery, pour l’autocomplétion -->
+        <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.0/themes/smoothness/jquery-ui.css">
+        <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.js'> </script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.0/jquery-ui.js"></script>
+    
     
     <title>{% block titre %}Recherche d’itinéraire{% endblock %}</title>
 
@@ -117,13 +108,8 @@
                 </ul>
               </li>
 
-       	      
-       	      
-		
        	      <li class="nav-item"><a class="nav-link" href="{% url 'contribution' %}"> Contribuer </a> </li>
-
        	    </ul> 
-	    
        	  </div>
         </div>
       </nav>

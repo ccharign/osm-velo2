@@ -7,25 +7,14 @@
 </p>
 
 Choisissez votre zone (plus la zone est petite et plus le chargement est rapide (ou moins lent)) :
-
-<!-- <ul> -->
-<!--   {% for z in zones %} -->
-<!--   <li> <a href="{% url 'index'%}{{z}}"> {{z}} </a> </li> -->
-<!--   {% endfor %} -->
-  <!-- </ul> -->
-
-{% load bootstrap3 %}
-{# Display django.contrib.messages as Bootstrap alerts #}
-{% bootstrap_messages %}
+  {% load bootstrap5 %}
 
 <form action="" method="get">
-  <!-- {% csrf_token %} -->
   
   {% bootstrap_form form %}
   
-  {% buttons %}
-  <button type="submit" class="btn btn-primary">C’est parti</button>
-  {% endbuttons %}
+
+  {% bootstrap_button button_type="submit" content="C’est parti" %}
 </form>
 
 
