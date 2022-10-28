@@ -420,9 +420,9 @@ def lieux_of_ville(ville, bavard=0, force=False):
             bavard=bavard
         )
         à_c, à_m = traitement_req_récup_lieux(requête, catégorie_lieu, tous_les_id_osm, force=force)
-        print(f"Création de {len(à_c)} nouveaux lieux")
+        print(f"(lieux_of_ville) Création de {len(à_c)} nouveaux lieux")
         mo.Lieu.objects.bulk_create(à_c)
-        print(f"Màj des {len(à_m)} lieux modifiés")
+        print(f"(lieux_of_ville) Màj des {len(à_m)} lieux modifiés")
         mo.Lieu.objects.bulk_update(à_m, ["nom", "horaires", "tél", "type_lieu", "json_initial", "json_nettoyé"])
         res.extend(à_c+à_m)
         tous_les_id_osm.update((l.id_osm for l in à_c))

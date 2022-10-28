@@ -77,6 +77,12 @@ def ajoute_ville_et_rue(ll, taille_paquets=1000, force=False, bavard=0):
         force, si True, écrase les données déjà présentes.
         taille_paquets : nb de lieux à envoyer à la fois à data.gouv.
     """
+    for i, l in enumerate(ll):
+        try:
+            l.pk
+        except Exception as e:
+            print(f"{l} n’a pas de pk.\n{e}. C’était le lieu d’indice {i}.\n")
+            raise e
     nb_traités = 0
     nb_problèmes = 0
     for paquet in morceaux_tableaux(ll, taille_paquets):
@@ -103,7 +109,7 @@ def ajoute_ville_et_rue(ll, taille_paquets=1000, force=False, bavard=0):
                         nb_problèmes += 1
                         LOG(f"Problème pour {l}\n  Données reçues : {pformat(d)}\n Erreur : {e}", type_de_log="pb", bavard=2)
         print(f"La récupération de l’adresse a échoué pour {nb_problèmes} lieux.")
-        print(f"Enregistrement des modifs ({len(à_maj)} lieux.\n)")
+        print(f"Enregistrement des modifs ({len(à_maj)} lieux).\n)")
         Lieu.objects.bulk_update(à_maj, ["ville", "adresse"])
 
 
