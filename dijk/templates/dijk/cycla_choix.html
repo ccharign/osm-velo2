@@ -7,17 +7,13 @@ Carte de la cyclabilité
 {% block contenu %}
 Choisissez la zone de laquelle afficher la carte de la cyclabilité :
 
-{% load bootstrap3 %}
-{# Display django.contrib.messages as Bootstrap alerts #}
-{% bootstrap_messages %}
+{% load bootstrap5 %}
+
 
 <form action="/cycla/" method="get">
     <!-- {% csrf_token %} -->
     {% bootstrap_form form %}
-
-    {% buttons %}
-        <button type="submit" class="btn btn-primary">C’est parti</button>
-    {% endbuttons %}
+    {% buttons submit='C’est parti' %}{% endbuttons %}
 </form>
 
 L’option « force_calcul » force le calcul de la carte, même si elle est déjà présente en mémoire (pour le cas où les données auraient changé depuis le dernier calcul).

@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 
 {% block contenu %}
-{% load bootstrap3 %}
+
+
+{% load bootstrap5 %}
 {% bootstrap_messages %}
 
 Indiquez ici les problèmes techniques ou vos suggestions d’amélioration !
@@ -15,9 +17,8 @@ Indiquez ici les problèmes techniques ou vos suggestions d’amélioration !
 <form method="post" action="{% url 'bug' %}">
   {% csrf_token %}
   {% bootstrap_form form %}
-
-    {% buttons %}
-        <button type="submit" class="btn btn-primary">Envoyer</button>
-    {% endbuttons %}
+  {% buttons submit='Envoyer' %}{% endbuttons %}
 </form>
+
+
 {% endblock %}
