@@ -12,9 +12,6 @@
 {% endif %}
 
 
-<!-- Formulaire de relance simplifié -->
-{% block modifs_rapides %}
-{% endblock %}
 
 
 <!-- Carte et stats -->
@@ -25,7 +22,8 @@
       {% block carte %}
       {% endblock %}
   </div>
-  
+
+
   <div class="col-sm-3">
       <!-- Statistiques -->
       <h4> Longueurs et traces gps </h4>
@@ -38,6 +36,11 @@
   </div>
 </div>
 
+<!-- Formulaire de relance simplifié -->
+<div class="row">
+  {% block modifs_rapides %}
+  {% endblock %}
+</div>
 <br><br>
 
 

@@ -13,9 +13,15 @@
 
 // Mettre en entrée la liste des champs du dico à afficher ?
 
+
+/**
+ * Rajoute à la carte « carte » un marqueur avec un popup contenant les infos.
+ * @param {number} lon 
+ * @param {number} lat 
+ * @param {dico} infos 
+ * @param {L.map} carte 
+ */
 function marqueur_avec_popup(lon, lat, infos, carte){
-    // infos : dico
-    // Rajoute à la carte « carte » un marqueur avec un popup contenant les infos.
 
     var marqueur = L.marker(
         [lat, lon]

@@ -8,6 +8,12 @@
 
 <!-- La carte -->
 {% block carte %}
+  Voici l’itinéraire obtenu à l’aide de mes connaissances actuelles. Pour me corriger:
+  <ul>
+    <li> indiquez des tronçons de rue à emprunter en cliquant sur la carte;</li>
+    <li> indiquez des tronçons à éviter en controle-cliquant.
+  </ul>
+  
 <div id="laCarte"></div>
 <script>
   laCarte = carte_bb{{bbox}};
@@ -20,7 +26,7 @@
   form_recherche = document.getElementById("relance_rapide");
   marqueurs_of_form(form_recherche, laCarte);
 </script>
-<a href="https://www.cyclosm.org/legend.html" target="blank"> Légende </a>
+<a href="https://www.cyclosm.org/legend.html" target="blank" class="légende"> Légende </a>
 {% endblock carte %}
 <!-- fin de la carte -->
 
@@ -150,12 +156,6 @@
 <!-- Relance rapide du formulaire -->
 {% block modifs_rapides %}
 <form action = "{% url 'relance_rapide' %}" method="get" id="relance_rapide">
-  Voici l’itinéraire obtenu à l’aide de mes connaissances actuelles. Pour me corriger:
-  <ul>
-    <li> indiquez des tronçons de rue à emprunter en cliquant sur la carte;</li>
-    <li> indiquez des tronçons à éviter en controle-cliquant.
-  </ul>
-(Ou formulaire complet en bas de page.)
   {% bootstrap_form relance_rapide %}
 
   {% buttons submit='Recalculer' %}{% endbuttons %}
