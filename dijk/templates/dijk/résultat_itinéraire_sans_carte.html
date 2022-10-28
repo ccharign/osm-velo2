@@ -15,17 +15,6 @@
   </ul>
   
 <div id="laCarte"></div>
-<script>
-  laCarte = carte_bb{{bbox}};
-  
-  {% for code_js in js_itinéraires %}
-  {{code_js | safe}}
-  {% endfor %}
-  
-  gèreLesClics(laCarte);
-  form_recherche = document.getElementById("relance_rapide");
-  marqueurs_of_form(form_recherche, laCarte);
-</script>
 <a href="https://www.cyclosm.org/legend.html" target="blank" class="légende"> Légende </a>
 {% endblock carte %}
 <!-- fin de la carte -->
@@ -160,6 +149,17 @@
 
   {% buttons submit='Recalculer' %}{% endbuttons %}
 </form>
+<script>
+  laCarte = carte_bb{{bbox}};
+  
+  {% for code_js in js_itinéraires %}
+  {{code_js | safe}}
+  {% endfor %}
+  
+  gèreLesClics(laCarte);
+  form_recherche = document.getElementById("relance_rapide");
+  marqueurs_of_form(form_recherche, laCarte);
+</script> 
 {% endblock %}
 <!-- fin relance rapide -->
 
