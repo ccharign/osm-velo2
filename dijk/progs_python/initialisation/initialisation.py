@@ -119,14 +119,16 @@ def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
     return vd.transfert_graphe(g, ville_d, bavard=bavard-1, juste_arêtes=False, rapide=rapide)
 
 
-def ajoute_ville(nom: str, code: int, nom_zone: str, pays="France"):
+def ajoute_ville(nom: str, code: int, nom_zone: str, force=False, pays="France"):
     """
     Ajoute la ville dans la zone indiquée.
+    Paramètres:
+        force : si True les données seront rechargées même si données_présentes est vrai.
     """
 
     zone_d = Zone.objects.get(nom=nom_zone)
     ville_d = ville_of_nom_et_code_postal(nom, code)
-    charge_ville(ville_d, zone_d, pays=pays)
+    charge_ville(ville_d, zone_d, force=force, pays=pays)
 
 
 def charge_ville(ville_d, zone_d,
@@ -181,7 +183,7 @@ def charge_ville(ville_d, zone_d,
 
         
     ## Arbre q des arêtes
-    if modif and (recalculer_arbre_arêtes_de_la_zone or rajouter_les_lieux):  # Pour rajouter les lieux il faut être sûr que l’arbre des arêtes est à jour
+    if modif or recalculer_arbre_arêtes_de_la_zone or rajouter_les_lieux:  # Pour rajouter les lieux il faut être sûr que l’arbre des arêtes est à jour
         # Si recalculer_arbre_arêtes_de_la_zone est Faux, c’est que le calcul de l’arbre des arêtes sera lancé par crée_zone.
         arbre_a = crée_les_arbres_darêtes([ville_d], bavard=bavard-1)[zone_d]
         modif = True
