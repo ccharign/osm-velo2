@@ -91,7 +91,7 @@ def ajoute_ville_et_rue(ll, taille_paquets=1000, force=False, bavard=0):
         try:
             données = adresses_of_liste_lieux(paquet, bavard=bavard)
         except:
-            print(f"Échec pour la récupération du dernier paquet de {len(paquet} lieux.")
+            print(f"Échec pour la récupération du dernier paquet de {len(paquet)} lieux.")
         à_maj = []
         for l, d in zip(paquet, données):
             if l.adresse and not force:
