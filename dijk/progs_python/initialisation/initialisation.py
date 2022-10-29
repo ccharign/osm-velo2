@@ -347,6 +347,8 @@ def crée_zone(liste_villes_str, zone: str,
     # Arbre quad des arêtes
     if villes_modifiées:
         arbre_a = crée_les_arbres_darêtes(villes_modifiées, bavard=bavard)[z_d]
+    else:
+        arbre_a = quadArbreAretesDeZone(z_d, sauv=False)
     
 
     # Lieux (besoin de l’arbre des arêtes)
