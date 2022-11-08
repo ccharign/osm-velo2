@@ -27,18 +27,10 @@ ousse = sh.mo.Ville.objects.get(nom_complet="Ousse")
 
 # Create your tests here.
 
-
-def charge_lieux_of_ville():
-    amen.charge_lieux_of_ville(gre, force=True, bavard=3)
-
-    
-def charge_lieux_of_ville_ousse():
-    amen.charge_lieux_of_ville(ousse, force=True, bavard=3)
-
     
 def test_data_gouv(nb=5):
     """
-    Teste adresses_of_liste_lieux sur les np premiers lieux de la base.
+    Teste adresses_of_liste_lieux sur les nb premiers lieux de la base.
     """
     ll = mo.Lieu.objects.all()[:nb]
     pprint(ll)
@@ -48,10 +40,9 @@ def test_data_gouv(nb=5):
             print(f"Pas de result_housenumber pour {l}\n Données reçues :\n{r}")
     return rés
 
+
 def entrainement():
     v.g.charge_zone("Pau_agglo")
     v.g.charge_zone("Grenoble")
     utils.lecture_tous_les_chemins(sh.v.g, bavard=6)
 
-
-arêtes_pb = mo.Arête.objects.filter(départ__id_osm=3206065247, arrivée__id_osm=7972899167)

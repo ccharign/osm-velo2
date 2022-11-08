@@ -391,7 +391,6 @@ def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, tous_les_id
              "lon": lon, "lat": lat,
              "type": x.tags.pop(catégorie_lieu),
              "catégorie": catégorie_lieu,
-             #"objet overpy": x
              }
         d.update(x.tags)
         l, créé, utile = mo.Lieu.of_dico(d, tous_les_id_osm=tous_les_id_osm, créer_type=True)
@@ -412,7 +411,7 @@ def lieux_of_ville(ville, bavard=0, force=False):
     """
     res = []
     tous_les_id_osm = set([i for i, in mo.Lieu.objects.all().values_list("id_osm")])
-    for catégorie_lieu in ["amenity", "shop", "tourism"]:
+    for catégorie_lieu in ["amenity", "shop", "tourism", "leisure"]:
         print(f"Recherche des lieux pour la catégorie {catégorie_lieu}\n")
         requête = récup_catégorie_lieu(
             catégorie_lieu,
