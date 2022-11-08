@@ -458,6 +458,24 @@ class Arête(models.Model):
 
 
 
+class Arbre_Arête(models.Model):
+
+    # la bbox
+    borne_sud = models.FloatField()
+    borne_ouest = models.FloatField()
+    borne_nord = models.FloatField()
+    borne_est = models.FloatField()
+
+    # pour les feuilles : une arête
+    arête = models.ForeignKey(Arête, on_delete=models.CASCADE, blank=True, default=None, null=True)
+
+    # les fils
+    fso = models.ForeignKey(Arbre_Arête, bdank=True, default=None, null=True, on_delete=models.CASCADE)
+    fse = models.ForeignKey(Arbre_Arête, bdank=True, default=None, null=True, on_delete=models.CASCADE)
+    fno = models.ForeignKey(Arbre_Arête, bdank=True, default=None, null=True, on_delete=models.CASCADE)
+    fne = models.ForeignKey(Arbre_Arête, bdank=True, default=None, null=True, on_delete=models.CASCADE)
+    
+
 class Chemin_d(models.Model):
     """
     Attributs:

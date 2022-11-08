@@ -8,7 +8,7 @@ from math import cos, pi
 from dijk.models import Arête
 
 def produit_scalaire(u, v):
-    return sum(ui*vi for (ui,vi) in zip(u,v))
+    return sum(ui*vi for (ui, vi) in zip(u, v))
 
 
 def union_bb(lbb):
@@ -16,7 +16,6 @@ def union_bb(lbb):
     Entrée : une liste de bounding box
     Sortie : la plus petite bounding box contenant celles de lbb
     """
-
     return (
         min(bb[0] for bb in lbb),
         min(bb[1] for bb in lbb),
@@ -34,7 +33,6 @@ class Quadrarbre():
         étiquette : doit être munie d’une méthode « coords » qui renvoie (lon, lat).
         distance (pour les feuilles) : fonction qui a une coords associe la distance à la feuille.
     """
-
 
     def __init__(self):
         """
@@ -55,7 +53,7 @@ class Quadrarbre():
     def of_list(cls, l, f_lon, f_lat, feuille):
         
         """
-        Entrée : 
+        Entrée :
             l, liste d’objets à mettre dans l’abre.
             f_lon, fonction qui a un objet associe la longitude selon laquelle trier.
             f_lat, fonction qui a un objet associe la latitude selon laquelle trier.
@@ -66,19 +64,19 @@ class Quadrarbre():
         assert isinstance(l, list), f"Pas une liste : {l}"
         assert l, "Reçu une liste vide"
 
-        if len(l)==1:
+        if len(l) == 1:
             return feuille(l[0])
         
         else:
-            l.sort(key=f_lon) # tri selon la longitude.
+            l.sort(key=f_lon)  # tri selon la longitude.
             ouest = l[:len(l)//2]
             est = l[len(l)//2:]
 
-            ouest.sort(key=f_lat) # tri selon la latitude
+            ouest.sort(key=f_lat)  # tri selon la latitude
             so = ouest[:len(ouest)//2]
             no = ouest[len(ouest)//2:]
 
-            est.sort(key=f_lat) # tri selon la latitude
+            est.sort(key=f_lat)  # tri selon la latitude
             se = est[:len(est)//2]
             ne = est[len(est)//2:]
 
@@ -96,7 +94,7 @@ class Quadrarbre():
             return sum(len(f) for f in self.fils)
         
     
-    def majorant_de_d_min(self, coords:(float,float)):
+    def majorant_de_d_min(self, coords: (float, float)):
         """
         Sortie : en O(1) un majorant de la plus petite distance entre coords et un élément de l’arbre. (Pour le branch and bound de la recherche de nœud le plus proche.)
         Basé sur le fait qu’il existe au moins un objet sur chaque bord de la bbox.
@@ -119,31 +117,31 @@ class Quadrarbre():
         return min(d1, d2, d3, d4)
     
     
-    def minorant_de_d_min(self, coords:(float,float)):
+    def minorant_de_d_min(self, coords: (float,float)):
         """
         Sortie : en O(1), un minorant de la distance min entre coords et un nœud de l’arbre.
         C’est la distance entre coords et la bounding box de self.
         """
         s,o,n,e = self.bb
-        lon, lat = coords #lon : ouest-est
-        res_carré=0
+        lon, lat = coords  #lon : ouest-est
+        res_carré = 0
         le_cos = cos(lat*pi/180)
         
         if lon < o:
             res_carré+=(o-lon)**2 * le_cos
-        elif lon > e :
+        elif lon > e:
             res_carré+=(lon-e)**2 * le_cos
         if lat < s:
             res_carré+=(s-lat)**2
         elif lat > n:
             res_carré+=(lat-n)**2
         
-        return res_carré**.5  * R_TERRE * pi/180
+        return res_carré**.5 * R_TERRE * pi/180
 
     
     # exemple : Barthou/SaintLouis (-0.37054131408589847, 43.295030439425645)
     # (-0.371292129834015, 43.29535229996814)
-    def étiquette_la_plus_proche(self, coords:(float,float)):
+    def étiquette_la_plus_proche(self, coords: (float,float)):
         """
         Sortie (étiquette×float) : (étiquette, distance) de la feuille plus la proche de coords.
         """
@@ -154,7 +152,7 @@ class Quadrarbre():
         else:
             d_min = float("inf")
             res = None
-            for m, fils in sorted( ((f.minorant_de_d_min(coords), f) for f in self.fils) ): # On commence par le fils qui a le plus probablement le nœud le plus proche.
+            for m, fils in sorted( ((f.minorant_de_d_min(coords), f) for f in self.fils) ):  # On commence par le fils qui a le plus probablement le nœud le plus proche.
                 if m < d_min:
                     s, dist = fils.étiquette_la_plus_proche(coords)
                     if dist<d_min:
@@ -182,7 +180,7 @@ class Quadrarbre():
     
     
     @classmethod
-    def of_fichier(cls, chemin:str, récup_objet, feuille):
+    def of_fichier(cls, chemin: str, récup_objet, feuille):
         """
         Entrées :
              chemin, adresse du fichier

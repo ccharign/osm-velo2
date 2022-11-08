@@ -348,7 +348,7 @@ def confirme_nv_chemin(requête):
     """
     Traitement du formulaire d’enregistrement d’un nouveau chemin.
     """
-    nb_lectures = 20
+    nb_lectures = 10
 
     
     try:
