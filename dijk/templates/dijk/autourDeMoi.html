@@ -66,12 +66,10 @@ Pour personaliser l’affichage, notamment le mettre sur deux colonnes :
  https://medium.com/@alfarhanzahedi/customizing-modelmultiplechoicefield-in-a-django-form-96e3ae7e1a07
   -->
 <div class="row">
-{% load bootstrap3 %}
+{% load bootstrap5 %}
 <form action="{% url 'autour de moi'%}" method="get" id="fouine">
-    {% bootstrap_form form %}
-    {% buttons %}
-        <button type="submit" class="btn btn-primary">C’est parti</button>
-    {% endbuttons %}
+  {% bootstrap_form form %}
+  {% buttons submit='C’est parti' %}{% endbuttons %}
 </form>
 </div>
 
