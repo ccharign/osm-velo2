@@ -105,6 +105,9 @@ class Ville(models.Model):
     def zones(self):
         return (rel.zone for rel in Ville_Zone.objects.filter(ville=self).prefetch_related("zone"))
 
+    def arêtes(self):
+        return self.arêtes_set.all()
+
     @classmethod
     def of_nom(cls, nom):
         """ Renvoie la ville telle que partie_commune(nom) = ville.nom_norm"""

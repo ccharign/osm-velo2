@@ -40,10 +40,3 @@ def test_data_gouv(nb=5):
             print(f"Pas de result_housenumber pour {l}\n Données reçues :\n{r}")
     return rés
 
-
-def entrainement():
-    v.g.charge_zone("Pau_agglo")
-    v.g.charge_zone("Grenoble")
-    utils.lecture_tous_les_chemins(v.g, bavard=6)
-
-
