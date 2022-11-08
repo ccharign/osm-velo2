@@ -44,5 +44,6 @@ def test_data_gouv(nb=5):
 def entrainement():
     v.g.charge_zone("Pau_agglo")
     v.g.charge_zone("Grenoble")
-    utils.lecture_tous_les_chemins(sh.v.g, bavard=6)
+    utils.lecture_tous_les_chemins(v.g, bavard=6)
+
 

@@ -128,6 +128,9 @@ class Zone(models.Model):
     """
     nom = models.CharField(max_length=100, unique=True)
     ville_défaut = models.ForeignKey(Ville, on_delete=models.CASCADE)
+
+    class Meta:
+        ordering = ["nom"]
     
     def villes(self):
         return (rel.ville for rel in Ville_Zone.objects.filter(zone=self).prefetch_related("ville"))
