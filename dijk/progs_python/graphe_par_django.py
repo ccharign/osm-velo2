@@ -64,7 +64,7 @@ class Itinéraire():
         ca = g.coords_of_id_osm(self.liste_sommets[-1])
         o, e = sorted((cd[0], ca[0]))  # lon
         s, n = sorted((cd[1], ca[1]))  # lat
-        return s,o,n,e
+        return s, o, n, e
 
     
 class Graphe_django():
@@ -154,7 +154,7 @@ class Graphe_django():
             tic = chrono(tic, "Chargement des arêtes.")
 
             ## Vérif que les sommets d’arrivée sont dans le dico des sommets
-            print("Vérif que les sommets darrivée sont connus")
+            print("Vérif que les sommets d’arrivée sont connus")
             for l in self.dico_voisins.values():
                 for s, _ in l:
                     assert t in self.dico_Sommet

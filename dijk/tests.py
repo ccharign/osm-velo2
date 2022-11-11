@@ -1,6 +1,6 @@
 from django.test import TestCase
 from importlib import reload
-from importlib import reload
+from functools import reduce
 from pprint import pprint
 
 import dijk.pour_shell as sh
@@ -40,3 +40,29 @@ def test_data_gouv(nb=5):
             print(f"Pas de result_housenumber pour {l}\n Données reçues :\n{r}")
     return rés
 
+
+def sommetsdéconnectés(g):
+
+    départ = list(g.dico_Sommet.keys())[1000]
+    vu = set((départ,))
+    àVisiter = [départ]
+
+    while àVisiter:
+        s = àVisiter.pop()
+        vu.add(s)
+        for t, _ in g.dico_voisins[s]:
+            if t not in vu:
+                àVisiter.append(t)
+    
+    pas_vus = [t for t in g.dico_Sommet.keys() if t not in vu]
+    return pas_vus
+
+
+def nomsDesDéconnectés(g):
+    déconnectés = sommetsdéconnectés(g)
+    arêtes_déconnectées = reduce(
+        lambda a, b: a+b,
+        [g.dico_voisins[s] for s in déconnectés if g.dico_voisins[s]],
+        []
+    )
+    return arêtes_déconnectées

@@ -101,11 +101,6 @@ def recherche(requête, zone_t):
     """
     Vue pour une recherche de base.
     """
-    # données = dict_of_get(requête.GET)
-    # form_zone = forms.ChoixZone(requête.GET)
-    # if not form_zone.is_valid():
-    #     print(form_zone.errors)
-    # données.update(form_zone.cleaned_data)
     données = récup_données(requête.GET, forms.ChoixZone, validation_obligatoire=False)
     if "zone" in données and données["zone"]:
         z_d = g.charge_zone(données["zone"].nom)

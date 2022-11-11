@@ -8,8 +8,8 @@ from time import perf_counter
 from pprint import pprint, pformat
 
 from django.db import close_old_connections, transaction
-
 from dijk.models import Ville, Zone, Cache_Adresse, Ville_Zone, Sommet, Rue, Arête
+from django.db.models import Count
 
 from dijk.progs_python.params import DONNÉES, RACINE_PROJET
 from initialisation.noeuds_des_rues import extrait_nœuds_des_rues
@@ -66,7 +66,7 @@ def supprime_arêtes_en_double():
             à_supprimer.append(a)
         else:
             déjà_vue.add(a.geom)
-        n+=1
+        n += 1
         if not n%1000: print(f"{n} arêtes vues")
     print(f"Suppression de {len(à_supprimer)} arêtes")
     supprime_objets_par_lots(à_supprimer)
@@ -74,6 +74,10 @@ def supprime_arêtes_en_double():
     
 
 def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
+    """
+    Récupère le graphe grâce à osmnx et le charge dans la base.
+    Une marge de 500m est prise. De sorte que les sommets et arêtes à moins de 500m d’une frontière entre deux villes seront au final associés à ces deux villes.
+    """
 
     ## Récup des graphe via osmnx
     print(f"\nRécupération du graphe pour « {ville_d.code} {ville_d.nom_complet}, {pays} » avec une marge :\n")
@@ -116,10 +120,18 @@ def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
     
     ## Transfert du graphe
     close_old_connections()
-    return vd.transfert_graphe(g, ville_d, bavard=bavard-1, juste_arêtes=False, rapide=rapide)
+    sommets, crées, màj = vd.transfert_graphe(g, ville_d, bavard=bavard-1, rapide=rapide)
+    
+    vd.ajoute_ville_à_sommets_et_arêtes(
+        ville_d,
+        sommets,
+        crées+màj,
+        bavard=bavard-1
+    )
+    return crées, màj
 
 
-def ajoute_ville(nom: str, code: int, nom_zone: str, force=False, pays="France"):
+def ajoute_ville(nom: str, code: int, nom_zone: str, force=False, pays="France", bavard=0):
     """
     Ajoute la ville dans la zone indiquée.
     Paramètres:
@@ -128,7 +140,7 @@ def ajoute_ville(nom: str, code: int, nom_zone: str, force=False, pays="France")
 
     zone_d = Zone.objects.get(nom=nom_zone)
     ville_d = ville_of_nom_et_code_postal(nom, code)
-    charge_ville(ville_d, zone_d, force=force, pays=pays)
+    charge_ville(ville_d, zone_d, force=force, pays=pays, bavard=bavard)
 
 
 def charge_ville(ville_d, zone_d,
@@ -170,16 +182,9 @@ def charge_ville(ville_d, zone_d,
     
     if not ville_d.données_présentes or force:
         # création et enregistrement du graphe de la ville
-        arêtes_créées, arêtes_màj = charge_graphe_de_ville(ville_d, pays=pays, bavard=0, rapide=rapide)
-        vd.ajoute_arêtes_de_ville(ville_d, arêtes_créées, arêtes_màj)
+        arêtes_créées, arêtes_màj = charge_graphe_de_ville(ville_d, pays=pays, bavard=bavard-1, rapide=rapide)
+        #vd.ajoute_arêtes_de_ville(ville_d, arêtes_créées, arêtes_màj)
         modif = True
-
-        # debug
-        #las = Arête.objects.filter(départ__id_osm=3206065247, arrivée__id_osm=7972899167)
-        # print(f"Après ajoute_arêtes_de_ville : {pformat(tuple(las))}")
-        # for a in las:
-        #     pprint(tuple(a.villes.get_queryset()))
-        # input("")
 
         
     ## Arbre q des arêtes
@@ -327,8 +332,16 @@ def crée_zone(liste_villes_str, zone: str,
         for v in liste_villes_d:
             v.données_présentes = False
             v.save()
-            print(f"J’ai mis données présentes à False pour {v}")
-            supprime_objets_par_lots(list(Sommet.objects.filter(villes=v)))
+            print(f"J’ai mis données présentes à False pour {v}.")
+
+            print("Suppression des relation sommet-ville et arête-ville :")
+            supprime_objets_par_lots(list(Sommet.villes.through.objects.filter(ville_id=v.id)))
+            supprime_objets_par_lots(list(Arête.villes.through.objects.filter(ville_id=v.id)))
+            print("Suppression des sommets orphelins :")
+            sansVille = Sommet.objects.all().alias(nbvilles=Count("villes")).filter(nbvilles=0)
+            supprime_objets_par_lots(list(sansVille))
+            # Ceci supprime au passage les arêtes liées aux sommets supprimés
+            
         Cache_Adresse.objects.all().delete()
 
     # Vidage du cache d’osmnx ?
@@ -360,7 +373,7 @@ def crée_zone(liste_villes_str, zone: str,
     else:
         print("\nFini!")
     print("Je lance ajoute_ville_et_rue_manquantes pour faire un deuxième essai de recherche des adresses des lieux sur toute la base..")
-    ajoute_ville_et_rue_manquantes(bavard=bavard-1)
+    #ajoute_ville_et_rue_manquantes(bavard=bavard-1)
 
 
 def charge_lieux_of_liste_ville(villes, arbre_a: QuadrArbreArête) -> list:
@@ -377,16 +390,6 @@ def charge_lieux_of_liste_ville(villes, arbre_a: QuadrArbreArête) -> list:
             pprint(e)
             pb.append(v_d)
     return pb
-
-
-# def charge_multidigraph():
-#     """
-#     Renvoie le multidigraph de la zone défaut, supposé enregistré sur le disque. Plutôt pour tests.
-#     """
-#     s,o,n,e = BBOX_DÉFAUT
-#     nom_fichier = f'{DONNÉES}/{s}{o}{n}{e}.graphml'
-#     g = osmnx.load_graphml(nom_fichier)
-#     return g
 
 
 def charge_fichier_cycla_défaut(g, chemin=os.path.join(RACINE_PROJET, "progs_python/initialisation/données_à_charger/rues et cyclabilité.txt"), zone="Pau_agglo"):

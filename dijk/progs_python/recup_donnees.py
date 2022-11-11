@@ -250,7 +250,7 @@ def ways_contenant_nodes(nœuds):
     Sortie : liste des ways avec tag highwaycontenant au moins un élément de nœuds.
     """
     api = overpy.Overpass()
-    requête=f"""
+    requête = f"""
     node(id:{",".join(map( str, nœuds))});
     way[highway](bn);
     out;
@@ -264,7 +264,7 @@ def nœuds_reliés(nœuds):
     Sortie : liste des nœuds sur un way contenant un des nœuds de nœuds.
     """
     ways = ways_contenant_nodes(nœuds)
-    res=[]
+    res = []
     for w in ways:
         res.extend(w._node_ids)
     return res

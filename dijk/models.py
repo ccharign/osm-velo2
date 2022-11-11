@@ -106,7 +106,7 @@ class Ville(models.Model):
         return (rel.zone for rel in Ville_Zone.objects.filter(ville=self).prefetch_related("zone"))
 
     def arêtes(self):
-        return self.arêtes_set.all()
+        return self.arête_set.all()
 
     @classmethod
     def of_nom(cls, nom):
