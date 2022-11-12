@@ -14,7 +14,10 @@ import progs_python.utils as utils
 import progs_python.initialisation.amenities as amen
 from progs_python.utils import lecture_tous_les_chemins, réinit_cycla
 from progs_python.initialisation.amenities import ajoute_ville_et_rue_manquantes
-osmnx.config(use_cache=True, log_console=True)
+
+#osmnx.config(use_cache=True, log_console=True)
+osmnx.settings.use_cache = True
+osmnx.settings.log_console = True
 
 def entraine_tout():
     """

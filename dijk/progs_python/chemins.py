@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 import re
-
+import json
+from pprint import pprint
 
 from dijk.progs_python.petites_fonctions import milieu
 
@@ -90,7 +91,6 @@ class Étape():
            d, dico contenant a priori le résultat d’un get.
            champ, nom du champ dans lequel chercher le texte de l’étape.
 
-
         Sortie :
             - S’il existe un champ nommé 'lieu_'+champ et qu’il est rempli, la valeur doit être l’id d’un lieu, c’est alors simplement ce lieu qui sera renvoyé.
 
@@ -98,15 +98,18 @@ class Étape():
 
             - sinon, renvoie une ÉtapeAdresse.
         """
-        LOG(f"of_dico lancé. d: {d},\n champ:{champ}", bavard=bavard)
+        LOG(f"of_dico lancé. d: {d},\n champ:{champ}", bavard=1)
         ch_coords = "coords_" + champ
-        ch_lieu = "lieu_" + champ
-        
-        if ch_lieu in d and d[ch_lieu]:
-            # ÉtapeLieu
-            LOG(f"(Étape.of_dico) Lieu détecté : {d[ch_lieu]}. Je renvoie un ÉtapeLieu", bavard=bavard)
-            ÉtapeLieu(Lieu.objects.get(pk=int(d[ch_lieu])))
-        
+        #ch_lieu = "lieu_" + champ
+        données_supp = json.loads(d["données_cachées_"+champ])
+        pprint(données_supp)
+
+        if données_supp and "type" in données_supp:
+            if données_supp["type"] == "lieu":
+                # ÉtapeLieu
+                LOG(f"(Étape.of_dico) Lieu détecté :{données_supp['pk']}", bavard=bavard)
+                return ÉtapeLieu(Lieu.objects.get(pk=int(données_supp["pk"])))
+
         elif ch_coords in d and d[ch_coords]:
             # ÉtapeArête
             coords = tuple(map(float, d[ch_coords].split(",")))
@@ -119,7 +122,7 @@ class Étape():
         
         else:
             # ÉtapeAdresse
-            LOG("Ni lieu ni arête détecté : je renvoie ur ÉtapeAdresse")
+            LOG("Ni lieu ni arête détecté : je renvoie une ÉtapeAdresse")
             return ÉtapeAdresse(d[champ], g, z_d)
     
     
@@ -219,8 +222,8 @@ class ÉtapeLieu(Étape):
     def __init__(self, l: Lieu):
         self.lieu = l
         self.nom = l.nom
-        self.nœuds = set((l.arête.départ, l.arête.arrivée))
-
+        self.nœuds = set((l.arête.départ.id_osm, l.arête.arrivée.id_osm))
+        self.adresse = l.adresse
 
 
     

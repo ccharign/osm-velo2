@@ -704,7 +704,7 @@ class Lieu(models.Model):
         """
         Renvoie la chaîne  « nom, ville »
         """
-        return f"{self.nom}, {self.ville}"
+        return f"{self.nom}, {self.adresse}, {self.ville}"
 
     def marqueur_leaflet(self, nomCarte):
         """

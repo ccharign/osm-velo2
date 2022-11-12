@@ -116,7 +116,9 @@ def recherche(requête, zone_t):
         form_recherche = forms.Recherche(données)
         if form_recherche.is_valid():
             données.update(form_recherche.cleaned_data)
+            print(f"(views.recherche) départ (données) : {données['départ']}")
             z_d, étapes, étapes_interdites, ps_détour = z_é_i_d(g, données)
+            print(f"(views.recherche) étapes récupérées : {[str(é) for é in étapes]}")
 
             return calcul_itinéraires(requête, ps_détour, z_d,
                                       étapes,
@@ -196,7 +198,7 @@ def trajet_retour(requête):
     
     #  Échange départ-arrivée dans le dico de données
     données["départ"], données["arrivée"] = données["arrivée"], données["départ"]
-    données["coords_départ"], données["coords_arrivée"] = données["coords_arrivée"], données["coords_départ"]
+    données["données_cachées_départ"], données["données_cachées_arrivée"] = données["données_cachées_arrivée"], données["données_cachées_départ"]
 
     #  Étapes à l’envers
     étapes.reverse()
@@ -238,6 +240,7 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_interdites=[
             où_enregistrer="dijk/templates/dijk/iti_folium.html"
         ))
         noms_étapes = données["noms_étapes"]
+        print(f"(calcul_itinéraires) nom des étapes {noms_étapes}")
         rues_interdites = données["rues_interdites"]
         
         
@@ -505,9 +508,9 @@ def pour_complétion(requête, nbMax=15):
         Pour enregistrer le résultat à renvoyer.
         Un nouvel élément d n’est ajouté que si self.f_hach(d) n’est pas déjà présent et si le nb de résultats est < self.n_max
         """
-        def __init__(self, f_hach, n_max):
+        def __init__(self, n_max):
             self.res = []
-            self.f_hach = f_hach
+            #self.f_hach = f_hach
             self.n_max = n_max
             self.déjà_présent = set()
             self.nb = 0
@@ -516,11 +519,16 @@ def pour_complétion(requête, nbMax=15):
         def __len__(self):
             return self.nb
 
-        def ajoute(self, d):
+        def ajoute(self, àAfficher, àCacher=None):
+            """
+            Entrées:
+                 àAfficher : texte à afficher dans les choix d’autocomplétion
+                 àCacher (dico) : données supplémentaires qui seront mises en json dans un champ caché.
+            """
             if self.nb < self.n_max:
-                if self.f_hach(d) not in self.déjà_présent:
-                    self.déjà_présent.add(self.f_hach(d))
-                    self.res.append(d)
+                if àAfficher not in self.déjà_présent:
+                    self.déjà_présent.add(àAfficher)
+                    self.res.append({"label": àAfficher, "àCacher": json.dumps(àCacher)})
                     self.nb += 1
             else:
                 self.trop_de_rés = True
@@ -567,7 +575,7 @@ def pour_complétion(requête, nbMax=15):
         req_villes = Subquery(villes.values("ville"))
 
         
-        res = Résultat(lambda d: d["label"], nbMax)
+        res = Résultat(nbMax)
 
         # Complétion dans l’arbre lexicographique (pour les fautes de frappe...)
         # Fonctionne sauf qu’on ne récupère pas la ville pour l’instant
@@ -579,13 +587,13 @@ def pour_complétion(requête, nbMax=15):
         lieux = Lieu.objects.filter(nom__icontains=rue, ville__in=req_villes).prefetch_related("ville", "type_lieu")
         print(f"{len(lieux)} lieux trouvées")
         for l in lieux:
-            res.ajoute({"label": l.str_pour_formulaire(), "lon": l.lon, "lat": l.lat})
+            res.ajoute(l.str_pour_formulaire(), {"type": "lieu", "pk": l.pk})
         
         
         # Recherche dans les rues de la base
         dans_la_base = Rue.objects.filter(nom_norm__icontains=rue, ville__in=req_villes).prefetch_related("ville")
         for rue_trouvée in dans_la_base:
-            res.ajoute({"label": chaîne_à_renvoyer(rue_trouvée.nom_complet, rue_trouvée.ville.nom_complet)})
+            res.ajoute(chaîne_à_renvoyer(rue_trouvée.nom_complet, rue_trouvée.ville.nom_complet))
 
         
         
@@ -593,12 +601,14 @@ def pour_complétion(requête, nbMax=15):
         for truc in Cache_Adresse.objects.filter(adresse__icontains=rue, ville__in=req_villes).prefetch_related("ville"):
             print(f"Trouvé dans Cache_Adresse : {truc}")
             chaîne = chaîne_à_renvoyer(truc.adresse, truc.ville.nom_complet)
-            res.ajoute({"label": chaîne})
+            res.ajoute(chaîne)
             
-        for chose in CacheNomRue.objects.filter(Q(nom__icontains=rue) | Q(nom_osm__icontains=rue), ville__in=req_villes).prefetch_related("ville"):
+        for chose in CacheNomRue.objects.filter(
+                Q(nom__icontains=rue) | Q(nom_osm__icontains=rue), ville__in=req_villes
+        ).prefetch_related("ville"):
             print(f"Trouvé dans CacheNomRue : {chose}")
             chaîne = chaîne_à_renvoyer(chose.nom_osm, chose.ville.nom_complet)
-            res.ajoute({"label": chaîne_à_renvoyer(chose.nom_osm, chose.ville.nom_complet)})
+            res.ajoute(chaîne_à_renvoyer(chose.nom_osm, chose.ville.nom_complet))
 
         return HttpResponse(res.vers_json(), mimeType)
         
