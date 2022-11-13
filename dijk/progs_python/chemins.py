@@ -101,7 +101,10 @@ class Étape():
         LOG(f"of_dico lancé. d: {d},\n champ:{champ}", bavard=1)
         ch_coords = "coords_" + champ
         #ch_lieu = "lieu_" + champ
-        données_supp = json.loads(d["données_cachées_"+champ])
+        if d["données_cachées_"+champ]:
+            données_supp = json.loads(d["données_cachées_"+champ])
+        else:
+            données_supp = {}
         pprint(données_supp)
 
         if données_supp and "type" in données_supp:
