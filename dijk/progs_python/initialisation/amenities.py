@@ -129,8 +129,9 @@ def ajoute_ville_et_rue_manquantes(bavard=1):
     
 def charge_lieux_of_ville(v_d, arbre_a=None, bavard=0, force=False):
     """
-    Récupère sur osm les amenities, shops, leisure et tourism de la ville, et remplit les tables TypeLieu et Lieu avec.
-    params:
+    Effet :
+        Récupère sur osm les amenities, shops, leisure et tourism de la ville, et remplit les tables TypeLieu et Lieu avec.
+    Params:
         - force : si True, remplace les lieux déjà présentes.
     """
 

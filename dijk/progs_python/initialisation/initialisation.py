@@ -8,7 +8,7 @@ from time import perf_counter
 from pprint import pprint, pformat
 
 from django.db import close_old_connections, transaction
-from dijk.models import Ville, Zone, Cache_Adresse, Ville_Zone, Sommet, Rue, Arête
+from dijk.models import Ville, Zone, Cache_Adresse, Ville_Zone, Sommet, Rue, Arête, Lieu
 from django.db.models import Count
 
 from dijk.progs_python.params import DONNÉES, RACINE_PROJET
@@ -26,32 +26,44 @@ from initialisation.communes import charge_villes
 
 
 
-def quadArbreDeZone(z_d, bavard=0):
-    l = list(Sommet.objects.filter(villes__zone=z_d))
-    tic = perf_counter()
-    res = QuadrArbreSommet.of_list(l)
-    chrono(tic, f"arbre quad de la zone {z_d}", bavard=bavard)
-    return res
+# def quadArbreDeZone(z_d, bavard=0):
+#     l = list(Sommet.objects.filter(villes__zone=z_d))
+#     tic = perf_counter()
+#     res = QuadrArbreSommet.of_list(l)
+#     chrono(tic, f"arbre quad de la zone {z_d}", bavard=bavard)
+#     return res
 
 
 def quadArbreAretesDeZone(z_d, sauv=True, bavard=0):
     """
     Entrée : z_d (mo.Zone)
-    Sortie : arbre des arêtes de cette zone
-    Effet : si sauv, enregistre l’arbre à l’adresse "{DONNÉES}/{z_d.nom}/arbre_arêtes_{z_d}"
+    Sortie : arbre des arêtes de cette zone.
+    Effet : si sauv, recalcule et enregistre l’arbre à l’adresse "{DONNÉES}/{z_d.nom}/arbre_arêtes_{z_d}"
+            sinon, l’arbre est chargé depuis le disque.
     """
     
-    l = list(z_d.arêtes())
-    LOG(f"Villes de la zone {z_d} : {tuple(z_d.villes())}\n {len(l)} arêtes.")
-    tic = perf_counter()
-    res = QuadrArbreArête.of_list_darêtes_d(l)
+    
     if sauv:
+        l = list(z_d.arêtes())
+        LOG(f"Villes de la zone {z_d} : {tuple(z_d.villes())}\n {len(l)} arêtes.")
+        tic = perf_counter()
+        res = QuadrArbreArête.of_list_darêtes_d(l)
         rép = os.path.join(DONNÉES, z_d.nom)
         os.makedirs(rép, exist_ok=True)
         res.sauv(os.path.join(rép, f"arbre_arêtes_{z_d}"))
         print(f"Arbre sauvegardé dans {os.path.join(rép, f'arbre_arêtes_{z_d}')}")
-    chrono(tic, f"création et sauvegarde de l’arbre quad de la zone {z_d}", bavard=bavard)
+        chrono(tic, f"création et sauvegarde de l’arbre quad de la zone {z_d}", bavard=bavard)
+    else:
+        dossier_données = os.path.join(DONNÉES, str(z_d))
+        chemin = os.path.join(dossier_données, f"arbre_arêtes_{z_d}")
+        tic = perf_counter()
+        LOG(f"Chargement de l’arbre quad des arêtes depuis {chemin}", bavard=bavard)
+        res = QuadrArbreArête.of_fichier(chemin)
+        tic = chrono(tic, "Chargement de l’arbre quad des arêtes", force=True)
+                
     return res
+
+
 
 
 def supprime_arêtes_en_double():
@@ -372,7 +384,7 @@ def crée_zone(liste_villes_str, zone: str,
         pprint(échec_lieux)
     else:
         print("\nFini!")
-    print("Je lance ajoute_ville_et_rue_manquantes pour faire un deuxième essai de recherche des adresses des lieux sur toute la base..")
+    #print("Je lance ajoute_ville_et_rue_manquantes pour faire un deuxième essai de recherche des adresses des lieux sur toute la base..")
     #ajoute_ville_et_rue_manquantes(bavard=bavard-1)
 
 
@@ -391,6 +403,17 @@ def charge_lieux_of_liste_ville(villes, arbre_a: QuadrArbreArête) -> list:
             pb.append(v_d)
     return pb
 
+
+def recharge_lieux_of_zone(zone, bavard=0):
+    """
+    Efface et recharge les lieux de la zone indiquée
+    """
+    villes = zone.villes()
+    lieux = Lieu.objects.filter(ville__in=villes)
+    lieux.delete()
+
+    charge_lieux_of_liste_ville(villes, quadArbreAretesDeZone(zone, sauv=False))
+    
 
 def charge_fichier_cycla_défaut(g, chemin=os.path.join(RACINE_PROJET, "progs_python/initialisation/données_à_charger/rues et cyclabilité.txt"), zone="Pau_agglo"):
     """

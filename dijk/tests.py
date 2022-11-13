@@ -66,3 +66,8 @@ def nomsDesDéconnectés(g):
         []
     )
     return arêtes_déconnectées
+
+
+def lieuxSansArête():
+    return mo.Lieu.objects.filter(arête=None)
+

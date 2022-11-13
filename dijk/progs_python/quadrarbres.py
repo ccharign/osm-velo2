@@ -8,7 +8,7 @@ from math import cos, pi
 from dijk.models import Arête
 
 def produit_scalaire(u, v):
-    return sum(ui*vi for (ui,vi) in zip(u,v))
+    return sum(ui*vi for (ui, vi) in zip(u, v))
 
 
 def union_bb(lbb):
@@ -341,8 +341,6 @@ class QuadrArbreArête(Quadrarbre):
     @classmethod
     def of_fichier(cls, chemin, bavard=0):
         """
-        Entrée:
-           d_arête_of_pk : dico qui à sa pk associe l’arête
         """
         tic = perf_counter()
         def arête_of_str(c):
