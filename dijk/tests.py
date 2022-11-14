@@ -57,6 +57,19 @@ def sommetsdéconnectés(g):
     pas_vus = [t for t in g.dico_Sommet.keys() if t not in vu]
     return pas_vus
 
+def arêtesSortant(g, ens_sommet):
+    """
+    Entrées:
+        g : graphe networkx
+        ens_sommet : ensemble de sommets d’icelui
+    Sortie:
+        liste des arêtes dont le départ est dans ens_sommet mais pas l’arrivée.
+    """
+    res = []
+    for s in ens_sommet:
+        res.extend([(t, la) for t, la in g[s].items if t not in ens_sommet])
+    return res
+
 
 def nomsDesDéconnectés(g):
     déconnectés = sommetsdéconnectés(g)

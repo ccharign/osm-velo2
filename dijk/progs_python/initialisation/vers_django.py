@@ -241,7 +241,7 @@ def transfert_graphe(g, ville_d,
     Effet : transfert le graphe dans la base Django.
     La longueur des arêtes est mise à min(champ "length", d_euc de ses sommets).
     
-    Sortie : arêtes créées, arêtes mises à jour ou conservées
+    Sortie : sommets django correspondant aux sommets de g (créés ou pas), arêtes créées, arêtes mises à jour ou conservées
     
     Paramètres:
         rapide (int) : pour tout  (s,t) sommets voisins dans g,

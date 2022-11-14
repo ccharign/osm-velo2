@@ -42,7 +42,6 @@ def quadArbreAretesDeZone(z_d, sauv=True, bavard=0):
             sinon, l’arbre est chargé depuis le disque.
     """
     
-    
     if sauv:
         l = list(z_d.arêtes())
         LOG(f"Villes de la zone {z_d} : {tuple(z_d.villes())}\n {len(l)} arêtes.")
@@ -96,15 +95,17 @@ def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
     gr_avec_marge = osmnx.graph_from_place(
         {"city": f"{ville_d.nom_complet}", "postcode": ville_d.code, "country": pays},
         network_type="all",  # Tout sauf private
-        retain_all="False",  # Sinon il peut y avoir des enclaves déconnectées car accessibles seulement par chemin privé (ex: CSTJF)
+        retain_all=False,  # Sinon il peut y avoir des enclaves déconnectées car accessibles seulement par chemin privé (ex: CSTJF)
         buffer_dist=500  # Marge de 500m
     )
     print("\n\nRécupération du graphe exact:\n")
     gr_strict = osmnx.graph_from_place(
         {"city": f"{ville_d.nom_complet}", "postcode": ville_d.code, "country": pays},
-        network_type="all", retain_all="True"
+        network_type="all", retain_all=True
     )
+
     g = Graphe_nx(gr_avec_marge)
+
 
     ## Noms des villes ajouté dans g
     for n in gr_strict:
@@ -129,7 +130,7 @@ def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
     close_old_connections()
     print("\nDésorientation du graphe")
     vd.désoriente(g, bavard=bavard-1)
-    
+
     ## Transfert du graphe
     close_old_connections()
     sommets, crées, màj = vd.transfert_graphe(g, ville_d, bavard=bavard-1, rapide=rapide)
