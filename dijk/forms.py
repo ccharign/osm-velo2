@@ -23,10 +23,12 @@ class RechercheBase(forms.Form):
     Classe mère pour les formulaires de recherche d’itinéraire
     """
     départ = forms.CharField(label="Départ", required=False)
-    coords_départ = forms.CharField(widget=forms.HiddenInput(), required=False)
+    #coords_départ = forms.CharField(widget=forms.HiddenInput(), required=False)
+    données_cachées_départ = forms.CharField(widget=forms.HiddenInput(), required=False)  # Sera rempli par l’autocomplétion
     partir_de_ma_position = forms.BooleanField(label="Partir de ma position", required=False, initial=False)
     arrivée = forms.CharField(label="Arrivée")
-    coords_arrivée = forms.CharField(widget=forms.HiddenInput(), required=False)
+    #coords_arrivée = forms.CharField(widget=forms.HiddenInput(), required=False)
+    données_cachées_arrivée = forms.CharField(widget=forms.HiddenInput(), required=False)
     #zone_t = forms.CharField(widget=forms.HiddenInput())
     zone = forms.ModelChoiceField(queryset=mo.Zone.objects.all(), widget=forms.HiddenInput())
     marqueurs_é = forms.CharField(widget=forms.HiddenInput(), required=False)  # Pour les marqueurs d’étapes précédents.

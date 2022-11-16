@@ -231,7 +231,7 @@ def supprime_tout(à_supprimer):
     
     
 def transfert_graphe(g, ville_d,
-                     bavard=0, rapide=1, juste_arêtes=False,
+                     bavard=0, rapide=1,
                      champs_arêtes_à_màj=[]
                      ):
     """
@@ -241,7 +241,7 @@ def transfert_graphe(g, ville_d,
     Effet : transfert le graphe dans la base Django.
     La longueur des arêtes est mise à min(champ "length", d_euc de ses sommets).
     
-    Sortie : arêtes créées, arêtes mises à jour ou conservées
+    Sortie : sommets django correspondant aux sommets de g (créés ou pas), arêtes créées, arêtes mises à jour ou conservées
     
     Paramètres:
         rapide (int) : pour tout  (s,t) sommets voisins dans g,
@@ -249,7 +249,6 @@ def transfert_graphe(g, ville_d,
                             1 -> regarder si les arête entre s et t dans g correspondent à celles dans la base, et dans ce cas ne rien faire.
                         « correspondent » signifie : même nombre et mêmes noms.
                             2 -> si il y a quelque chose dans la base pour (s,t), ne rien faire.
-        juste_arêtes (bool) : si vrai, ne recharge pas les sommets.
         champs_arêtes_à_màj : la valeur de ces champs sera mise à jour pour les arêtes déjà présentes.
     """
     assert isinstance(ville_d, Ville), f"transfert_graphe attend une ville et a reçu {ville_d}"
@@ -259,47 +258,33 @@ def transfert_graphe(g, ville_d,
     print(f"{len(tous_les_sommets)} sommets dans la base")
 
     ### Sommets ###
-    if not juste_arêtes:
-        LOG("Chargement des sommets")
-        à_créer = []
-        à_màj = []
-        nb = 0
-        for s in g.multidigraphe.nodes:
-            if nb%500==0: print(f"    {nb} sommets vus")
-            nb += 1
-            lon, lat = g.coords_of_nœud(s)
-            essai = Sommet.objects.filter(id_osm=s).first()
-            if essai is None:
-                s_d = Sommet(id_osm=s, lon=lon, lat=lat)
-                à_créer.append(s_d)
-            else:
-                s_d = essai
-                # màj des coords au cas où...
-                s_d.lon = lon
-                s_d.lat = lat
-                à_màj.append(s_d)
 
-        ## Création/màj des sommets
-        LOG(f"Ajout des {len(à_créer)} nouveaux sommets dans la base")
-        sauv_objets_par_lots(à_créer)
-        LOG(f"Mise à jour des {len(à_màj)} sommets modifiés")
-        Sommet.objects.bulk_update(à_màj, ["lon", "lat"])
+    LOG("Chargement des sommets")
+    à_créer = []
+    à_màj = []
+    nb = 0
+    for s in g.multidigraphe.nodes:
+        if nb%500==0: print(f"    {nb} sommets vus")
+        nb += 1
+        lon, lat = g.coords_of_nœud(s)
+        essai = Sommet.objects.filter(id_osm=s).first()
+        if essai is None:
+            s_d = Sommet(id_osm=s, lon=lon, lat=lat)
+            à_créer.append(s_d)
+        else:
+            s_d = essai
+            # màj des coords au cas où...
+            s_d.lon = lon
+            s_d.lat = lat
+            à_màj.append(s_d)
 
-        ## ville des sommets
-        LOG("Ajout de la ville à chaque sommet...")
-        # Ne serait-il pas plus simple de tout supprimer puis tout recréer ?
-        LOG("Sommets créés", bavard=bavard)
-        rel_àcréer = []
-        for s_d in à_créer:
-            rel = Sommet.villes.through(sommet_id=s_d.id, ville_id=ville_d.id)
-            rel_àcréer.append(rel)
-        LOG("Sommets mis à jour", bavard=bavard)
-        for s_d in à_màj:
-            if ville_d not in s_d.villes.all():  # c’est ce test qui est lent a priori
-                rel = Sommet.villes.through(sommet_id=s_d.id, ville_id=ville_d.id)
-                rel_àcréer.append(rel)
-        Sommet.villes.through.objects.bulk_create(rel_àcréer)
+    ## Création/màj des sommets
+    LOG(f"Ajout des {len(à_créer)} nouveaux sommets dans la base")
+    sauv_objets_par_lots(à_créer)
+    LOG(f"Mise à jour des {len(à_màj)} sommets modifiés")
+    Sommet.objects.bulk_update(à_màj, ["lon", "lat"])
 
+    sommets_venant_du_graphe = à_créer+à_màj
 
     ### Arêtes ###
 
@@ -317,12 +302,6 @@ def transfert_graphe(g, ville_d,
             dico_voisins[s] = []
         dico_voisins[s].append((t, a))
 
-    #@mesure_temps("récup_nom", temps, nb_appels)
-    # def récup_noms(arêtes_d, nom):
-    #     """ Renvoie le tuple des a∈arêtes_d qui ont pour nom 'nom'"""
-    #     return [a_d for a_d in arêtes_d if nom == a_d.nom]
-
-    
     #@mesure_temps("correspondance", temps, nb_appels)
     def correspondance(s_d, t_d, gx):
         """
@@ -364,9 +343,6 @@ def transfert_graphe(g, ville_d,
                     if na == va:  # NB: le __eq__ se base sur la géom.
                         à_màj.append((va, na))
                         nouvelles_arêtes.pop(i)
-                        # if va.départ.id_osm == 3206065247 and va.arrivée.id_osm == 7972899167:
-                        #     print(f"Arête reconnue. nouvelles_arêtes={pformat(nouvelles_arêtes)}")
-
                         return None
                 à_supprimer.append(va)
 
@@ -403,18 +379,6 @@ def transfert_graphe(g, ville_d,
         return à_màj, à_garder
     
 
-    #@mesure_temps("remplace_arêtes", temps, nb_appels)
-    # def nelles_arêtes(s_d, t_d, arêtes_x, bavard=0):
-    #     """
-    #     Sortie (Arête list): Arêtes django correspondant aux arêtes nx passées en arg.
-    #     Effet : les arêtes à créer sont ajoutées dans à_créer.
-    #     """
-    #     à_créer = []
-    #     for a_nx in arêtes_x:
-    #         a_d = Arête.of_arête_nx(s_d, t_d, a_nx)
-    #         à_créer.append(a_d)
-    #     return à_créer
-
     LOG("Chargement des arêtes depuis le graphe osmnx", bavard)
     nb = 0
     à_créer = []
@@ -441,55 +405,64 @@ def transfert_graphe(g, ville_d,
 
     LOG(f"Suppression de {len(à_supprimer)} arêtes.", bavard=bavard)
     supprime_tout(à_supprimer)
-    LOG(f"Ajout des {len(à_créer)} nouvelles arêtes dans la base", bavard=bavard)
-
-    # debug
-    # las = Arête.objects.filter(départ__id_osm=3206065247, arrivée__id_osm=7972899167)
-    # print(f"Avant sauv_données : {pformat(tuple(las))}")
-    # input("")
     
+    LOG(f"Ajout des {len(à_créer)} nouvelles arêtes dans la base", bavard=bavard)
     sauv_objets_par_lots(à_créer)  # bulk_create pas possible
-
-    # debug
-    # las = Arête.objects.filter(départ__id_osm=3206065247, arrivée__id_osm=7972899167)
-    # print(f"Après sauv_données : {pformat(tuple(las))}")
-    # input("")
     
     if à_màj:
         LOG(f"Mise à jour des {len(à_màj)} anciennes arêtes", bavard=bavard)
         Arête.objects.bulk_update(à_màj, champs_arêtes_à_màj)
     else:
         LOG("Pas d’arête à mettre à jour", bavard=bavard)
+        
     LOG(f"{len(à_garder)} arêtes conservées")
-
-    #    print(f"{}")
-    # ex d’arête sans sa ville : (3206065247, 7972899167) (id_osm des sommets)
-
     
-    return à_créer, à_màj+à_garder
-    
+    return sommets_venant_du_graphe, à_créer, à_màj+à_garder
 
-# def ajoute_zone_des_arêtes(zone_d, créées, màj):
-#     ### Zone des arête
-#     assert False, "Cette fonction est dépréciée. Passer par ajoute_arêtes_de_ville"
-#     LOG("Ajout de la zone à chaque arête")
-#     nb = 0
-#     ## nouvelles arêtes -> rajouter zone_d mais aussi les éventuelles anciennes zones.
-#     rel_àcréer = []
-#     for a_d in créées:
-#         for z in union([zone_d], intersection(a_d.départ.zone.all(), a_d.arrivée.zone.all())):
-#             rel = Arête.zone.through(arête_id=a_d.id, zone_id=z.id)
-#             rel_àcréer.append(rel)
-#     Arête.zone.through.objects.bulk_create(rel_àcréer)
-#     ## anciennes arêtes mises à jour -> rajouter zone_d et ville_d si pas présente.
-#     rel_àcréer = []
-#     for a_d in màj:
-#         if zone_d not in a_d.zone.all():
-#             rel = Arête.zone.through(arête_id=a_d.id, zone_id=zone_d.id)
-#             rel_àcréer.append(rel)
-#         nb += 1
-#         if nb%1000==0: print(f"    {nb} arêtes traités")
-#     Arête.zone.through.objects.bulk_create(rel_àcréer)
+
+
+def ajoute_ville_à_sommets_et_arêtes(ville, sommets, arêtes, bavard=0):
+    """
+    Entrées:
+       ville (instance de Ville)
+       sommets (itérable de Sommets) : sommets de la ville
+       arêtes (itérable d’Arêtes) : arêtes.
+
+    Précondition : les arêtes et sommets doivent avoir été sauvegardées.
+
+    Effet : ajoute la ville dans les ManyToMany correspondant.
+    """
+    LOG(f"(ajoute_ville_à_sommets_et_arêtes) ville : {ville}. {len(sommets)} sommets et {len(arêtes)} arêtes reçus.\n", bavard=bavard)
+    rel_à_créer = []
+    sommets_à_ignorer = frozenset(ville.sommet_set.all())
+    LOG(f"{len(sommets_à_ignorer)} sommets déjà associés à {ville}.", bavard=bavard)
+    sommets_à_traiter = [s for s in sommets if s not in sommets_à_ignorer]
+    
+    ## Sommets
+    LOG("Ajout de la ville à chaque sommet...")
+    for s_d in sommets_à_traiter:
+        rel = Sommet.villes.through(sommet_id=s_d.id, ville_id=ville.id)
+        rel_à_créer.append(rel)
+    LOG(f"{len(rel_à_créer)} relations à créer pour les sommets.")
+    Sommet.villes.through.objects.bulk_create(rel_à_créer)
+
+    ## Arêtes
+    LOG("Ajout de la ville à chaque sommet...")
+    rel_à_créer = []
+    arêtes_à_ignorer = frozenset(ville.arête_set.all())
+    LOG(f"{len(arêtes_à_ignorer)} arêtes déjà associés à {ville}.", bavard=bavard)
+    arêtes_à_traiter = [
+        a for a in arêtes
+        if a not in arêtes_à_ignorer
+    ]
+    for a in arêtes_à_traiter:
+        rel = Arête.villes.through(arête_id=a.id, ville_id=ville.id)
+        rel_à_créer.append(rel)
+    LOG(f"{len(rel_à_créer)} relations à créer pour les arêtes.")
+    Arête.villes.through.objects.bulk_create(rel_à_créer)
+
+    LOG("fin de l’ajout de la ville aux arêtes et sommets.")
+
 
     
 def ajoute_arêtes_de_ville(ville_d, créées, màj, bavard=0):
@@ -502,25 +475,15 @@ def ajoute_arêtes_de_ville(ville_d, créées, màj, bavard=0):
     
     ## nouvelles arêtes -> rajouter ville_d mais aussi les éventuelles anciennes villes.
     rel_àcréer = []
-    #couples = set()  # juste pour débug
     n = 1
     for a_d in créées:
         villes_de_a = tuple(intersection(a_d.départ.get_villes(), a_d.arrivée.get_villes()))
         for v in villes_de_a:
             rel = Arête.villes.through(arête_id=a_d.id, ville_id=v.id)
-            # if (a_d, v) not in couples:
-            #     couples.add((a_d, v))
-            # else:
-            #     raise RuntimeError(f"Rel déjà créée : {a_d, v}. Ville de l’arête : {villes_de_a}. L’arête était la {n}ième traitée")
             rel_àcréer.append(rel)
             n += 1
-        #assert (a_d, ville_d) in couples
-        # if a_d.départ.id_osm == 3206065247 and a_d.arrivée.id_osm == 7972899167:
-        #     print(f"Arête problématique {a_d} !\n villes : {tuple(villes_de_a)}")
-        #     input("")
+
     LOG(f"Enregistrement des {len(rel_àcréer)} relations pour les nouvelles arêtes.")
-    #assert len(rel_àcréer) == len(set(couples)), "Des relations ont été créées en double"
-    # pprint(tuple(couples[:10])); input("")
     Arête.villes.through.objects.bulk_create(rel_àcréer, batch_size=2000)
     
     ## anciennes arêtes mises à jour -> rajouter ville_d si pas présente.

@@ -1,6 +1,6 @@
 from django.test import TestCase
 from importlib import reload
-from importlib import reload
+from functools import reduce
 from pprint import pprint
 
 import dijk.pour_shell as sh
@@ -27,18 +27,10 @@ ousse = sh.mo.Ville.objects.get(nom_complet="Ousse")
 
 # Create your tests here.
 
-
-def charge_lieux_of_ville():
-    amen.charge_lieux_of_ville(gre, force=True, bavard=3)
-
-    
-def charge_lieux_of_ville_ousse():
-    amen.charge_lieux_of_ville(ousse, force=True, bavard=3)
-
     
 def test_data_gouv(nb=5):
     """
-    Teste adresses_of_liste_lieux sur les np premiers lieux de la base.
+    Teste adresses_of_liste_lieux sur les nb premiers lieux de la base.
     """
     ll = mo.Lieu.objects.all()[:nb]
     pprint(ll)
@@ -48,10 +40,47 @@ def test_data_gouv(nb=5):
             print(f"Pas de result_housenumber pour {l}\n Données reçues :\n{r}")
     return rés
 
-def entrainement():
-    v.g.charge_zone("Pau_agglo")
-    v.g.charge_zone("Grenoble")
-    utils.lecture_tous_les_chemins(sh.v.g, bavard=6)
+
+def sommetsdéconnectés(g):
+
+    départ = list(g.dico_Sommet.keys())[1000]
+    vu = set((départ,))
+    àVisiter = [départ]
+
+    while àVisiter:
+        s = àVisiter.pop()
+        vu.add(s)
+        for t, _ in g.dico_voisins[s]:
+            if t not in vu:
+                àVisiter.append(t)
+    
+    pas_vus = [t for t in g.dico_Sommet.keys() if t not in vu]
+    return pas_vus
+
+def arêtesSortant(g, ens_sommet):
+    """
+    Entrées:
+        g : graphe networkx
+        ens_sommet : ensemble de sommets d’icelui
+    Sortie:
+        liste des arêtes dont le départ est dans ens_sommet mais pas l’arrivée.
+    """
+    res = []
+    for s in ens_sommet:
+        res.extend([(t, la) for t, la in g[s].items if t not in ens_sommet])
+    return res
 
 
-arêtes_pb = mo.Arête.objects.filter(départ__id_osm=3206065247, arrivée__id_osm=7972899167)
+def nomsDesDéconnectés(g):
+    déconnectés = sommetsdéconnectés(g)
+    arêtes_déconnectées = reduce(
+        lambda a, b: a+b,
+        [g.dico_voisins[s] for s in déconnectés if g.dico_voisins[s]],
+        []
+    )
+    return arêtes_déconnectées
+
+
+def lieuxSansArête():
+    return mo.Lieu.objects.filter(arête=None)
+

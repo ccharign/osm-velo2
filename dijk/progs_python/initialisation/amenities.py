@@ -129,8 +129,9 @@ def ajoute_ville_et_rue_manquantes(bavard=1):
     
 def charge_lieux_of_ville(v_d, arbre_a=None, bavard=0, force=False):
     """
-    Récupère sur osm les amenities, shops et tourism de la ville, et remplit les tables TypeLieu et Lieu avec.
-    params:
+    Effet :
+        Récupère sur osm les amenities, shops, leisure et tourism de la ville, et remplit les tables TypeLieu et Lieu avec.
+    Params:
         - force : si True, remplace les lieux déjà présentes.
     """
 
@@ -153,10 +154,14 @@ def charge_lieux_of_ville(v_d, arbre_a=None, bavard=0, force=False):
     
     LOG("Calcul des arêtes les plus proches de chaque Lieu.", bavard=bavard)
     if not arbre_a:
-        z_d = Ville_Zone.objects.filter(ville=v_d).first().zone
-        dossier_données = os.path.join(DONNÉES, str(z_d))
-        chemin = os.path.join(dossier_données, f"arbre_arêtes_{z_d}")
-        arbre_a = QuadrArbreArête.of_fichier(chemin)
+        try:
+            z_d = Ville_Zone.objects.filter(ville=v_d).first().zone
+            dossier_données = os.path.join(DONNÉES, str(z_d))
+            chemin = os.path.join(dossier_données, f"arbre_arêtes_{z_d}")
+            arbre_a = QuadrArbreArête.of_fichier(chemin)
+        except Exception as e:
+            print(f"Erreur dans la récupération de l’arbre des arêtes : {e}")
+            arbre_a = QuadrArbreArête.of_ville(v_d)
         
     for l in lieux_de_la_bonne_ville:
         l.ajoute_arête_la_plus_proche(arbre_a)

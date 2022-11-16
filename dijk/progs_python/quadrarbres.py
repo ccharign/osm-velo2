@@ -284,7 +284,7 @@ class QuadrArbreArête(Quadrarbre):
         
         res.étiquette = a
 
-        le_cos = cos(lat_a*pi/180) # Je considère que c’est le même que pour lat_d.
+        le_cos = cos(lat_a*pi/180)  # Je considère que c’est le même que pour lat_d.
         
         def distance(coords):
             """ Distance entre coords et l’arête a (càd le point de a le plus proche de coords)."""
@@ -332,10 +332,13 @@ class QuadrArbreArête(Quadrarbre):
     
 
     @classmethod
+    def of_ville(cls, v_d):
+        return cls.of_list_darêtes_d(list(v_d.arêtes()))
+
+    
+    @classmethod
     def of_fichier(cls, chemin, bavard=0):
         """
-        Entrée: 
-           d_arête_of_pk : dico qui à sa pk associe l’arête
         """
         tic = perf_counter()
         def arête_of_str(c):

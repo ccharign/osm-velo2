@@ -6,8 +6,7 @@ from itertools import chain
 from django.db import models, close_old_connections
 from dijk.progs_python.params import LOG, DONNÉES
 from dijk.progs_python.lecture_adresse.normalisation0 import partie_commune
-
-from petites_fonctions import distance_euc
+from dijk.progs_python.petites_fonctions import distance_euc
 
 
 def objet_of_dico(
@@ -30,7 +29,6 @@ def objet_of_dico(
        dico_autres_champs (dico str-> str) : idem
        autres_valeurs (dico str->'a) : données à rajouter directement.
        champs_à_traiter (dico str: str × ('a->'b)) : associe à un nom de champ dans d le nom dans cls et une fonction à appliquer aux données. Ces champs ne sont pas facultatifs.
-
 
 
     Sortie : l’objet créé. Une erreur est levée si un champs de champs_obligatoires n’est pas présent dans d.
@@ -105,6 +103,9 @@ class Ville(models.Model):
     def zones(self):
         return (rel.zone for rel in Ville_Zone.objects.filter(ville=self).prefetch_related("zone"))
 
+    def arêtes(self):
+        return self.arête_set.all()
+
     @classmethod
     def of_nom(cls, nom):
         """ Renvoie la ville telle que partie_commune(nom) = ville.nom_norm"""
@@ -128,9 +129,12 @@ class Zone(models.Model):
     """
     nom = models.CharField(max_length=100, unique=True)
     ville_défaut = models.ForeignKey(Ville, on_delete=models.CASCADE)
+
+    class Meta:
+        ordering = ["nom"]
     
     def villes(self):
-        return (rel.ville for rel in Ville_Zone.objects.filter(zone=self).prefetch_related("ville"))
+        return tuple(rel.ville for rel in Ville_Zone.objects.filter(zone=self).prefetch_related("ville"))
 
     # def arêtes(self):
     #     """
@@ -156,6 +160,15 @@ class Zone(models.Model):
             for s in v.sommet_set.all():
                 yield s
 
+                
+    # def quadArbreArêtes(self, bavard=0):
+    #     dossier_données = os.path.join(DONNÉES, str(self))
+    #     chemin = os.path.join(dossier_données, f"arbre_arêtes_{self}")
+    #     LOG(f"Chargement de l’arbre quad des arêtes depuis {chemin}", bavard=bavard)
+    #     return QuadrArbreArête.of_fichier(chemin)
+
+
+    
     def ajoute_ville(self, ville):
         rel = Ville_Zone(ville=ville, zone=self)
         rel.save()
@@ -716,7 +729,7 @@ class Lieu(models.Model):
         """
         Renvoie la chaîne  « nom, ville »
         """
-        return f"{self.nom}, {self.ville}"
+        return f"{self.nom}, {self.adresse}, {self.ville}"
 
     def marqueur_leaflet(self, nomCarte):
         """
