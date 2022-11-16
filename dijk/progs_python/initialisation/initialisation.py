@@ -87,7 +87,7 @@ def supprime_arêtes_en_double():
 def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
     """
     Récupère le graphe grâce à osmnx et le charge dans la base.
-    Une marge de 500m est prise. De sorte que les sommets et arêtes à moins de 500m d’une frontière entre deux villes seront au final associés à ces deux villes.
+    Une marge de 500m est prise. En particulier les sommets et arêtes à moins de 500m d’une frontière entre deux villes seront au final associés à ces deux villes.
     """
 
     ## Récup des graphe via osmnx
