@@ -470,8 +470,14 @@ class Arête(models.Model):
         return formule_pour_correction_longueur(self.longueur, cy, p_détour)
 
 
+    
 
-class Arbre_Arête(models.Model):
+
+class ArbreArête(models.Model):
+    """
+    Enregistre un nœud (interne ou feuille) d’un arbre quad.
+    C’est le père qui est enregistré. Clef étrangère en cascade donc supprimer la racine supprime tout l’arbre.
+    """
 
     # la bbox
     borne_sud = models.FloatField()
@@ -479,15 +485,42 @@ class Arbre_Arête(models.Model):
     borne_nord = models.FloatField()
     borne_est = models.FloatField()
 
-    # pour les feuilles : une arête
-    arête = models.ForeignKey(Arête, on_delete=models.CASCADE, blank=True, default=None, null=True)
+    # Si c’est une feuille : un segment d’Arête
+    # maintennt c’est le segmentqui a l’attribut vers sa feuille
+    #segment = models.ForeignKey(SegmentArête, blank=True, default=None, null=True, on_delete=models.CASCADE)
 
-    # les fils
-    fso = models.ForeignKey(Arbre_Arête, bdank=True, default=None, null=True, on_delete=models.CASCADE)
-    fse = models.ForeignKey(Arbre_Arête, bdank=True, default=None, null=True, on_delete=models.CASCADE)
-    fno = models.ForeignKey(Arbre_Arête, bdank=True, default=None, null=True, on_delete=models.CASCADE)
-    fne = models.ForeignKey(Arbre_Arête, bdank=True, default=None, null=True, on_delete=models.CASCADE)
-    
+    # Le père
+    père = models.ForeignKey("self", null=True, related_name="fils", on_delete=models.CASCADE)
+    #f1 = models.ForeignKey("self", blank=True, default=None, null=True, on_delete=models.CASCADE, related_name="père")
+    #f2 = models.ForeignKey("self", blank=True, default=None, null=True, on_delete=models.CASCADE)
+    #f3 = models.ForeignKey(ArbreArête, blank=True, default=None, null=True, on_delete=models.CASCADE)
+    #f4 = models.ForeignKey(ArbreArête, blank=True, default=None, null=True, on_delete=models.CASCADE)
+
+    def bbox(self):
+        return (self.borne_sud, self.borne_ouest, self.borne_nord, self.borne_est)
+
+    def get_fils(self):
+        return self.fils.all()
+
+
+class SegmentArête(models.Model):
+    """
+    Enregistre un segment d’une arête. Ce sera une feuille de l’arbre d’Arêtes.
+    NB: les clefs étrangères sont en cascade, donc supprimer un segment supprime tout ce qu’il y a au-dessus dans l’arbre.
+    """
+    # l’Arête complète contenant le segment
+    arête = models.ForeignKey(Arête, on_delete=models.CASCADE, blank=True, default=None, null=True)
+    # départ
+    d_lon = models.FloatField()
+    d_lat = models.FloatField()
+    # arrivée
+    a_lon = models.FloatField()
+    a_lat = models.FloatField()
+
+    feuille = models.ForeignKey(ArbreArête, on_delete=models.CASCADE, related_name="segment")
+
+
+
 
 class Chemin_d(models.Model):
     """

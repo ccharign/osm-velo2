@@ -8,7 +8,7 @@ from time import perf_counter
 from pprint import pprint, pformat
 
 from django.db import close_old_connections, transaction
-from dijk.models import Ville, Zone, Cache_Adresse, Ville_Zone, Sommet, Rue, Arête, Lieu
+from dijk.models import Ville, Zone, Cache_Adresse, Ville_Zone, Sommet, Rue, Arête, Lieu, ArbreArête, SegmentArête
 from django.db.models import Count
 
 from dijk.progs_python.params import DONNÉES, RACINE_PROJET
@@ -19,8 +19,8 @@ from petites_fonctions import chrono, LOG, supprime_objets_par_lots
 
 import initialisation.vers_django as vd
 from quadrarbres import QuadrArbreSommet, QuadrArbreArête
-from initialisation.amenities import charge_lieux_of_ville, ajoute_ville_et_rue_manquantes
-from initialisation.communes import charge_villes
+from initialisation.amenities import charge_lieux_of_ville#, ajoute_ville_et_rue_manquantes
+#from initialisation.communes import charge_villes
 
 ### Fonctions pour (ré)initialiser ou ajouter une nouvelle ville ou zone.
 
@@ -34,6 +34,20 @@ from initialisation.communes import charge_villes
 #     return res
 
 
+def quadArbreArêtesDeLaBase():
+    """
+    Crée l’arbre de toutes les arêtes de la base et l’enregistre dans celle-ci.
+    """
+    print("Création de l’arbre de toute la base")
+    print(" Récupération de toutes les arêtes")
+    l = list(Arête.objects.all())
+    #assert all(isinstance(a, Arête) for a in l), f"Un truc n’est pas une arête {l[0]}"
+    print("Création de l’arbre (type QuadrArbreArête)")
+    arbre = QuadrArbreArête.of_list_darêtes_d(l)
+    print("Sauvegarde de l’arbre dans la base")
+    arbre.sauv_dans_base(ArbreArête, SegmentArête)
+
+
 def quadArbreAretesDeZone(z_d, sauv=True, bavard=0):
     """
     Entrée : z_d (mo.Zone)
@@ -43,8 +57,9 @@ def quadArbreAretesDeZone(z_d, sauv=True, bavard=0):
     """
     
     if sauv:
+        #  Création et sauvegarde de l’arbre
         l = list(z_d.arêtes())
-        LOG(f"Villes de la zone {z_d} : {tuple(z_d.villes())}\n {len(l)} arêtes.")
+        LOG(f"Villes de la zone {z_d} : {tuple(z_d.villes())}\n {len(l)} arêtes.", bavard=bavard)
         tic = perf_counter()
         res = QuadrArbreArête.of_list_darêtes_d(l)
         rép = os.path.join(DONNÉES, z_d.nom)
@@ -52,7 +67,17 @@ def quadArbreAretesDeZone(z_d, sauv=True, bavard=0):
         res.sauv(os.path.join(rép, f"arbre_arêtes_{z_d}"))
         print(f"Arbre sauvegardé dans {os.path.join(rép, f'arbre_arêtes_{z_d}')}")
         chrono(tic, f"création et sauvegarde de l’arbre quad de la zone {z_d}", bavard=bavard)
+
+        # print("Maintenant sauvegarde dans la base")
+        # à_supprimer = SegmentArête.objects.filter(arête__pk__in=l)
+        # print(f"Élimination des {len(à_supprimer)} anciennes feuilles, et leurs parents par cascade")
+        # à_supprimer.delete()
+        # print("Sauvegarde")
+        # res.sauv_dans_base(ArbreArête, SegmentArête)
+        # print("Sauvegarde de l’arbre finie.")
+        
     else:
+        #  Chargement de l’arbre
         dossier_données = os.path.join(DONNÉES, str(z_d))
         chemin = os.path.join(dossier_données, f"arbre_arêtes_{z_d}")
         tic = perf_counter()

@@ -9,7 +9,8 @@ import dijk.models as mo
 import dijk.views as v
 
 import progs_python.initialisation.initialisation as ini
-from progs_python.initialisation.initialisation import charge_fichier_cycla_défaut as charge_cycla_defaut, ajoute_ville, charge_villes, crée_zone
+from progs_python.initialisation.initialisation import charge_fichier_cycla_défaut as charge_cycla_defaut, ajoute_ville, crée_zone
+from progs_python.initialisation.communes import charge_villes
 import progs_python.utils as utils
 import progs_python.initialisation.amenities as amen
 from progs_python.utils import lecture_tous_les_chemins, réinit_cycla

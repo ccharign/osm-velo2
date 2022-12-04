@@ -1,10 +1,10 @@
 
 # -*- coding:utf-8 -*-
+"""
+Pour remplir la base de données.
+Ces fonctions seront cachées dans la console.
+"""
 
-
-##################################################
-### Transférer les données dans la base Django ###
-##################################################
 
 import re
 import json

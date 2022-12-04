@@ -1,6 +1,10 @@
 
 À FAIRE :
 
+charger les bib_js dans la page d’entrée
+
+Désorienter les arêtes dans l’arbre
+
 Supprimer folium de carte_cycla pour pouvoir le supprimer définitivement.
 
 Y-a-t-il encore des requête overpass dans la lecture des étapes ?

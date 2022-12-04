@@ -1,7 +1,6 @@
 # -*- coding:utf-8 -*-
 
 
-
 """
 Ces petites fonctions ne doivent pas dépendre d’autres modules, à part params.py, pour ne pas créer de pb de dépendance.
 
@@ -14,7 +13,7 @@ import os
 import datetime
 import re
 
-import django.db.transaction as transaction
+from django.db import transaction
 # import geopy
 # import geopy.distance
 from params import D_MAX_POUR_NŒUD_LE_PLUS_PROCHE, LOG
@@ -123,13 +122,20 @@ def union_liste(l):
         for y in x:
             yield y
 
-            
+
 def intersection(t1, t2):
     """ Itérateur sur t1 ∩ t2."""
     for x in t1:
         if x in t2:
             yield x
 
+
+
+            
+
+########################################
+#### Modif de la base par lots ####
+########################################
 
 
 def morceaux_tableaux(t, taille):
@@ -163,7 +169,7 @@ def sauv_objets_par_lots(l, taille_lots=2000):
         print(f"{n} objets sauvegardés")
 
 
-            
+
 ###################
 ### Benchmarking###
 ###################
@@ -248,6 +254,24 @@ def multi_remplace(d, texte):
     return regexp.sub(lambda m:remp[re.escape(m.group(0))], texte)
 
 
+########################################
+#### Manip de tableaux ####
+########################################
+
+def fusionne_tab_de_tab(t1, t2):
+    """
+    Entrées:
+       t1 et t2 tableaux de tableaux
+    Effet:
+        Pour tout i dans [|0, max(len(t1), len(t2))[|, rajoute les éléments de t2[i] dans t1[i]. (Cases créées dans t1 si besoin)
+    """
+    dl = len(t2)-len(t1)
+    if dl > 0:
+        t1.extend([[] for _ in range(dl)])
+    for i in range(len(t2)):
+        t1[i].extend(t2[i])
+
+
 def ajouteDico(d, clef, val):
     """d est un dico de listes.
        Ajoute val à la liste de clef donnée si pas encore présente."""
@@ -255,7 +279,15 @@ def ajouteDico(d, clef, val):
         if val not in d[clef]:
             d[clef].append(val)
     else:
-            d[clef]=[val]
+        d[clef] = [val]
+
+
+
+def zip_dico(clefs, vals):
+    """
+    Sortie : dico contenant les clefs de clefs, associées aux valeurs de vals, respectivement.
+    """
+    return {c: v for (c, v) in zip(clefs, vals)}
 
 # geopy.geocoders.options.default_user_agent = "pau à vélo"
 # localisateur = geopy.geocoders.Nominatim(user_agent="pau à vélo")

@@ -173,6 +173,7 @@ def charge_lieux_of_ville(v_d, arbre_a=None, bavard=0, force=False):
     
 
 def charge_lieux_of_zone(z_t, force=False):
+    close_old_connections()
     z_d = Zone.objects.get(nom=z_t)
     for rel in z_d.ville_zone_set.all():
         charge_lieux_of_ville(rel.ville, force=force)

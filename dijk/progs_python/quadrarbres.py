@@ -1,11 +1,15 @@
 # -*- coding:utf-8 -*-
+
 """
 Arbres quaternaires. Le type correspond plutôt aux R-arbres, mais la fonction of_list crée a priori quatre fils par nœud.
 """
-from petites_fonctions import distance_euc, R_TERRE, chrono, deuxConséc
+
+
 from time import perf_counter
 from math import cos, pi
 from dijk.models import Arête
+from petites_fonctions import distance_euc, R_TERRE, chrono, deuxConséc, fusionne_tab_de_tab, zip_dico, sauv_objets_par_lots
+
 
 def produit_scalaire(u, v):
     return sum(ui*vi for (ui, vi) in zip(u, v))
@@ -27,7 +31,7 @@ def union_bb(lbb):
 class Quadrarbre():
     """
     Attributs :
-        fils (liste de Quadarbres)
+        fils (tuple de Quadarbres)
         bb (float, float, float, float) : bounding box minimale contenant les nœuds de l’arbre. (s,o,n,e)
              Pour une feuille, ouest==est et nord==sud.
         étiquette : doit être munie d’une méthode « coords » qui renvoie (lon, lat).
@@ -40,7 +44,7 @@ class Quadrarbre():
         """
         self.fils = None
         self.bb = None
-        #self.étiquette = None
+        self.étiquette = None
         self.distance = None
 
     def __lt__(self, autre):
@@ -81,8 +85,8 @@ class Quadrarbre():
             ne = est[len(est)//2:]
 
             res = cls()
-            res.fils = [cls.of_list(sl) for sl in (so,no,ne,se) if sl]
-            res.bb = union_bb([f.bb for f in res.fils])
+            res.fils = tuple(cls.of_list(sl) for sl in (so, no, ne, se) if sl)
+            res.bb = union_bb(tuple(f.bb for f in res.fils))
             return res
 
     
@@ -155,7 +159,7 @@ class Quadrarbre():
             for m, fils in sorted( ((f.minorant_de_d_min(coords), f) for f in self.fils) ):  # On commence par le fils qui a le plus probablement le nœud le plus proche.
                 if m < d_min:
                     s, dist = fils.étiquette_la_plus_proche(coords)
-                    if dist<d_min:
+                    if dist < d_min:
                         d_min, res = dist, s
             return res, d_min
 
@@ -250,9 +254,9 @@ class ArêteSimplifiée():
         pk (int) : pk de l’arête django contenant celle-ci.
     """
     def __init__(self, départ, arrivée, pk):
-        self.départ=départ
-        self.arrivée=arrivée
-        self.pk=pk
+        self.départ = départ
+        self.arrivée = arrivée
+        self.pk = pk
 
     def __str__(self):
         lon_d, lat_d = self.départ
@@ -273,6 +277,9 @@ class QuadrArbreArête(Quadrarbre):
 
     @classmethod
     def feuille(cls, a):
+        """
+        Entrée : a (Arête ou ArêteSimplifiée)
+        """
         
         lon_d, lat_d = a.départ
         lon_a, lat_a = a.arrivée
@@ -280,7 +287,7 @@ class QuadrArbreArête(Quadrarbre):
         o, e = sorted((lon_d, lon_a))
         s, n = sorted((lat_d, lat_a))
         res = cls()
-        res.bb=(s,o,n,e)
+        res.bb = (s, o, n, e)
         
         res.étiquette = a
 
@@ -321,7 +328,7 @@ class QuadrArbreArête(Quadrarbre):
     @classmethod
     def of_list_darêtes_d(cls, l):
         """
-        Entrée : l, liste de mo.Arête. En pratique les objets de l doivent avoir une méthode « géométrie » qui renvoie une liste de coords, et un attribut pk (clef primaire).
+        Entrée : l, liste de mo.Arête. Plus précisèment, les objets de l doivent avoir une méthode « géométrie » qui renvoie une liste de coords, et un attribut pk (clef primaire).
         Sortie : arbre quad contenant les ArêteSimplifiée obtenues en découpant les Arêtes selon leur géom.
         """
         lf = []
@@ -342,7 +349,7 @@ class QuadrArbreArête(Quadrarbre):
         """
         tic = perf_counter()
         def arête_of_str(c):
-            lon_d, lat_d, lon_a,lat_a,pk = c.split(";")
+            lon_d, lat_d, lon_a, lat_a, pk = c.split(";")
             dép = tuple(map(float, (lon_d, lat_d)))
             arr = tuple(map(float, (lon_a, lat_a)))
             return ArêteSimplifiée(dép, arr, int(pk))
@@ -354,11 +361,71 @@ class QuadrArbreArête(Quadrarbre):
         chrono(tic, f"Chargement de l’arbre des arêtes depuis {chemin}", bavard=bavard)
         return res
 
+
+    def vers_django(self, crée_nœud, crée_segment, père):
+        """
+        Entrées:
+            crée_nœud : fonction à utiliser pour créer un nœud. En pratique, models.ArbreArête.
+            crée_segment : fonction à utiliser pour créer un segment d’arête. Sera mis dans le champ « segment » des feuilles. En pratique models.SegmentArête.
+            père (models.ArbreArête ou None) : le père du nœud actuel.
+
+        Sortie :
+            (feuiles, nœuds), où:
+                   - nœuds contient les objets Django qui représentent l’arbre. Il faut encore les sauver étage par étage à cause des contraintes de clef étrangère.  Tableau de tableaux où les nœuds sont rangés par profondeur. Racine en tête.
+                   - feuilles contient les segments d’arête nécessaires aux feuilles : à sauver en dernier.
+        """
+
+        nœuds = []
+        feuilles = []
+
+        données = zip_dico(["borne_sud", "borne_ouest", "borne_nord", "borne_est"], self.bb)  # Pour envoyer à classe_nœud pour créer le nœud actuel.
+        données["père"] = père
+        nœud_actuel = crée_nœud(**données)
+        nœuds.append([nœud_actuel])
+        
+        if self.fils is None:
+            # Cas d’une arête : on crée un segment d’arête qu’on relie à nœud_actuel
+            d_lon, d_lat = self.étiquette.départ
+            a_lon, a_lat = self.étiquette.arrivée
+            feuilles.append(crée_segment(
+                arête_id=self.étiquette.pk,  # self.étiquette est une instance de ArêteSimplifiée. pk est la pk de l’arête complète la contenant.
+                d_lon=d_lon, d_lat=d_lat,
+                a_lon=a_lon, a_lat=a_lat,
+                feuille=nœud_actuel
+            ))
+
+        else:
+            for f in self.fils:
+                feuilles_de_f, nœuds_des_f = f.vers_django(crée_nœud, crée_segment, nœud_actuel)
+                fusionne_tab_de_tab(nœuds, [[]]+nœuds_des_f)
+                feuilles.extend(feuilles_de_f)
+            
+        return feuilles, nœuds
+
+
+    def sauv_dans_base(self, crée_nœud, crée_segment):
+        """
+        Effet : sauve l’arbre dans la base.
+        """
+        print("Création des objets")
+        feuilles, nœuds = self.vers_django(crée_nœud, crée_segment, None)
+        print(f"Fini. {len(feuilles)} feuilles et {len(nœuds)} nœuds.\n")
+        breakpoint()
+
+        print("Sauvegarde des nœuds")
+        num_étage = 0
+        for étage in nœuds:
+            print(f"étage {num_étage}")
+            num_étage += 1
+            sauv_objets_par_lots(étage)
+            
+        print("Sauvegarde des segments d’arêtes des feuilles")
+        sauv_objets_par_lots(feuilles)
     
-    def arête_la_plus_proche(self, coords):
-        """
-        Sortie : (arête django la plus proche de coords, distance)
-        """
-        a, d = self.étiquette_la_plus_proche(coords)
-        a_d = Arête.objects.get(pk=a.pk)
-        return a_d, d
+    # def arête_la_plus_proche(self, coords):
+    #     """
+    #     Sortie : (arête django la plus proche de coords, distance)
+    #     """
+    #     a, d = self.étiquette_la_plus_proche(coords)
+    #     a_d = Arête.objects.get(pk=a.pk)
+    #     return a_d, d
