@@ -6,6 +6,7 @@ from django.db.models import Max, Min, Subquery
 from django.db import transaction, close_old_connections
 
 from dijk.models import Rue, Ville, Arête, Sommet, Cache_Adresse, Zone, Ville_Zone
+import dijk.models as mo
 
 import recup_donnees as rd
 from params import LOG, DONNÉES, LOG_PB
@@ -13,7 +14,7 @@ from petites_fonctions import deuxConséc, chrono, distance_euc
 import dijkstra
 from lecture_adresse.arbresLex import ArbreLex
 import lecture_adresse.normalisation as no
-from quadrarbres import QuadrArbreArête
+#from quadrarbres import QuadrArbreArête
 
 
 class VillePasTrouvée(Exception):
@@ -161,10 +162,12 @@ class Graphe_django():
             print("C’est bon")
             
             ## Arbre quad des arêtes:
-            chemin = os.path.join(dossier_données, f"arbre_arêtes_{z_d}")
+            #chemin = os.path.join(dossier_données, f"arbre_arêtes_{z_d}")
             tic = perf_counter()
-            LOG(f"Chargement de l’arbre quad des arêtes depuis {chemin}", bavard=bavard)
-            self.arbre_arêtes[z_d.nom] = QuadrArbreArête.of_fichier(chemin)
+            #LOG(f"Chargement de l’arbre quad des arêtes depuis {chemin}", bavard=bavard)
+            LOG("Chargement de l’arbre des arêtes dans la base")
+            #self.arbre_arêtes[z_d.nom] = QuadrArbreArête.of_fichier(chemin)
+            self.arbre_arêtes[z_d.nom] = mo.ArbreArête.objects.get(pk=1)  # En théorie, l’élément 1 est la racine
             tic = chrono(tic, "Chargement de l’arbre quad des arêtes", force=True)
                 
                 

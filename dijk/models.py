@@ -8,6 +8,8 @@ from dijk.progs_python.params import LOG, DONNÉES
 from dijk.progs_python.lecture_adresse.normalisation0 import partie_commune
 from dijk.progs_python.petites_fonctions import distance_euc
 
+#from dijk.progs_python.quadrarbres import fonction_distance_pour_feuille, Quadrarbre
+import dijk.progs_python.quadrarbres as qa
 
 def objet_of_dico(
         cls, d,
@@ -122,115 +124,6 @@ class Ville_Ville(models.Model):
             models.UniqueConstraint(fields=["ville1", "ville2"], name="Pas de relation ville_ville en double."),
         ]
 
-        
-class Zone(models.Model):
-    """
-    Une zone délimite une zone dont le graphe sera mis en mémoire au chargement.
-    """
-    nom = models.CharField(max_length=100, unique=True)
-    ville_défaut = models.ForeignKey(Ville, on_delete=models.CASCADE)
-
-    class Meta:
-        ordering = ["nom"]
-    
-    def villes(self):
-        return tuple(rel.ville for rel in Ville_Zone.objects.filter(zone=self).prefetch_related("ville"))
-
-    # def arêtes(self):
-    #     """
-    #     Générateur des arêtes de self.
-    #     Beaucoup trop lent !
-    #     """
-    #     for v in self.villes():
-    #         for a in v.arête_set.all():
-    #             yield a
-
-    def arêtes(self):
-        """
-        Sortie (queryset) : les arêtes des villes de la zone
-        """
-        villes = self.villes()
-        return Arête.objects.filter(villes__in=villes).prefetch_related("départ", "arrivée")
-        
-    def sommets(self):
-        """
-        Générateur des sommets de self.
-        """
-        for v in self.villes():
-            for s in v.sommet_set.all():
-                yield s
-
-                
-    # def quadArbreArêtes(self, bavard=0):
-    #     dossier_données = os.path.join(DONNÉES, str(self))
-    #     chemin = os.path.join(dossier_données, f"arbre_arêtes_{self}")
-    #     LOG(f"Chargement de l’arbre quad des arêtes depuis {chemin}", bavard=bavard)
-    #     return QuadrArbreArête.of_fichier(chemin)
-
-
-    
-    def ajoute_ville(self, ville):
-        rel = Ville_Zone(ville=ville, zone=self)
-        rel.save()
-                
-    def __str__(self):
-        return self.nom
-    
-    def __hash__(self):
-        return self.pk
-
-    
-    def sauv_csv(self, chemin_csv=DONNÉES) -> str:
-        """
-        Renvoie un csv contenant tous les chemins de la table.
-        """
-        res = ""
-        nb = 0
-        for c in Chemin_d.objects.filter(zone=self):
-            ligne = "|".join(map(str, (c.ar, c.p_détour, c.étapes_texte, c.interdites_texte, c.utilisateur, c.zone)))
-            res += ligne + "\n"
-            nb += 1
-        nom_fichier = os.path.join(chemin_csv, f"sauv_chemins_{self}")
-        with open(nom_fichier, "w", encoding="utf-8") as sortie:
-            sortie.write(res)
-        LOG(f"Les {nb} chemins de la zone {self} ont été sauvegardés dans {nom_fichier}")
-        return res
-
-    
-    def charge_csv(self, chemin=DONNÉES):
-        """
-        Charge le csv contenant les chemins
-        """
-        nom_fichier = os.path.join(chemin, f"sauv_chemins_{self}")
-        with open(nom_fichier, encoding="utf8") as entrée:
-            nb = 0
-            for ligne in entrée:
-                ar, p_détour, étapes_texte, interdites_texte, utilisateur, zone = ligne.strip().split("|")
-                ch = Chemin_d(
-                    ar = ar=="True",
-                    p_détour=float(p_détour),
-                    étapes_texte=étapes_texte,
-                    interdites_texte=interdites_texte,
-                    utilisateur=utilisateur,
-                    zone=Zone.objects.get(nom=zone)
-                )
-                if not ch.déjà_présent()[0]:
-                    ch.save()
-                nb += 1
-            LOG(f"{nb} chemins ont été chargés")
-        
-
-
-class Ville_Zone(models.Model):
-    """
-    Table d’association
-    """
-    ville = models.ForeignKey(Ville, on_delete=models.CASCADE)
-    zone = models.ForeignKey(Zone, on_delete=models.CASCADE)
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=["zone", "ville"], name="Pas de relation en double.")
-        ]
 
 
 class Sommet(models.Model):
@@ -473,11 +366,14 @@ class Arête(models.Model):
     
 
 
-class ArbreArête(models.Model):
+class ArbreArête(models.Model, qa.Quadrarbre):
     """
     Enregistre un nœud (interne ou feuille) d’un arbre quad.
     C’est le père qui est enregistré. Clef étrangère en cascade donc supprimer la racine supprime tout l’arbre.
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     # la bbox
     borne_sud = models.FloatField()
@@ -485,22 +381,72 @@ class ArbreArête(models.Model):
     borne_nord = models.FloatField()
     borne_est = models.FloatField()
 
+    @property
+    def bb(self):
+        """
+        Pour compatibilité avec la classe quadrarbres.QuadrArbre. Renvoie la bb du nœuds courant.
+        """
+        return self.borne_sud, self.borne_ouest, self.borne_nord, self.borne_est
+
+    @property
+    def étiquette(self):
+        return self.segment().arêteSimplifiée()
+    
+
     # Si c’est une feuille : un segment d’Arête
-    # maintennt c’est le segmentqui a l’attribut vers sa feuille
+    # maintenant c’est le segment qui a l’attribut vers sa feuille
     #segment = models.ForeignKey(SegmentArête, blank=True, default=None, null=True, on_delete=models.CASCADE)
 
     # Le père
-    père = models.ForeignKey("self", null=True, related_name="fils", on_delete=models.CASCADE)
+    père = models.ForeignKey("self", null=True, related_name="related_manager_fils", on_delete=models.CASCADE)
     #f1 = models.ForeignKey("self", blank=True, default=None, null=True, on_delete=models.CASCADE, related_name="père")
     #f2 = models.ForeignKey("self", blank=True, default=None, null=True, on_delete=models.CASCADE)
     #f3 = models.ForeignKey(ArbreArête, blank=True, default=None, null=True, on_delete=models.CASCADE)
     #f4 = models.ForeignKey(ArbreArête, blank=True, default=None, null=True, on_delete=models.CASCADE)
 
+    @property
     def bbox(self):
         return (self.borne_sud, self.borne_ouest, self.borne_nord, self.borne_est)
 
-    def get_fils(self):
-        return self.fils.all()
+    def distance(self, coords: (float, float)):
+        """
+        Précondition : self est une feuille.
+        Sortie (float) : distance entre le point de coordonnées coords et le segment représenté par self.
+        """
+        if not self.fils:
+            seg = self.segment()
+            return qa.fonction_distance_pour_feuille(seg.départ, seg.arrivée, coords)
+        else:
+            raise ValueError(f"{self} n’est pas une feuille.")
+
+        
+    @property                   # getter
+    def fils(self):
+        """
+        Sortie : queryset des fils de self
+        """
+        return self.related_manager_fils.all()
+
+    
+    def segment(self):
+        """
+        Précondition : self est une feuille.
+        Renvoie l’objet SegmentArête associé à self.
+        """
+        segments = tuple(self.related_manager_segment.all())
+        if len(segments) == 1:
+            return segments[0]
+        else:
+            raise ValueError("{self} ne semble pas être une feuille. J’ai obtenu {len(segments)} segments associés. Ce sont {segments}.")
+
+        
+    def arête_la_plus_proche(self, coords: (float, float)):
+        """
+        Sortie : (arête django la plus proche de coords, distance)
+        """
+        a, d = self.étiquette_la_plus_proche(coords)  # a est une ArêteSimplifiée
+        a_d = Arête.objects.get(pk=a.pk)
+        return a_d, d
 
 
 class SegmentArête(models.Model):
@@ -509,7 +455,7 @@ class SegmentArête(models.Model):
     NB: les clefs étrangères sont en cascade, donc supprimer un segment supprime tout ce qu’il y a au-dessus dans l’arbre.
     """
     # l’Arête complète contenant le segment
-    arête = models.ForeignKey(Arête, on_delete=models.CASCADE, blank=True, default=None, null=True)
+    arête = models.ForeignKey(Arête, on_delete=models.CASCADE, blank=True, related_name="segments", default=None, null=True)
     # départ
     d_lon = models.FloatField()
     d_lat = models.FloatField()
@@ -517,8 +463,132 @@ class SegmentArête(models.Model):
     a_lon = models.FloatField()
     a_lat = models.FloatField()
 
-    feuille = models.ForeignKey(ArbreArête, on_delete=models.CASCADE, related_name="segment")
+    feuille = models.ForeignKey(ArbreArête, on_delete=models.CASCADE, related_name="related_manager_segment")
 
+    @property
+    def départ(self):
+        return self.d_lon, self.d_lat
+
+    @property
+    def arrivée(self):
+        return self.a_lon, self.a_lat
+
+    def arêteSimplifiée(self):
+        """
+        Renvoie l’objet ArêteSimplifiée correspondant.
+        """
+        return qa.ArêteSimplifiée(self.départ, self.arrivée, self.arête.pk)
+
+    
+class Zone(models.Model):
+    """
+    Une zone délimite une zone dont le graphe sera mis en mémoire au chargement.
+    """
+    nom = models.CharField(max_length=100, unique=True)
+    ville_défaut = models.ForeignKey(Ville, on_delete=models.CASCADE)
+    arbre_arêtes = models.ForeignKey(ArbreArête, on_delete=models.SET_NULL, null=True)
+
+    class Meta:
+        ordering = ["nom"]
+    
+    def villes(self):
+        return tuple(rel.ville for rel in Ville_Zone.objects.filter(zone=self).prefetch_related("ville"))
+
+    # def arêtes(self):
+    #     """
+    #     Générateur des arêtes de self.
+    #     Beaucoup trop lent !
+    #     """
+    #     for v in self.villes():
+    #         for a in v.arête_set.all():
+    #             yield a
+
+    def arêtes(self):
+        """
+        Sortie (queryset) : les arêtes des villes de la zone
+        """
+        villes = self.villes()
+        return Arête.objects.filter(villes__in=villes).prefetch_related("départ", "arrivée")
+        
+    def sommets(self):
+        """
+        Générateur des sommets de self.
+        """
+        for v in self.villes():
+            for s in v.sommet_set.all():
+                yield s
+
+                
+    # def quadArbreArêtes(self, bavard=0):
+    #     dossier_données = os.path.join(DONNÉES, str(self))
+    #     chemin = os.path.join(dossier_données, f"arbre_arêtes_{self}")
+    #     LOG(f"Chargement de l’arbre quad des arêtes depuis {chemin}", bavard=bavard)
+    #     return QuadrArbreArête.of_fichier(chemin)
+
+
+    
+    def ajoute_ville(self, ville):
+        rel = Ville_Zone(ville=ville, zone=self)
+        rel.save()
+                
+    def __str__(self):
+        return self.nom
+    
+    def __hash__(self):
+        return self.pk
+
+    
+    def sauv_csv(self, chemin_csv=DONNÉES) -> str:
+        """
+        Renvoie un csv contenant tous les chemins de la table.
+        """
+        res = ""
+        nb = 0
+        for c in Chemin_d.objects.filter(zone=self):
+            ligne = "|".join(map(str, (c.ar, c.p_détour, c.étapes_texte, c.interdites_texte, c.utilisateur, c.zone)))
+            res += ligne + "\n"
+            nb += 1
+        nom_fichier = os.path.join(chemin_csv, f"sauv_chemins_{self}")
+        with open(nom_fichier, "w", encoding="utf-8") as sortie:
+            sortie.write(res)
+        LOG(f"Les {nb} chemins de la zone {self} ont été sauvegardés dans {nom_fichier}")
+        return res
+
+    
+    def charge_csv(self, chemin=DONNÉES):
+        """
+        Charge le csv contenant les chemins
+        """
+        nom_fichier = os.path.join(chemin, f"sauv_chemins_{self}")
+        with open(nom_fichier, encoding="utf8") as entrée:
+            nb = 0
+            for ligne in entrée:
+                ar, p_détour, étapes_texte, interdites_texte, utilisateur, zone = ligne.strip().split("|")
+                ch = Chemin_d(
+                    ar = ar=="True",
+                    p_détour=float(p_détour),
+                    étapes_texte=étapes_texte,
+                    interdites_texte=interdites_texte,
+                    utilisateur=utilisateur,
+                    zone=Zone.objects.get(nom=zone)
+                )
+                if not ch.déjà_présent()[0]:
+                    ch.save()
+                nb += 1
+            LOG(f"{nb} chemins ont été chargés")
+        
+
+
+class Ville_Zone(models.Model):
+    """
+    Table d’association
+    """
+    ville = models.ForeignKey(Ville, on_delete=models.CASCADE)
+    zone = models.ForeignKey(Zone, on_delete=models.CASCADE)
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["zone", "ville"], name="Pas de relation en double.")
+        ]
 
 
 

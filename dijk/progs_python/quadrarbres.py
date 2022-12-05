@@ -7,7 +7,6 @@ Arbres quaternaires. Le type correspond plutôt aux R-arbres, mais la fonction o
 
 from time import perf_counter
 from math import cos, pi
-from dijk.models import Arête
 from petites_fonctions import distance_euc, R_TERRE, chrono, deuxConséc, fusionne_tab_de_tab, zip_dico, sauv_objets_par_lots
 
 
@@ -28,24 +27,61 @@ def union_bb(lbb):
     )
 
 
+def fonction_distance_pour_feuille(départ: (float, float), arrivée: (float, float), coords: (float, float)):
+    """
+    Entrée : début et fin d’un segment d’arête. coords d’un autre point.
+    Sortie : distance entre le point et le segment.
+    """
+    
+    lon_d, lat_d = départ
+    lon_a, lat_a = arrivée
+
+    le_cos = cos(lat_a*pi/180)  # Je considère que c’est le même que pour lat_d.
+    vec_ad = ((lon_d-lon_a)*le_cos, lat_d-lat_a)
+    
+
+    x, y = coords
+    vec_ac = ((x-lon_a)*le_cos, y-lat_a)
+
+
+    if produit_scalaire(vec_ad, vec_ac) <= 0:
+        # Le point de a le plus proche est son arrivée
+        return distance_euc(coords, (lon_a, lat_a))
+
+    elif produit_scalaire(vec_ad, ((x-lon_d)*le_cos, y-lat_d)) >= 0:
+        # Le point le plus proche est le départ de a.
+        return distance_euc(coords, (lon_d, lat_d))
+
+    else:
+        # Le point le plus proche est dans le segment a.
+        # La distance au carré est AC**2 - <AB|AC>/AD**2
+        return (
+            produit_scalaire(vec_ac, vec_ac)
+            - produit_scalaire(vec_ad, vec_ac)**2 / produit_scalaire(vec_ad, vec_ad)
+        ) ** .5 * pi/180 * R_TERRE
+
+
+
+    
+
 class Quadrarbre():
     """
     Attributs :
         fils (tuple de Quadarbres)
         bb (float, float, float, float) : bounding box minimale contenant les nœuds de l’arbre. (s,o,n,e)
-             Pour une feuille, ouest==est et nord==sud.
         étiquette : doit être munie d’une méthode « coords » qui renvoie (lon, lat).
         distance (pour les feuilles) : fonction qui a une coords associe la distance à la feuille.
     """
 
     def __init__(self):
         """
-        Renvoie un arbre vide
+        Fonction init bidon car cette classe ne sera jamais utilisée seule : que des sous-classes.
         """
-        self.fils = None
-        self.bb = None
-        self.étiquette = None
-        self.distance = None
+        pass
+        # self.fils = None
+        # self.bb = None
+        # self.étiquette = None
+        # self.distance = None
 
     def __lt__(self, autre):
         """
@@ -59,8 +95,8 @@ class Quadrarbre():
         """
         Entrée :
             l, liste d’objets à mettre dans l’abre.
-            f_lon, fonction qui a un objet associe la longitude selon laquelle trier.
-            f_lat, fonction qui a un objet associe la latitude selon laquelle trier.
+            f_lon, fonction qui a un objet de l associe la longitude selon laquelle trier.
+            f_lat, fonction qui a un objet de l associe la latitude selon laquelle trier.
             feuille, fonction qui a un objet associe la feuille correspondante.
         Sortie (Quadrarbre) : arbre quad contenant les éléments l.
         """
@@ -103,11 +139,13 @@ class Quadrarbre():
         Sortie : en O(1) un majorant de la plus petite distance entre coords et un élément de l’arbre. (Pour le branch and bound de la recherche de nœud le plus proche.)
         Basé sur le fait qu’il existe au moins un objet sur chaque bord de la bbox.
         """
+
+        s, o, n, e = self.bb
         # Il existe au moins un élément sur chaque bord de la bounding box
-        dno = distance_euc(coords, (self.ouest, self.nord))
-        dso = distance_euc(coords, (self.ouest, self.sud))
-        dne = distance_euc(coords, (self.est, self.nord))
-        dse = distance_euc(coords, (self.est, self.sud))
+        dno = distance_euc(coords, (o, n))
+        dso = distance_euc(coords, (o, s))
+        dne = distance_euc(coords, (e, n))
+        dse = distance_euc(coords, (e, s))
         
         # Il existe un élément sur le bord ouest
         d1 = max(dno, dso)
@@ -121,31 +159,31 @@ class Quadrarbre():
         return min(d1, d2, d3, d4)
     
     
-    def minorant_de_d_min(self, coords: (float,float)):
+    def minorant_de_d_min(self, coords: (float, float)):
         """
         Sortie : en O(1), un minorant de la distance min entre coords et un nœud de l’arbre.
         C’est la distance entre coords et la bounding box de self.
         """
-        s,o,n,e = self.bb
-        lon, lat = coords  #lon : ouest-est
+        s, o, n, e = self.bb
+        lon, lat = coords  # lon : ouest-est
         res_carré = 0
         le_cos = cos(lat*pi/180)
         
         if lon < o:
-            res_carré+=(o-lon)**2 * le_cos
+            res_carré += (o-lon)**2 * le_cos
         elif lon > e:
-            res_carré+=(lon-e)**2 * le_cos
+            res_carré += (lon-e)**2 * le_cos
         if lat < s:
-            res_carré+=(s-lat)**2
+            res_carré += (s-lat)**2
         elif lat > n:
-            res_carré+=(lat-n)**2
+            res_carré += (lat-n)**2
         
         return res_carré**.5 * R_TERRE * pi/180
 
     
     # exemple : Barthou/SaintLouis (-0.37054131408589847, 43.295030439425645)
     # (-0.371292129834015, 43.29535229996814)
-    def étiquette_la_plus_proche(self, coords: (float,float)):
+    def étiquette_la_plus_proche(self, coords: (float, float)):
         """
         Sortie (étiquette×float) : (étiquette, distance) de la feuille plus la proche de coords.
         """
@@ -194,15 +232,15 @@ class Quadrarbre():
         with open(chemin) as entrée:
             def aux():
                 
-                ligne=entrée.readline().strip()
+                ligne = entrée.readline().strip()
                 
-                if ligne[0]=="F":
+                if ligne[0] == "F":
                     s,o,n,e, c = ligne[1:].split(',')
                     étiquette = récup_objet(c)
                     return feuille(étiquette)
                 
-                elif ligne[0]=="N":
-                    s,o,n,e, nb_fils = ligne[1:].split(',')
+                elif ligne[0] == "N":
+                    s, o, n, e, nb_fils = ligne[1:].split(',')
                     res = cls()
                     res.bb = tuple(map(float, (s,o,n,e)))
                     res.fils = [aux() for _ in range(int(nb_fils))]
@@ -223,7 +261,7 @@ class QuadrArbreSommet(Quadrarbre):
     """
     
     def __init__(self):
-        super().__init__()
+        pass
                 
 
     @classmethod
@@ -231,9 +269,9 @@ class QuadrArbreSommet(Quadrarbre):
         """ feuille contenant le sommet s."""
         lon, lat = s.coords()
         res = cls()
-        res.bb = lat, lon, lat, lon # bbox réduite à un point.
+        res.bb = lat, lon, lat, lon  # bbox réduite à un point.
         res.étiquette = s
-        res.distance = lambda c:distance_euc(s.coords(), c)
+        res.distance = lambda c: distance_euc(s.coords(), c)
         return res
 
     
@@ -267,18 +305,22 @@ class ArêteSimplifiée():
 class QuadrArbreArête(Quadrarbre):
     """
     Prévu pour contenir des arêtes.
-    En pratique, les étiquettes doivent avoir un attribut « départ » et une méthode « arrivée », qui renvoient des objets ayant une méthode « coords ».
+    En pratique, les étiquettes doivent avoir un attribut « départ » et « arrivée », qui renvoient des objets ayant un attribut « coords ».
     Les arêtes sont supposées être des segments : découper au préalable en cas de géométrie plus complexe.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        self.fils = None
+        self.bb = None
+        self.distance = None
+        self.etiquette = None
 
 
     @classmethod
     def feuille(cls, a):
         """
-        Entrée : a (Arête ou ArêteSimplifiée)
+        Entrée : a (ArêteSimplifiée)
+        Sortie : la feuille correspondante. càd un objet de cls dont fils vaut None et étiquette vaut a. Muni également de la méthode distance qui prend des coords et renvoie la distance entre celle-ci et l’arête.
         """
         
         lon_d, lat_d = a.départ
@@ -291,32 +333,7 @@ class QuadrArbreArête(Quadrarbre):
         
         res.étiquette = a
 
-        le_cos = cos(lat_a*pi/180)  # Je considère que c’est le même que pour lat_d.
-        
-        def distance(coords):
-            """ Distance entre coords et l’arête a (càd le point de a le plus proche de coords)."""
-            vec_ad = ((lon_d-lon_a)*le_cos, lat_d-lat_a)
-            x, y = coords
-            vec_ac = ((x-lon_a)*le_cos, y-lat_a)
-
-
-            if produit_scalaire(vec_ad, vec_ac) <= 0:
-                # Le point de a le plus proche est son arrivée
-                return distance_euc(coords, (lon_a, lat_a))
-
-            elif produit_scalaire(vec_ad, ((x-lon_d)*le_cos, y-lat_d)) >= 0:
-                # Le point le plus proche est le départ de a.
-                return distance_euc(coords, (lon_d, lat_d))
-
-            else:
-                # Le point le plus proche est dans le segment a.
-                # La distance au carré est AC**2 - <AB|AC>/AD**2
-                return (
-                    produit_scalaire(vec_ac, vec_ac)
-                    - produit_scalaire(vec_ad, vec_ac)**2 / produit_scalaire(vec_ad, vec_ad)
-                ) ** .5 * pi/180 * R_TERRE
-
-        res.distance = distance
+        res.distance = lambda coords: fonction_distance_pour_feuille(a.départ, a.arrivée, coords)
         return res
 
     
@@ -410,7 +427,6 @@ class QuadrArbreArête(Quadrarbre):
         print("Création des objets")
         feuilles, nœuds = self.vers_django(crée_nœud, crée_segment, None)
         print(f"Fini. {len(feuilles)} feuilles et {len(nœuds)} nœuds.\n")
-        breakpoint()
 
         print("Sauvegarde des nœuds")
         num_étage = 0

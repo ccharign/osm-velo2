@@ -47,6 +47,7 @@ def quadArbreArêtesDeLaBase():
     print("Sauvegarde de l’arbre dans la base")
     arbre.sauv_dans_base(ArbreArête, SegmentArête)
 
+    
 
 def quadArbreAretesDeZone(z_d, sauv=True, bavard=0):
     """
