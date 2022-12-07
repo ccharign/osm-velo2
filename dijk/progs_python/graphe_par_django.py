@@ -167,7 +167,7 @@ class Graphe_django():
             #LOG(f"Chargement de l’arbre quad des arêtes depuis {chemin}", bavard=bavard)
             LOG("Chargement de l’arbre des arêtes dans la base")
             #self.arbre_arêtes[z_d.nom] = QuadrArbreArête.of_fichier(chemin)
-            self.arbre_arêtes[z_d.nom] = mo.ArbreArête.objects.get(pk=1)  # En théorie, l’élément 1 est la racine
+            self.arbre_arêtes[z_d.nom] = mo.ArbreArête.racine()
             tic = chrono(tic, "Chargement de l’arbre quad des arêtes", force=True)
                 
                 

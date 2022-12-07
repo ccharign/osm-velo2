@@ -427,6 +427,64 @@ class ArbreArête(models.Model, qa.Quadrarbre):
         """
         return self.related_manager_fils.all()
 
+
+    def ancètre(self):
+        """
+        Renvoie le nœud le plus haut duquel descend self.
+        """
+        if self.père is None:
+            return self
+        else:
+            return self.père.ancètre()
+
+        
+    def sous_arbre_contenant(self, l):
+        """
+        Renvoie le plus petit sous-arbre de self contenant tous les éléments de l.
+        Algo semi-naïf : on rassemble les frères entre eux tant que possible avant de lancer l’algo naïf (qui est dans la classe générale QuadrArbre)
+        """
+        print(f"(sous_arbre_contenant) Reçu une liste de {len(l)} feuiles.")
+
+        fini = False
+        fils = l
+        étage = 0
+        
+        
+        while not fini:
+            # Invariant : fils ne doit pas contenir la racine. Càd tous les éléments de fils ont un père.
+            
+            pères = {}          # dico père-> fils dans fils
+            for f in fils:
+                p = f.père
+                if p not in pères: pères[p] = []
+                pères[p].append(f)
+                
+            # On garde à présent les pères ayant plusieurs fils et les fils uniques
+            fini = True
+            fils = []
+            for (p, fs) in pères.items():
+                if len(fs) == 1:  # fils unique
+                    fils.append(fs[0])
+                else:
+                    if p.père is None:
+                        print(f"Je suis tombé sur la racine {p}")
+                        return p
+                    fils.append(p)
+                    fini = False
+            print(f"Étage {étage} fini. {len(fils)} nœuds restant.")
+            étage+=1
+        print(f"Après rassemblement des frères il reste {len(fils)} nœuds. Je lance l’algo naïf.")
+        return self.sous_arbre_contenant_naïf(fils)
+                
+            
+
+    @classmethod
+    def racine(cls):
+        """
+        Renvoie la racine de l’arbre de toute la base. Obtenu en remontant depuis le premier élément de la base.
+        """
+        return cls.objects.all().first().ancètre()
+
     
     def segment(self):
         """
@@ -451,8 +509,7 @@ class ArbreArête(models.Model, qa.Quadrarbre):
 
 class SegmentArête(models.Model):
     """
-    Enregistre un segment d’une arête. Ce sera une feuille de l’arbre d’Arêtes.
-    NB: les clefs étrangères sont en cascade, donc supprimer un segment supprime tout ce qu’il y a au-dessus dans l’arbre.
+    Enregistre un segment d’une arête. Sera attaché à une feuille de l’arbre d’Arêtes.
     """
     # l’Arête complète contenant le segment
     arête = models.ForeignKey(Arête, on_delete=models.CASCADE, blank=True, related_name="segments", default=None, null=True)

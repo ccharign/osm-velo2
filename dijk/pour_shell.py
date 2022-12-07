@@ -52,7 +52,7 @@ def mise_à_jour():
 print("""
 - charge_villes()  (attention au s !) pour charger les données INSEE des villes de France.
 - ajoute_ville(nom:str, code_postal:int, zone:str) pour ajuter une ville à la zone indiquée.
-- crée_zone(liste_villes: list[str*int], zone:str) initialise une zone avec une *liste* de (ville, code_postal)
+- crée_zone(liste_villes: list[(str, int)], zone:str) initialise une zone avec une *liste* de (ville, code_postal)
 
 Dans les deux fonctions ci-dessus, les codes postaux ne servent que si le nom est ambigü.
 

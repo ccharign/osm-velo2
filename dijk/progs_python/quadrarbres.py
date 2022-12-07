@@ -132,6 +132,28 @@ class Quadrarbre():
             return 1
         else:
             return sum(len(f) for f in self.fils)
+
+        
+    def bbox_contient(self, bb: (float, float, float, float)) -> bool:
+        """
+        Indique si bb est inclue dans self.bb
+        """
+        s, o, n, e = bb
+        ss, os, ns, es = self.bb
+        return ss <= s and n <= ns and os <= o and e <= es
+
+    
+    def __contains__(self, nœud):
+        """
+        Indique si nœud figure parmis les descendants de self.
+        """
+        if self == nœud:
+            return True
+        else:
+            for f in self.fils:
+                if f.bbox_contient(nœud.bb) and nœud in f:
+                    return True
+            return False
         
     
     def majorant_de_d_min(self, coords: (float, float)):
@@ -219,7 +241,19 @@ class Quadrarbre():
                     # Feuille
                     sortie.write( f"F{','.join(map(str, a.bb))},{a.étiquette}\n"  )
             aux(self)
-    
+
+
+    def sous_arbre_contenant_naïf(self, l: list):
+        """
+        Renvoie le plus petit sous-arbre de self contenant les éléments de l.
+        Algo naïf...
+        """
+        print(f"Arrivée au nœud {self}")
+        for f in self.fils:
+            if all(n in f for n in l):
+                return f.sous_arbre_contenant_naïf(l)
+        return self
+
     
     @classmethod
     def of_fichier(cls, chemin: str, récup_objet, feuille):
@@ -438,10 +472,4 @@ class QuadrArbreArête(Quadrarbre):
         print("Sauvegarde des segments d’arêtes des feuilles")
         sauv_objets_par_lots(feuilles)
     
-    # def arête_la_plus_proche(self, coords):
-    #     """
-    #     Sortie : (arête django la plus proche de coords, distance)
-    #     """
-    #     a, d = self.étiquette_la_plus_proche(coords)
-    #     a_d = Arête.objects.get(pk=a.pk)
-    #     return a_d, d
+
