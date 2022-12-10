@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "dijk/base.html" %}
 
 
 
@@ -28,12 +28,6 @@
       </div>
     </div>
 
-    <script>
-      let form = document.getElementById("recherche");
-      let url_api = "{% url 'complète rue' %}";
-      autoComplète("départ", url_api, form);
-      autoComplète("arrivée", url_api, form);
-    </script>
 
     <br><br>
 
@@ -89,3 +83,14 @@
 
   
   {% endblock %}
+
+
+  {% block script %}
+      <script>
+      let form = document.getElementById("recherche");
+      let url_api = "{% url 'complète rue' %}";
+      autoComplète("départ", url_api, form);
+      autoComplète("arrivée", url_api, form);
+    </script>
+
+      {% endblock script %}

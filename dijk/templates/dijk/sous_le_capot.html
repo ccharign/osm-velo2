@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "dijk/base.html" %}
 {% block title %} Sous le capot {% endblock %}
 
 {% block contenu %}
@@ -13,7 +13,7 @@
   </li>
 
   
-  <li> Les adresses sont récupérées sur <a href="https://adresse.data.gouv.fr/base-adresse-nationale">la base nationale d’adresses</a> lorsqu’elles contiennent un numéro de rue, directement dans le graphe lorsqu’elle contiennent un nom de rue sans numéro, et sur le moteur de recherche Nominatim d’openstreetmap dans les cas restants (bâtiment public, bar, …)</li>
+  <li> Les adresses sont récupérées sur <a href="https://adresse.data.gouv.fr/base-adresse-nationale">la base nationale d’adresses</a> lorsqu’elles contiennent un numéro de rue, directement dans le graphe lorsqu’elle contiennent un nom de rue sans numéro, et sur openstreetmap dans les cas restants (bâtiment public, bar, …)</li>
 </ul>
 
 <h2>Les maths !</h2>

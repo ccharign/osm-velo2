@@ -1,81 +1,10 @@
+// Pour la gestion des marqueurs sur la carte:
+// Création lors d’un clic, déplacement, suppression et mise à jour des champs du formulaire
 
 
 
-
-
-
-////////////////////////////////////
-// Gestion des clics sur la carte //
-////////////////////////////////////
-
-
-
-
-// Mettre en entrée la liste des champs du dico à afficher ?
-
-
-/**
- * Rajoute à la carte « carte » un marqueur avec un popup contenant les infos.
- * @param {number} lon 
- * @param {number} lat 
- * @param {dico} infos 
- * @param {L.map} carte 
- */
-function marqueur_avec_popup(lon, lat, infos, carte){
-
-    var marqueur = L.marker(
-        [lat, lon]
-    ).addTo(carte);
-        
-//     var popup = L.popup({"maxWidth": "100%"});
-//     var html_à_mettre = $(`<div style="width: 100.0%; height: 100.0%;">{contenu}</div>`)[0];
-//     popup.setContent(html_à_mettre);
-//     marqueur.bindPopup(popup);
-    //
-
-    var contenu ="";
-    for (champ of ["nom", "horaires", "tél" ]){
-	if (infos[champ]){
-	    contenu=contenu+infos[champ]+"<br>";
-	}
-    };
-
-    contenu= `<div class="pop">${contenu}</div>`;
-    
-    //D’après le tuto de leaflet:
-    marqueur.bindPopup(contenu);
-    
-}
-
-
-var nbÉtapes = 0;
-var nbArêtesInterdites = 0;
-
-
-
-// Ordre des events handler:
-// https://stackoverflow.com/questions/2360655/jquery-event-handlers-always-execute-in-order-they-were-bound-any-way-around-t
-// [name] is the name of the event "click", "mouseover", ..
-// same as you'd pass it to bind()
-// [fn] is the handler function
-// $.fn.bindFirst = function(name, fn) {
-//     // bind as you normally would
-//     // don't want to miss out on any jQuery magic
-//     this.on(name, fn);
-
-//     // Thanks to a comment by @Martin, adding support for
-//     // namespaced events too.
-//     this.each(function() {
-//         var handlers = $._data(this, 'events')[name.split('.')[0]];
-//         // take out the handler we just inserted from the end
-//         var handler = handlers.pop();
-//         // move it at the beginning
-//         handlers.splice(0, 0, handler);
-//     });
-// };
-
-
-
+let nbÉtapes = 0;
+let nbArêtesInterdites = 0;
 
 
 function gèreLesClics(carte){
@@ -121,8 +50,6 @@ function addMarker(e, carte) {
 	nvÉtape(e.latlng, carte);
     }
 }
-
-
 
 
 function nvÉtape(latlng, carte){
@@ -203,16 +130,4 @@ function dragedMarker() {
     //}`;
     const marker=this;
     document.getElementById(marker.champ_du_form).value = marker.getLatLng().lng+","+ marker.getLatLng().lat;
-}
-
-
-function addHidden(theForm, key, value) {
-    // Create a hidden input element, and append it to the form:
-    console.log(`Je crée un hidden. this : ${this}, form: ${theForm}, key:${key}`);
-    var input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = key; // 'the key/name of the attribute/field that is sent to the server
-    input.value = value;
-    input.id = key;
-    theForm.appendChild(input);
 }

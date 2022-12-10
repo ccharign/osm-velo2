@@ -4,13 +4,13 @@
 function markerHtmlStyles(coul){
     return `
   background-color: ${coul};
-  width: 3rem;
-  height: 3rem;
+  width: 2rem;
+  height: 2rem;
   display: block;
-  left: -1.5rem;
-  top: -1.5rem;
+  left: -1rem;
+  top: -1rem;
   position: relative;
-  border-radius: 3rem 3rem 0;
+  border-radius: 2rem 2rem 0;
   transform: rotate(45deg);
   border: 1px solid gray`;
 }
@@ -23,6 +23,42 @@ function mon_icone(coul){
 	popupAnchor: [0, -36],
 	html: `<span style="${markerHtmlStyles(coul)}" />`
     });
+}
+
+
+
+// Mettre en entrée la liste des champs du dico à afficher ?
+/**
+ * Rajoute à la carte « carte » un marqueur avec un popup contenant les infos.
+ * @param {number} lon 
+ * @param {number} lat 
+ * @param {dico} infos 
+ * @param {L.map} carte 
+ */
+function marqueur_avec_popup(lon, lat, infos, carte){
+
+    var marqueur = L.marker(
+        [lat, lon]
+    ).addTo(carte);
+        
+//     var popup = L.popup({"maxWidth": "100%"});
+//     var html_à_mettre = $(`<div style="width: 100.0%; height: 100.0%;">{contenu}</div>`)[0];
+//     popup.setContent(html_à_mettre);
+//     marqueur.bindPopup(popup);
+    //
+
+    var contenu ="";
+    for (champ of ["nom", "horaires", "tél" ]){
+	if (infos[champ]){
+	    contenu=contenu+infos[champ]+"<br>";
+	}
+    };
+
+    contenu= `<div class="pop">${contenu}</div>`;
+    
+    //D’après le tuto de leaflet:
+    marqueur.bindPopup(contenu);
+    
 }
 
 
@@ -135,29 +171,3 @@ function ajoute_fonctionalités_à_la_carte(carte){
 
 
 
-
-function voir_si_géoLoc(){
-    //if (navigator.geolocalisation){
-	form_recherche = document.getElementById("recherche");
-	addHidden(form_recherche, "localisation", (0.,0.));
-	navigator.geolocation.getCurrentPosition(
-	    pos => àLaGéoloc(pos, form_recherche),
-	    () => pasDeGéoloc(form_recherche)
-	);
-    //}
-}
-
-
-function àLaGéoloc(pos, form){
-    // Met à jour le champ "localisation" du form
-    texte = texte_of_latLng(pos);
-    console.log("Position obtenue : " + texte );
-    form.elements["localisation"].value = texte;
-}
-
-
-function pasDeGéoloc(form){
-    // Supprime la chekbox « partir de ma position »
-    console.log("Pas de géoloc");
-    form_recherche.getElementsByClassName("checkbox")[0].remove();
-}
