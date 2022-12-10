@@ -86,11 +86,16 @@
 
 
   {% block script %}
-      <script>
-      let form = document.getElementById("recherche");
-      let url_api = "{% url 'complète rue' %}";
-      autoComplète("départ", url_api, form);
-      autoComplète("arrivée", url_api, form);
-    </script>
+  <script>
+    const form = document.getElementById("recherche");
 
-      {% endblock script %}
+    // autocomplétion
+    const url_api = "{% url 'complète rue' %}";
+    autoComplète("départ", url_api, form);
+    autoComplète("arrivée", url_api, form);
+
+    // géolocalisation
+    init_géoLoc(form);
+  </script>
+
+  {% endblock script %}

@@ -15,6 +15,7 @@ function markerHtmlStyles(coul){
   border: 1px solid gray`;
 }
 
+
 function mon_icone(coul){
     return L.divIcon({
 	className: "my-custom-pin",
@@ -37,7 +38,7 @@ function mon_icone(coul){
  */
 function marqueur_avec_popup(lon, lat, infos, carte){
 
-    var marqueur = L.marker(
+    const marqueur = L.marker(
         [lat, lon]
     ).addTo(carte);
         
@@ -47,10 +48,10 @@ function marqueur_avec_popup(lon, lat, infos, carte){
 //     marqueur.bindPopup(popup);
     //
 
-    var contenu ="";
+    let contenu ="";
     for (champ of ["nom", "horaires", "tél" ]){
 	if (infos[champ]){
-	    contenu=contenu+infos[champ]+"<br>";
+	    contenu += infos[champ]+"<br>";
 	}
     };
 
@@ -80,10 +81,10 @@ function texte_of_latLng(ll){
 
 function carteIci(){
     // Crée une carte à la position actuelle
-    // Tuile de cyclosm
+    // Tuiles de cyclosm
     // Sortie : l’objet map créé
 
-    var laCarte = L.map('laCarte', {fullscreenControl: true}).fitWorld();
+    const laCarte = L.map('laCarte', {fullscreenControl: true}).fitWorld();
 
     L.tileLayer(
 	'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
@@ -129,7 +130,7 @@ function carte_bb(s,o,n,e){
     // Tuile osm normales avec une couche cyclosm_lite
     // Sortie : la carte créé
 
-    var laCarte = L.map('laCarte', {fullscreenControl: true}).fitBounds([[s,o],[n,e]]);
+    const laCarte = L.map('laCarte', {fullscreenControl: true}).fitBounds([[s,o],[n,e]]);
 
     // tuiles osm de base
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -158,7 +159,7 @@ function ajoute_fonctionalités_à_la_carte(carte){
     // Ajoute le bouton géoloc et l’échelle à la carte passée en arg.
     
     // Bouton de géoloc
-    var locate_control = L.control.locate(
+    const locate_control = L.control.locate(
         {"locateOptions": {
 	    "enableHighAccuracy": true,
 	    "keepCurrentZoomLevel": true

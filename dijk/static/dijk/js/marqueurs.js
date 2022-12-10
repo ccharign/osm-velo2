@@ -34,15 +34,14 @@ function récupMarqueurs(texte, fonction) {
     // Effet : transforme chaque coord en un objet latLng puis lance fonction dessus.
     for (coords_t of (texte.split(";"))){
 	if (coords_t){
-	    coord =  latLng_of_texte(coords_t);
-	    fonction(coord);
+	    fonction(latLng_of_texte(coords_t));
 	}
     }
 }
 
-
+// Appelé lors d’un clic sur la carte leaflet.
+// Crée une étape si clic normal, une étape interdite si ctrl-clic
 function addMarker(e, carte) {
-    // Appelé lors d’un clic sur la carte leaflet.
     if (e.originalEvent.ctrlKey){
 	nvArêteInterdite(e.latlng, carte);
     }
@@ -72,9 +71,10 @@ function nvÉtape(latlng, carte){
     // event draged marker
     marker.on("dragend", dragedMarker);
 
-    form = document.getElementById("relance_rapide");
-    addHidden(form, marker.champ_du_form, latlng.lng +","+ latlng.lat);
+    const form_relance = document.getElementById("relance_rapide");
+    addHidden(form_relance, marker.champ_du_form, latlng.lng +","+ latlng.lat);
 }
+
 
 
 function nvArêteInterdite(latlng, carte){
@@ -97,11 +97,11 @@ function nvArêteInterdite(latlng, carte){
     marker.on("dragend", dragedMarker);
     
     // Ajout du champ hidden au formulaire
-    form = document.getElementById("relance_rapide");
-    addHidden(form, marker.champ_du_form, latlng.lng +","+ latlng.lat);
+    const form_relance = document.getElementById("relance_rapide");
+    addHidden(form_relance, marker.champ_du_form, latlng.lng +","+ latlng.lat);
 }
 
-
+// Sera mis dans les popup
 const buttonRemove =
   '<button type="button" class="remove">Supprimer</button>';
 

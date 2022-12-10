@@ -1,30 +1,32 @@
 
-// Fonctions diverses, qui ne requierent pas de bib externe.
+// Fonctions diverses, qui ne requièrent pas de bib externe.
 
-function voir_si_géoLoc(){
+
+// Rajoute un champ caché avec la géoloc
+function init_géoLoc(form){
     //if (navigator.geolocalisation){
-	form_recherche = document.getElementById("recherche");
-	addHidden(form_recherche, "localisation", (0.,0.));
+	// form_recherche = document.getElementById("recherche");
+	addHidden(form, "localisation", (0.,0.));
 	navigator.geolocation.getCurrentPosition(
-	    pos => àLaGéoloc(pos, form_recherche),
-	    () => pasDeGéoloc(form_recherche)
+	    pos => àLaGéoloc(pos, form),
+	    () => pasDeGéoloc(form)
 	);
     //}
 }
 
 
-function àLaGéoloc(pos, form){
     // Met à jour le champ "localisation" du form
-    texte = texte_of_latLng(pos);
+function àLaGéoloc(pos, form){
+    const texte = texte_of_latLng(pos);
     console.log("Position obtenue : " + texte );
     form.elements["localisation"].value = texte;
 }
 
 
-function pasDeGéoloc(form){
     // Supprime la chekbox « partir de ma position »
+function pasDeGéoloc(form){
     console.log("Pas de géoloc");
-    form_recherche.getElementsByClassName("checkbox")[0].remove();
+    form.getElementsByClassName("checkbox")[0].remove();
 }
 
 
