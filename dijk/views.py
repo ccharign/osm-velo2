@@ -16,7 +16,7 @@ from django.db.models import Subquery, Q
 from dijk import forms
 
 from .progs_python.params import LOG
-from .progs_python.petites_fonctions import chrono, bbox_autour
+from .progs_python.petites_fonctions import chrono, bbox_autour, get_full_class_name
 
 from .progs_python.chemins import Chemin, ÉtapeArête
 
@@ -24,7 +24,7 @@ from .progs_python.lecture_adresse.recup_noeuds import PasTrouvé
 from .progs_python.lecture_adresse.normalisation0 import prétraitement_rue
 from .progs_python import recup_donnees
 from .progs_python.apprentissage import n_lectures
-from .progs_python.bib_vues import bool_of_checkbox, énumération_texte, récup_head_body_script, récup_données, z_é_i_d
+from .progs_python.bib_vues import bool_of_checkbox, énumération_texte, récup_head_body_script, récup_données, z_é_i_d, chaîne_avec_points_virgule_renversée
 
 from .progs_python.utils import dessine_cycla, itinéraire_of_étapes
 
@@ -36,18 +36,10 @@ from .models import Chemin_d, Zone, Rue, Ville_Zone, Cache_Adresse, CacheNomRue,
 chrono(tic0, "Chargement total\n\n", bavard=3)
 
 
+
+
+
 g = Graphe_django()
-
-
-
-
-
-# https://stackoverflow.com/questions/18176602/how-to-get-the-name-of-an-exception-that-was-caught-in-python
-def get_full_class_name(obj):
-    module = obj.__class__.__module__
-    if module is None or module == str.__class__.__module__:
-        return obj.__class__.__name__
-    return module + '.' + obj.__class__.__name__
 
 
 
@@ -101,20 +93,23 @@ def recherche(requête, zone_t):
     """
     Vue pour une recherche de base.
     """
+    
     données = récup_données(requête.GET, forms.ChoixZone, validation_obligatoire=False)
     if "zone" in données and données["zone"]:
-        z_d = g.charge_zone(données["zone"].nom)
+        z_d = g.charge_zone(données["zone"].nom)  # Charge la zone si besoin
         requête.session["zone"] = z_d.nom
         requête.session["zone_id"] = z_d.pk
     elif "zone" in requête.session:
-        z_d = g.charge_zone(requête.session["zone"])
+        z_d = g.charge_zone(requête.session["zone"])  # Charge la zone si besoin
         données["zone"] = z_d
     else:
+        # Si pas de zone dispo, renvoie à la page de choix de la zone.
         return choix_zone(requête)
     
     if requête.GET and "arrivée" in requête.GET:
         form_recherche = forms.Recherche(données)
         if form_recherche.is_valid():
+            # Formulaire rempli et valide
             données.update(form_recherche.cleaned_data)
             print(f"(views.recherche) départ (données) : {données['départ']}")
             z_d, étapes, étapes_interdites, ps_détour = z_é_i_d(g, données)
@@ -142,6 +137,7 @@ def relance_rapide(requête):
     Relance un calcul à partir du résultat du formulaire de relance rapide.
     Les étapes sont dans des champs dont le nom contient 'étape_coord', sous la forme 'lon;lat'
     Les arêtes interdites sont dans des champs dont le nom contient 'interdite_coord', sous la même forme.
+    Le champ « étapes » du formulaire n’est pas utilisé ! Seulement les étapes venant d’un clic sur la carte.
     """
 
     données = récup_données(requête.GET, forms.RelanceRapide)
@@ -177,17 +173,6 @@ def relance_rapide(requête):
 
 
 
-def chaîne_avec_points_virgule_renversée(c: str):
-    """
-    c contient des point-virgules
-    Sortie : la même en inversant l’ordre des morceaux séparés par les points-virgules.
-    """
-    return ";".join(
-        reversed(
-            c.split(";")
-        )
-    )
-
 def trajet_retour(requête):
     """
     Renvoie le résultat pour le trajet retour de celui reçu dans la requête.
@@ -220,58 +205,26 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_interdites=[
     """
     Entrées : ps_détour (float list ou str)
               z_d (models.Zone)
-              noms_étapes (str list)
-              rues_interdites (str list), noms des rues interdites.
               étapes (chemin.Étape list or None), si présent sera utilisé au lieu de noms_étapes. Doit contenir aussi départ et arrivée. Et dans ce cas, interdites sera utilisé au lieu de rues_interdites.
-              interdites (chemin.Étape list or None), ne passer par aucune arête inclue dans une de ces étapes.
-              données : données du formulaire précédent : sera utilisé pour préremplir les formulaires de relance de recherche et d’enregistrement.
+              étapes_interdites (chemin.Étape list or None), ne passer par aucune arête inclue dans une de ces étapes.
+              données : données du formulaire précédent. Sera utilisé pour préremplir les formulaires de relance de recherche et d’enregistrement.
     """
     
     if isinstance(ps_détour, str):
         ps_détour = list(map( lambda x: float(x)/100, requête.GET["pourcentage_détour"].split(";")) )
         
     try:
-        #stats, chemin, noms_étapes, rues_interdites, carte = itinéraire_of_étapes(
         données.update(itinéraire_of_étapes(
-            étapes, ps_détour, g, z_d, requête.session,
+            étapes, ps_détour, g, z_d,
             rajouter_iti_direct=len(étapes) > 2,
             étapes_interdites=étapes_interdites,
-            bavard=1,
-            où_enregistrer="dijk/templates/dijk/iti_folium.html"
+            bavard=1
         ))
         noms_étapes = données["noms_étapes"]
         print(f"(calcul_itinéraires) nom des étapes {noms_étapes}")
         rues_interdites = données["rues_interdites"]
         
-        
-        ## Création du gabarit
 
-        # suffixe = "".join(noms_étapes) + "texte_étapes" + "".join(rues_interdites)
-
-        # vieux_fichier = glob("dijk/templates/dijk/résultat_itinéraire_complet**")
-        # for f in vieux_fichier:
-        #     os.remove(f)
-        # head, body, script = récup_head_body_script("dijk/templates/dijk/iti_folium.html")
-
-        # nom_fichier_html = f"dijk/résultat_itinéraire_complet{suffixe}"
-        # if len(nom_fichier_html) > 230:
-        #     nom_fichier_html = nom_fichier_html[:230]
-        # nom_fichier_html += ".html"
-
-        # with open(os.path.join("dijk/templates", nom_fichier_html), "w") as sortie:
-        #     sortie.write(f"""
-        #     {{% extends "dijk/résultat_itinéraire_sans_carte.html" %}}
-        #     {{% block head_début %}}
-        #     {head}
-        #     {{% load static %}}
-        #     <script src="{{% static 'dijk/leaflet-providers.js' %}}" type="text/javascript" > </script>
-        #     {{% endblock %}}
-        #     {{% block carte %}} {body} {{% endblock %}}
-        #     {{% block script %}} <script> {script} </script> {{% endblock %}}
-        #     """)
-
-            
-        ## Chargement du gabarit
 
         def texte_marqueurs(l_é, supprime_début_et_fin=False):
             """
@@ -297,10 +250,10 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_interdites=[
                         "marqueurs_i": texte_marqueurs(étapes_interdites),  # Sera mis en hidden dans le formulaire relance_rapide
                         "marqueurs_é": texte_marqueurs(étapes, supprime_début_et_fin=True),  # idem
                         })
-        LOG(f"(views.calcul_itinéraires) marqueurs_i : {données['marqueurs_i']}")
+
         texte_étapes_inter = énumération_texte(noms_étapes[1:-1])
 
-        coords_départ = g.coords_of_id_osm(données["itinéraires"][-1].liste_sommets[0])  # coords du début de l’iti avec le plus grand p_détour 
+        coords_départ = g.coords_of_id_osm(données["itinéraires"][-1].liste_sommets[0])  # coords du début de l’iti avec le plus grand p_détour
         coords_arrivée = g.coords_of_id_osm(données["itinéraires"][-1].liste_sommets[-1])
         marqueurs_à_rajouter = [
             étapes[0].marqueur_leaflet(coords_départ),
@@ -308,20 +261,17 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_interdites=[
         ]
         
         return render(requête,
-                      #nom_fichier_html,
                       "dijk/résultat_itinéraire_sans_carte.html",
                       {**données,
                        **{
                            "texte_étapes_inter": texte_étapes_inter,
                            "rues_interdites": énumération_texte(rues_interdites),
-                           #"chemin": chemin.str_joli(),
                            "post_préc": données,
                            "relance_rapide": forms.RelanceRapide(initial=données),
                            "enregistrer_contrib": forms.EnregistrerContrib(initial=données),
                            "trajet_retour": forms.ToutCaché(initial=données),
                            "fouine": requête.session.get("fouine", None),
                            "js_itinéraires": [iti.vers_leaflet() for iti in données["itinéraires"]] + marqueurs_à_rajouter
-                           #"la_carte": carte.get_name()
                          }
                        }
                       )
@@ -587,13 +537,13 @@ def pour_complétion(requête, nbMax=15):
         lieux = Lieu.objects.filter(nom__icontains=rue, ville__in=req_villes).prefetch_related("ville", "type_lieu")
         print(f"{len(lieux)} lieux trouvées")
         for l in lieux:
-            res.ajoute(l.str_pour_formulaire(), {"type": "lieu", "pk": l.pk})
+            res.ajoute(l.str_pour_formulaire(), àCacher={"type": "lieu", "pk": l.pk})
         
         
         # Recherche dans les rues de la base
         dans_la_base = Rue.objects.filter(nom_norm__icontains=rue, ville__in=req_villes).prefetch_related("ville")
         for rue_trouvée in dans_la_base:
-            res.ajoute(chaîne_à_renvoyer(rue_trouvée.nom_complet, rue_trouvée.ville.nom_complet))
+            res.ajoute(chaîne_à_renvoyer(rue_trouvée.nom_complet, rue_trouvée.ville.nom_complet), àCacher={"type": "rue", "pk": rue_trouvée.pk})
 
         
         
