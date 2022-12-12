@@ -165,18 +165,24 @@ def tous_les_nœuds(g, z_d, adresse, nv_cache=1, bavard=0):
     
 
 def un_seul_nœud(g, z_d, adresse, nœuds_de_la_rue=None, bavard=0):
-    """ Renvoie un singleton si on dispose d’assez de données pour localiser le numéro. Sinon renvoie tous les nœuds de la rue."""
+    """
+    Renvoie un singleton si on dispose d’assez de données pour localiser le numéro. Sinon renvoie tous les nœuds de la rue.
+    Remplit au passage l’attribut coords de adresse.
+    """
+    
     try:
         #if bavard > 0: print(f"Je lance coords_of_adresse pour {adresse}.")
         #coords = coords_of_adresse(adresse)
         #return [nœud_sur_rue_le_plus_proche(g, coords, adresse)]
-        if bavard>0:print(f"Récupération des coordonnées de {adresse} via adresse.data.gouv.fr")
-        coords = cherche_adresse_complète(adresse, bavard=bavard)
-        adresse.coords = coords
+        if not adresse.coords:
+            if bavard>0: print(f"Récupération des coordonnées de {adresse} via adresse.data.gouv.fr")
+            coords = cherche_adresse_complète(adresse, bavard=bavard)
+            adresse.coords = coords
         return [nœud_sur_rue_le_plus_proche(g, adresse, nœuds=nœuds_de_la_rue, bavard=bavard-1)]
+    
     except Exception as e:
         LOG_PB(f"Échec dans cherche_adresse_complète : {e}. Je vais renvoyer tous les nœuds pour {adresse}). J’efface le numéro de l’adresse.")
-        adresse.num=None
+        adresse.num = None
         if nœuds_de_la_rue:
             return nœuds_de_la_rue
         else:

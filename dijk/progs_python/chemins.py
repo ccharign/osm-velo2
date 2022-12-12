@@ -92,16 +92,21 @@ class Étape():
            champ, nom du champ dans lequel chercher le texte de l’étape.
 
         Sortie :
-            - S’il existe un champ nommé 'lieu_'+champ et qu’il est rempli, la valeur doit être l’id d’un lieu, c’est alors simplement ce lieu qui sera renvoyé.
+            - si d["données_cachées_"+champ] contient des infos:
+                 - si ["type"]=="lieu", renvoie l’objet ÉtapeLieu correspondant au lieu de pk dans ["pk"]
+                 - si ["type"]=="rue", renvoie l’objet ÉtapeAdresse obtenue en utilisant la rue de pk dans ["pk"]
 
             - S’il existe un champ nommé 'coords_'+champ et qu’il est rempli, sera utilisé pour obtenir directement les sommets via arête_la_plus_proche. L’objet renvoyé sera alors une ÉtapeArête
 
             - sinon, renvoie une ÉtapeAdresse en lisant d[champ]
+
+        Effet:
+            dans le cas d["données_cachées_"+champ]["type"] == rue, et num présent, on complète d avec les coords de l’adresse.
         """
         
         LOG(f"of_dico lancé. d: {d},\n champ:{champ}", bavard=1)
         ch_coords = "coords_" + champ
-        #ch_lieu = "lieu_" + champ
+
         if d["données_cachées_"+champ]:
             données_supp = json.loads(d["données_cachées_"+champ])
         else:
@@ -115,8 +120,16 @@ class Étape():
                 return ÉtapeLieu(Lieu.objects.get(pk=int(données_supp["pk"])))
 
             elif données_supp["type"] == "rue":
-                ad = Adresse.of_pk_rue(données_supp["pk"], données_supp["num"], données_supp["bis_ter"])
-                return ÉtapeAdresse.of_adresse(g, ad, bavard=bavard)
+                # Adresse venant d’une autocomplétion
+                ad = Adresse.of_pk_rue(données_supp)
+
+                res = ÉtapeAdresse.of_adresse(g, ad, bavard=bavard)
+                # ad.coords a pu être rempli.
+                if ad.coords and not données_supp["coords"]:
+                    print(f"Coordonnées trouvées dans ad. Je les enregistre dans {'données_cachées_'+champ}")
+                    données_supp["coords"] = ad.coords
+                    d["données_cachées_"+champ] = json.dumps(données_supp)
+                return res
             
             
 
@@ -163,11 +176,13 @@ class ÉtapeAdresse(Étape):
         assert nœuds_de_la_rue, f"Pas de nœuds récupérées pour {ad}"
         if ad.num:
             res.nœuds = un_seul_nœud(g, None, ad, nœuds_de_la_rue=nœuds_de_la_rue, bavard=bavard)
+            # ad.coords a été complété au passage
         else:
             # Pas de num : on prend tous les nœuds de la rue
             res.nœuds = set(nœuds_de_la_rue)
         return res
-    
+
+    @classmethod
     def of_texte(cls, texte, g, z_d, bavard=0):
         """
         texte est une adresse postale, de la forme « [num] [bis|ter] rue, ville [, pays]

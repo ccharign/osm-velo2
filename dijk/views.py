@@ -89,7 +89,7 @@ def sous_le_capot(requête):
 ### Formulaires de recherche d’itinéraire
 
 
-def recherche(requête, zone_t):
+def recherche(requête, zone_t, bavard=1):
     """
     Vue pour une recherche de base.
     """
@@ -111,9 +111,10 @@ def recherche(requête, zone_t):
         if form_recherche.is_valid():
             # Formulaire rempli et valide
             données.update(form_recherche.cleaned_data)
-            print(f"(views.recherche) départ (données) : {données['départ']}")
+            LOG(f"(views.recherche) départ (données) : {données['départ']}", bavard=bavard)
             z_d, étapes, étapes_interdites, ps_détour = z_é_i_d(g, données)
-            print(f"(views.recherche) étapes récupérées : {[str(é) for é in étapes]}")
+            # données a éventuellement été complété avec des coords de l’adresse
+            LOG(f"(views.recherche) étapes récupérées : {[str(é) for é in étapes]}", bavard=bavard)
 
             return calcul_itinéraires(requête, ps_détour, z_d,
                                       étapes,
@@ -544,22 +545,22 @@ def pour_complétion(requête, nbMax=15):
         dans_la_base = Rue.objects.filter(nom_norm__icontains=rue, ville__in=req_villes).prefetch_related("ville")
         for rue_trouvée in dans_la_base:
             res.ajoute(chaîne_à_renvoyer(rue_trouvée.nom_complet, rue_trouvée.ville.nom_complet),
-                       àCacher={"type": "rue", "pk": rue_trouvée.pk, "num": num, "bis_ter": bis_ter})
+                       àCacher={"type": "rue", "pk": rue_trouvée.pk, "num": num, "bis_ter": bis_ter, "coords": ""})
 
         
         
         # Recherche dans les caches
-        for truc in Cache_Adresse.objects.filter(adresse__icontains=rue, ville__in=req_villes).prefetch_related("ville"):
-            print(f"Trouvé dans Cache_Adresse : {truc}")
-            chaîne = chaîne_à_renvoyer(truc.adresse, truc.ville.nom_complet)
-            res.ajoute(chaîne)
+        # for truc in Cache_Adresse.objects.filter(adresse__icontains=rue, ville__in=req_villes).prefetch_related("ville"):
+        #     print(f"Trouvé dans Cache_Adresse : {truc}")
+        #     chaîne = chaîne_à_renvoyer(truc.adresse, truc.ville.nom_complet)
+        #     res.ajoute(chaîne)
             
-        for chose in CacheNomRue.objects.filter(
-                Q(nom__icontains=rue) | Q(nom_osm__icontains=rue), ville__in=req_villes
-        ).prefetch_related("ville"):
-            print(f"Trouvé dans CacheNomRue : {chose}")
-            chaîne = chaîne_à_renvoyer(chose.nom_osm, chose.ville.nom_complet)
-            res.ajoute(chaîne_à_renvoyer(chose.nom_osm, chose.ville.nom_complet))
+        # for chose in CacheNomRue.objects.filter(
+        #         Q(nom__icontains=rue) | Q(nom_osm__icontains=rue), ville__in=req_villes
+        # ).prefetch_related("ville"):
+        #     print(f"Trouvé dans CacheNomRue : {chose}")
+        #     chaîne = chaîne_à_renvoyer(chose.nom_osm, chose.ville.nom_complet)
+        #     res.ajoute(chaîne_à_renvoyer(chose.nom_osm, chose.ville.nom_complet))
 
         return HttpResponse(res.vers_json(), mimeType)
         

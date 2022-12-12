@@ -248,17 +248,19 @@ class Adresse():
 
         
     @classmethod
-    def of_pk_rue(cls, pk_rue: int, num: int, bis_ter: str):
+    def of_pk_rue(cls, d: dict):
         """
         Entrée:
-            pk_rue, id de la rue dans base.
+            d["pk"], id de la rue dans base.
         """
         res = cls()
-        res.rue_osm = Rue.objects.get(pk=pk_rue)
-        res.num = str(num)
+        res.rue_osm = Rue.objects.get(pk=d["pk"])
+        res.num = str(d["num"])
+        bis_ter = d["bis_ter"]
         if bis_ter:
             res.nom += " " + bis_ter.strip()
         res.ville = res.rue_osm.ville
+        res.coords = d["coords"]
         return res
 
         

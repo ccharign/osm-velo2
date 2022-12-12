@@ -51,7 +51,9 @@ def z_é_i_d(g, données):
     """
     Entrée (dico) : résultat d’un GET ou d’un POST d’un formulaire de recherche d’itinéraire.
     Sortie (Zone, Étapes list, Étapes list, float list) : (zone, étapes, étapes_interdites, ps_détours)
-    Effet : la zone est chargée si pas déjà le cas.
+    Effet :
+       la zone est chargée si pas déjà le cas.
+       données est éventuellement complété dans le cas d’une adresse venant d’une autocomplétion par les coords de l’adresse.
     """
     
     z_d = g.charge_zone(données["zone"])
