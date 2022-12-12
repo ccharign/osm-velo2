@@ -160,7 +160,7 @@ def normalise_rue(g, z_d, rue, ville, persevérant=True, rés_nominatim=None, nv
         return rue_n, r.nom_complet, None
         
     else:
-        LOG(f"(normalise_rue) {étape1} pas dans l’arbre lex des rues de {ville} ({tol} fautes de frappes tolérées).", bavard=bavard)
+        LOG(f"(normalise_rue) {étape1} pas dans l’arbre lex des rues de {ville} ({tol} fautes de frappes tolérées).", bavard=1)
 
         # Autre nom dans le cache ?
         essai = dans_cache_nom_rue(étape1, ville)
@@ -183,12 +183,12 @@ def normalise_rue(g, z_d, rue, ville, persevérant=True, rés_nominatim=None, nv
 
         # Recherche d’un autre nom sur nominatim
         else:
-            LOG(f"(normalise_rue) Je lance une recherche Nominatim avec '{rue}, {ville}'.", bavard=bavard)
+            LOG(f"(normalise_rue) Je lance une recherche Nominatim avec '{rue}, {ville}'.", bavard=1)
             lieu = cherche_lieu(
                 Adresse.of_texte(g, z_d, f"{rue}, {ville}", norm_rue=False, bavard=bavard-2),
                 bavard=bavard-1
             )
-            LOG(f"(normalise_rue) La recherche Nominatim a donné {lieu}.", bavard=bavard)
+            LOG(f"(normalise_rue) La recherche Nominatim a donné {lieu}.", bavard=1)
             if not lieu:
                 LOG_PB(f"Pas de lieu trouvé pour {rue}")
                 return étape1, rue, lieu
@@ -205,10 +205,10 @@ def normalise_rue(g, z_d, rue, ville, persevérant=True, rés_nominatim=None, nv
             if prétraitement_rue(nom_osm) != étape1:
                 LOG("Nouveau nom différent de l’ancien")
                 if nv_cache > 1:
-                    LOG(f"Je mets dans CacheNomRue la valeur {nom_osm} pour le nom prétraité {étape1}")
+                    LOG(f"Je mets dans CacheNomRue la valeur {nom_osm} pour le nom prétraité {étape1}", bavard=2)
                     CacheNomRue.ajoute(étape1, nom_osm, ville)
 
-                LOG(f"(normalise_rue) Nom récupéré : {nom_osm}. Je relance normalise_rue avec celui-ci.", bavard=bavard)
+                LOG(f"(normalise_rue) Nom récupéré : {nom_osm}. Je relance normalise_rue avec celui-ci.", bavard=1)
                 return normalise_rue(g, z_d, nom_osm, ville, persevérant=False, rés_nominatim=lieu, tol=tol, bavard=bavard)
             else:
                 LOG(f"Pas de différence significative entre {rue} et {nom_osm}")
@@ -246,6 +246,22 @@ class Adresse():
         self.rés_nominatim = None
         self.amen = False
 
+        
+    @classmethod
+    def of_pk_rue(cls, pk_rue: int, num: int, bis_ter: str):
+        """
+        Entrée:
+            pk_rue, id de la rue dans base.
+        """
+        res = cls()
+        res.rue_osm = Rue.objects.get(pk=pk_rue)
+        res.num = str(num)
+        if bis_ter:
+            res.nom += " " + bis_ter.strip()
+        res.ville = res.rue_osm.ville
+        return res
+
+        
         
     @classmethod
     def of_amenity(cls, amen, ville):

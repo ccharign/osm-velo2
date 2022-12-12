@@ -11,7 +11,7 @@ from dijk.models import Chemin_d, Arête, Lieu
 from lecture_adresse.normalisation0 import découpe_adresse
 from lecture_adresse.normalisation import Adresse
 
-from lecture_adresse.recup_noeuds import nœuds_of_étape
+from lecture_adresse.recup_noeuds import nœuds_of_étape, un_seul_nœud
 
 
 def sans_guillemets(c):
@@ -96,8 +96,9 @@ class Étape():
 
             - S’il existe un champ nommé 'coords_'+champ et qu’il est rempli, sera utilisé pour obtenir directement les sommets via arête_la_plus_proche. L’objet renvoyé sera alors une ÉtapeArête
 
-            - sinon, renvoie une ÉtapeAdresse.
+            - sinon, renvoie une ÉtapeAdresse en lisant d[champ]
         """
+        
         LOG(f"of_dico lancé. d: {d},\n champ:{champ}", bavard=1)
         ch_coords = "coords_" + champ
         #ch_lieu = "lieu_" + champ
@@ -113,6 +114,12 @@ class Étape():
                 LOG(f"(Étape.of_dico) Lieu détecté :{données_supp['pk']}", bavard=bavard)
                 return ÉtapeLieu(Lieu.objects.get(pk=int(données_supp["pk"])))
 
+            elif données_supp["type"] == "rue":
+                ad = Adresse.of_pk_rue(données_supp["pk"], données_supp["num"], données_supp["bis_ter"])
+                return ÉtapeAdresse.of_adresse(g, ad, bavard=bavard)
+            
+            
+
         elif ch_coords in d and d[ch_coords]:
             # ÉtapeArête
             coords = tuple(map(float, d[ch_coords].split(",")))
@@ -126,7 +133,7 @@ class Étape():
         else:
             # ÉtapeAdresse
             LOG("Ni lieu ni arête détecté : je renvoie une ÉtapeAdresse")
-            return ÉtapeAdresse(d[champ], g, z_d)
+            return ÉtapeAdresse.of_texte(d[champ], g, z_d)
     
     
     
@@ -137,13 +144,39 @@ class ÉtapeAdresse(Étape):
         adresse (instance de Adresse)
     """
     
-    def __init__(self, texte: str, g, z_d, bavard=0):
+    def __init__(self):
+        self.adresse = None
+        self.nœuds = set()
+        self.nom = ""
+        
+
+    @classmethod
+    def of_adresse(cls, g, ad, bavard=0):
+        """
+        Entrée:
+             ad (Adresse) dont l’attribut ad.rue_osm est déjà un objet mo.Rue.
+        """
+        res = cls()
+        res.adresse = ad
+        res.nom = str(ad)
+        nœuds_de_la_rue = ad.rue_osm.nœuds()
+        assert nœuds_de_la_rue, f"Pas de nœuds récupérées pour {ad}"
+        if ad.num:
+            res.nœuds = un_seul_nœud(g, None, ad, nœuds_de_la_rue=nœuds_de_la_rue, bavard=bavard)
+        else:
+            # Pas de num : on prend tous les nœuds de la rue
+            res.nœuds = set(nœuds_de_la_rue)
+        return res
+    
+    def of_texte(cls, texte, g, z_d, bavard=0):
         """
         texte est une adresse postale, de la forme « [num] [bis|ter] rue, ville [, pays]
         """
-        n, self.adresse = nœuds_of_étape(texte, g, z_d, bavard=bavard-1)
-        self.nœuds = set(n)
-        self.nom = texte
+        res = cls()
+        n, res.adresse = nœuds_of_étape(texte, g, z_d, bavard=bavard)
+        res.nœuds = set(n)
+        res.nom = texte
+        return res
 
         
     def infos(self):

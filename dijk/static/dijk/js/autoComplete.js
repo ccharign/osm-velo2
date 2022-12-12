@@ -17,6 +17,7 @@ function onSelectAutoComplète(e, ui, form, champ){
     form.elements[champ].value = lieu.àCacher;
 }
 
+// Met en place l’autocomplétion pour le champ indiqué dans le form indiqué.
 function autoComplète(nomChamp, adresseSource, form, longMin=3){
     // longMin est facultatif. 3 par défaut.
     // l’élément du formulaire doit s’appeler "id_"+nomChamp, l’élément à remplir doit s’appeler "données_cachées_"+nomChamp

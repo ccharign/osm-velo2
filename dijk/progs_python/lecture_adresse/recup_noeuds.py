@@ -51,10 +51,6 @@ def nœuds_of_étape(c: str, g, z_d, nv_cache=1, bavard=0):
         Effet : si mettre_en_cache, rajoute res dans le cache.
         """
         assert len(res) > 0
-        #res_d = [Sommet.objects.get(id_osm=s) for s in res]
-        # for s in res_d:
-        #     if s not in g :
-        #        raise ValueError("Le nœud {s} obtenu pour {c} n’est pas dans le graphe. Liste des nœuds obtenus : {res_d}.")
         if mettre_en_cache:
             g.met_en_cache(ad, res)
             print(f"(nœuds_of_étape) Mis en cache : {res} pour {ad}")
@@ -154,21 +150,21 @@ def tous_les_nœuds(g, z_d, adresse, nv_cache=1, bavard=0):
 
 
     
-def filtre_nœuds(nœuds, g):
-    """ 
-    Entrées : liste de nœuds récupérés par cherche_lieu. Chacun doit être un dictionnaire avec pour clefs au moins "osm_id", "lon", "lat".
-    Renvoie les éléments de nœuds qui sont dans g ; si aucun renvoie le nœud de g le plus proche de nœuds[0].
-    """
-    nœuds_de_g = [ n["osm_id"] for n in nœuds_osm if n["osm_id"] in g]
-    if nœuds_de_g != []:
-        return nœuds_de_g
-    else:
-        n=nœuds[0]
-        return [g.nœud_le_plus_proche( (float(n["lon"]), float(n["lat"])), recherche=f"Depuis tous_les_nœuds pour {nom_rue} ({ville})" )]
+# def filtre_nœuds(nœuds, g):
+#     """ 
+#     Entrées : liste de nœuds récupérés par cherche_lieu. Chacun doit être un dictionnaire avec pour clefs au moins "osm_id", "lon", "lat".
+#     Renvoie les éléments de nœuds qui sont dans g ; si aucun renvoie le nœud de g le plus proche de nœuds[0].
+#     """
+#     nœuds_de_g = [ n["osm_id"] for n in nœuds if n["osm_id"] in g]
+#     if nœuds_de_g != []:
+#         return nœuds_de_g
+#     else:
+#         n = nœuds[0]
+#         return [g.nœud_le_plus_proche( (float(n["lon"]), float(n["lat"])), recherche=f"Depuis tous_les_nœuds pour {nom_rue} ({ville})" )]
 
     
 
-def un_seul_nœud(g, z_d, adresse, bavard=0):
+def un_seul_nœud(g, z_d, adresse, nœuds_de_la_rue=None, bavard=0):
     """ Renvoie un singleton si on dispose d’assez de données pour localiser le numéro. Sinon renvoie tous les nœuds de la rue."""
     try:
         #if bavard > 0: print(f"Je lance coords_of_adresse pour {adresse}.")
@@ -177,11 +173,14 @@ def un_seul_nœud(g, z_d, adresse, bavard=0):
         if bavard>0:print(f"Récupération des coordonnées de {adresse} via adresse.data.gouv.fr")
         coords = cherche_adresse_complète(adresse, bavard=bavard)
         adresse.coords = coords
-        return [nœud_sur_rue_le_plus_proche(g, adresse, bavard=bavard-1)]
+        return [nœud_sur_rue_le_plus_proche(g, adresse, nœuds=nœuds_de_la_rue, bavard=bavard-1)]
     except Exception as e:
         LOG_PB(f"Échec dans cherche_adresse_complète : {e}. Je vais renvoyer tous les nœuds pour {adresse}). J’efface le numéro de l’adresse.")
         adresse.num=None
-        return tous_les_nœuds(g, z_d, adresse, bavard=bavard)
+        if nœuds_de_la_rue:
+            return nœuds_de_la_rue
+        else:
+            return tous_les_nœuds(g, z_d, adresse, bavard=bavard)
         
 
     
@@ -233,16 +232,17 @@ def nœuds_rue_of_nom_et_nœud(g, n, nom):
 
 
 
-def nœud_sur_rue_le_plus_proche(g, adresse, bavard=0):
+def nœud_sur_rue_le_plus_proche(g, adresse, nœuds=None, bavard=0):
     """ 
     Entrée : g (graphe)
              adresse (instance de Adresse)
-             coords ( (float, float) )
+             nœuds, nœuds de la rue.
     Renvoie le nœud sur la rue nom_rue le plus proche de coords.
     Les nœuds de la rue seront récupérée via g.nœuds_of_rue.
     """
     coords = adresse.coords
-    nœuds = g.nœuds_of_rue(adresse, bavard=bavard)
+    if nœuds is None:
+        nœuds = g.nœuds_of_rue(adresse, bavard=bavard)
     #nœuds = tous_les_nœuds(g, adresse, bavard=bavard-1) ## Ceci peut planter si la rue n'est pas en mémoire...
     
     if nœuds is not None:

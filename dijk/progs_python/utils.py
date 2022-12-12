@@ -71,10 +71,8 @@ def itinéraire_of_étapes(étapes,
                          ps_détour,
                          g,
                          z_d,
-                         session,
                          rajouter_iti_direct=True,
                          étapes_interdites={},
-                         où_enregistrer=os.path.join(TMP, "itinéraire.html"),
                          bavard=0):
     """
     Entrées:
@@ -94,17 +92,15 @@ def itinéraire_of_étapes(étapes,
     """
     np = len(ps_détour)
     ps_détour.sort()  # Pour être sûr que l’éventuel 0 est en premier.
-    à_dessiner = []
     stats = []
     itinéraires = []
     
     interdites = chemins.arêtes_interdites(g, z_d, étapes_interdites, bavard=bavard)
     
     def traite_un_chemin(c, coul, légende, aide):
-        iti = g.itinéraire(c, coul, bavard=bavard-1)
+        iti = g.itinéraire(c, coul, bavard=bavard-2)
         itinéraires.append(iti)
         longueur = int(iti.longueur_vraie())
-        #à_dessiner.append((iti_d, coul, p))
         
         stats.append({"légende": légende,
                       "aide": aide,
@@ -139,14 +135,11 @@ def itinéraire_of_étapes(étapes,
         for s in stats:
             s["p_détour_effectif"] = int((s["longueur"]/longueur_ch_direct - 1.) * 100.)
 
-    # tic = perf_counter()
-    # carte, bbox = dessine(à_dessiner, g, z_d, d.adresse, a.adresse, où_enregistrer=où_enregistrer, bavard=bavard, fouine="fouine" in session)
-    # chrono(tic, "Dessin")
+
     return {"stats": stats,
             "chemin": c,
             "noms_étapes": [str(é) for é in étapes],
             "rues_interdites": [str(é) for é in étapes_interdites],
-            #"carte": carte,
             "bbox": itinéraires[0].bbox(g),
             "itinéraires": itinéraires
             }

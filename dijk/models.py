@@ -871,6 +871,9 @@ class Lieu(models.Model):
         """
         return json.loads(self.json_initial)
 
+    def infos(self):
+        return json.loads(self.json_nettoyé)
+
         
     def ville_ou_pas(self):
         """

@@ -42,6 +42,8 @@ def quadArbreArêtesDeLaBase():
     """
     Crée l’arbre de toutes les arêtes de la base et l’enregistre dans celle-ci.
     """
+    print("Suppression de l’ancien arbre")
+    supprime_objets_par_lots(mo.ArbreArête.objects.all())
     print("Création de l’arbre de toute la base")
     print(" Récupération de toutes les arêtes")
     l = list(Arête.objects.all())

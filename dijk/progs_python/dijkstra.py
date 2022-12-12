@@ -181,7 +181,7 @@ def iti_étapes_ensembles(g, c, bavard=0):
               - interdites : arêtes interdites. dico s->sommets interdits depuis s.
     Sortie (int list × float): plus court chemin d’un sommet de étapes[0] vers un sommet de étapes[-1] qui passe par au moins une arête de chaque étape intérmédiaire, longueur de l’itinéraire.
     """
-    LOG(f"Recherche d’un itinéraire pour le chemin {c}")
+    LOG(f"Recherche d’un itinéraire pour le chemin {c}", bavard=bavard)
     correction_max = 1. / formule_pour_correction_longueur(1., g.cycla_max[c.zone], c.p_détour)
     LOG(f"correction_max : {correction_max}", bavard=bavard-1)
     étapes = c.étapes

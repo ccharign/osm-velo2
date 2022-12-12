@@ -45,6 +45,7 @@ def cherche_adresse_complète(adresse, bavard=0):
     api_url = "https://api-adresse.data.gouv.fr/search/?q="
     r = requests.get(api_url + urllib.parse.quote(str(adresse)))
     r = r.content.decode('unicode_escape')
+    print("\nRequête sur api-adresse.data.gouv")
     return json.loads(r)["features"][0]["geometry"]["coordinates"]
 
 

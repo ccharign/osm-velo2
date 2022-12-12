@@ -24,7 +24,7 @@ from .progs_python.lecture_adresse.recup_noeuds import PasTrouvé
 from .progs_python.lecture_adresse.normalisation0 import prétraitement_rue
 from .progs_python import recup_donnees
 from .progs_python.apprentissage import n_lectures
-from .progs_python.bib_vues import bool_of_checkbox, énumération_texte, récup_head_body_script, récup_données, z_é_i_d, chaîne_avec_points_virgule_renversée
+from .progs_python.bib_vues import bool_of_checkbox, énumération_texte, récup_données, z_é_i_d, chaîne_avec_points_virgule_renversée
 
 from .progs_python.utils import dessine_cycla, itinéraire_of_étapes
 
@@ -543,7 +543,8 @@ def pour_complétion(requête, nbMax=15):
         # Recherche dans les rues de la base
         dans_la_base = Rue.objects.filter(nom_norm__icontains=rue, ville__in=req_villes).prefetch_related("ville")
         for rue_trouvée in dans_la_base:
-            res.ajoute(chaîne_à_renvoyer(rue_trouvée.nom_complet, rue_trouvée.ville.nom_complet), àCacher={"type": "rue", "pk": rue_trouvée.pk})
+            res.ajoute(chaîne_à_renvoyer(rue_trouvée.nom_complet, rue_trouvée.ville.nom_complet),
+                       àCacher={"type": "rue", "pk": rue_trouvée.pk, "num": num, "bis_ter": bis_ter})
 
         
         
