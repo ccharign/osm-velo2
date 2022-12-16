@@ -413,7 +413,7 @@ class QuadrArbreArête(Quadrarbre):
         return res
 
 
-    def vers_django(self, crée_nœud, crée_segment, père):
+    def vers_django(self, nv_nœud, nv_segment, père):
         """
         Entrées:
             crée_nœud : fonction à utiliser pour créer un nœud. En pratique, models.ArbreArête.
@@ -429,16 +429,16 @@ class QuadrArbreArête(Quadrarbre):
         nœuds = []
         feuilles = []
 
-        données = zip_dico(["borne_sud", "borne_ouest", "borne_nord", "borne_est"], self.bb)  # Pour envoyer à classe_nœud pour créer le nœud actuel.
+        données = zip_dico(["borne_sud", "borne_ouest", "borne_nord", "borne_est"], self.bb)  # Pour envoyer à nv_nœud pour créer le nœud actuel.
         données["père"] = père
-        nœud_actuel = crée_nœud(**données)
+        nœud_actuel = nv_nœud(**données)
         nœuds.append([nœud_actuel])
         
         if self.fils is None:
-            # Cas d’une arête : on crée un segment d’arête qu’on relie à nœud_actuel
+            # Cas d’une feuille : on crée un segment d’arête qu’on relie à nœud_actuel.
             d_lon, d_lat = self.étiquette.départ
             a_lon, a_lat = self.étiquette.arrivée
-            feuilles.append(crée_segment(
+            feuilles.append(nv_segment(
                 arête_id=self.étiquette.pk,  # self.étiquette est une instance de ArêteSimplifiée. pk est la pk de l’arête complète la contenant.
                 d_lon=d_lon, d_lat=d_lat,
                 a_lon=a_lon, a_lat=a_lat,
@@ -447,19 +447,19 @@ class QuadrArbreArête(Quadrarbre):
 
         else:
             for f in self.fils:
-                feuilles_de_f, nœuds_des_f = f.vers_django(crée_nœud, crée_segment, nœud_actuel)
-                fusionne_tab_de_tab(nœuds, [[]]+nœuds_des_f)
+                feuilles_de_f, nœuds_de_f = f.vers_django(nv_nœud, nv_segment, nœud_actuel)
+                fusionne_tab_de_tab(nœuds, [[]]+nœuds_de_f)
                 feuilles.extend(feuilles_de_f)
             
         return feuilles, nœuds
 
 
-    def sauv_dans_base(self, crée_nœud, crée_segment):
+    def sauv_dans_base(self, nv_nœud, nv_segment):
         """
         Effet : sauve l’arbre dans la base.
         """
         print("Création des objets")
-        feuilles, nœuds = self.vers_django(crée_nœud, crée_segment, None)
+        feuilles, nœuds = self.vers_django(nv_nœud, nv_segment, None)
         print(f"Fini. {len(feuilles)} feuilles et {len(nœuds)} nœuds.\n")
 
         print("Sauvegarde des nœuds")
@@ -468,6 +468,10 @@ class QuadrArbreArête(Quadrarbre):
             print(f"étage {num_étage}")
             num_étage += 1
             sauv_objets_par_lots(étage)
+
+        print("Ajout du feuille_id dans les feuilles (pour vieille version de Django)")
+        for f in feuilles:
+            f.feuille_id = f.feuille.id  # f.feuille.id a été créé lors de la sauvegarde de f.feuille ci dessus, mais f.feuille_id n’avait pas été mis à jour...
             
         print("Sauvegarde des segments d’arêtes des feuilles")
         sauv_objets_par_lots(feuilles)

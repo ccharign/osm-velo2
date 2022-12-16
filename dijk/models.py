@@ -512,7 +512,7 @@ class SegmentArête(models.Model):
     Enregistre un segment d’une arête. Sera attaché à une feuille de l’arbre d’Arêtes.
     """
     # l’Arête complète contenant le segment
-    arête = models.ForeignKey(Arête, on_delete=models.CASCADE, blank=True, related_name="segments", default=None, null=True)
+    arête = models.ForeignKey(Arête, on_delete=models.CASCADE, related_name="segments")
     # départ
     d_lon = models.FloatField()
     d_lat = models.FloatField()
