@@ -254,6 +254,18 @@ class Quadrarbre():
                 return f.sous_arbre_contenant_naïf(l)
         return self
 
+    def toutes_les_feuilles(self)->list:
+        """
+        Renvoie la liste des feuilles de self
+        """
+        if self.fils:
+            res = []
+            for f in self.fils:
+                res.extend(f.toutes_les_feuilles())
+            return res
+        else:
+            return [self]
+
     
     @classmethod
     def of_fichier(cls, chemin: str, récup_objet, feuille):
