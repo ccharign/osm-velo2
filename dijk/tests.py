@@ -6,6 +6,7 @@ from pprint import pprint
 import dijk.pour_shell as sh
 
 import dijk.progs_python.initialisation.amenities as amen
+import dijk.progs_python.initialisation as ini
 from dijk.progs_python.initialisation.communes import charge_villes
 from dijk.progs_python.initialisation.initialisation import À_RAJOUTER_PAU, crée_zone, ZONE_GRENOBLE, charge_ville
 
@@ -23,6 +24,8 @@ gre = sh.mo.Ville.objects.get(nom_complet="Grenoble")
 pau = sh.mo.Ville.objects.get(nom_complet="Pau")
 pag = sh.mo.Zone.objects.get(nom="Pau_agglo")
 ousse = sh.mo.Ville.objects.get(nom_complet="Ousse")
+
+arbre_ousse = ini.QuadrArbreArête.of_list_darêtes_d(list(ousse.arêtes()))
 
 
 # Create your tests here.
