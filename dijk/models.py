@@ -1,9 +1,10 @@
 import json
 from pprint import pformat
 import os
+import math
 from itertools import chain
 
-from django.db import models, close_old_connections
+from django.db import models, close_old_connections, transaction
 from dijk.progs_python.params import LOG, DONNÉES
 from dijk.progs_python.lecture_adresse.normalisation0 import partie_commune
 from dijk.progs_python.petites_fonctions import distance_euc
@@ -394,15 +395,10 @@ class ArbreArête(models.Model, qa.Quadrarbre):
     
 
     # Si c’est une feuille : un segment d’Arête
-    # maintenant c’est le segment qui a l’attribut vers sa feuille
-    #segment = models.ForeignKey(SegmentArête, blank=True, default=None, null=True, on_delete=models.CASCADE)
+    # mais c’est le segment qui a l’attribut vers sa feuille
 
     # Le père
     père = models.ForeignKey("self", null=True, related_name="related_manager_fils", on_delete=models.CASCADE)
-    #f1 = models.ForeignKey("self", blank=True, default=None, null=True, on_delete=models.CASCADE, related_name="père")
-    #f2 = models.ForeignKey("self", blank=True, default=None, null=True, on_delete=models.CASCADE)
-    #f3 = models.ForeignKey(ArbreArête, blank=True, default=None, null=True, on_delete=models.CASCADE)
-    #f4 = models.ForeignKey(ArbreArête, blank=True, default=None, null=True, on_delete=models.CASCADE)
 
     @property
     def bbox(self):
@@ -472,7 +468,7 @@ class ArbreArête(models.Model, qa.Quadrarbre):
                     fils.append(p)
                     fini = False
             print(f"Étage {étage} fini. {len(fils)} nœuds restant.")
-            étage+=1
+            étage += 1
         print(f"Après rassemblement des frères il reste {len(fils)} nœuds. Je lance l’algo naïf.")
         return self.sous_arbre_contenant_naïf(fils)
                 
@@ -505,6 +501,60 @@ class ArbreArête(models.Model, qa.Quadrarbre):
         a, d = self.étiquette_la_plus_proche(coords)  # a est une ArêteSimplifiée
         a_d = Arête.objects.get(pk=a.pk)
         return a_d, d
+
+    
+    @transaction.atomic
+    def supprime_n_feuilles(self, n: int):
+        """
+        Effet : supprime en une seule transaction n feuilles de self. Si self a moins de n feuilles, elles seront toutes supprimées.
+        Sortie : nombre de feuilles supprimées
+        (Utile pour supprimer l’arbre sur un système avec peu de mémoire)
+        """
+
+        if self.fils:
+            n_restant = n
+            for f in self.fils:
+                n_restant -= f.supprime_n_feuilles(n_restant)
+                if n_restant == 0:
+                    return n
+            return n-n_restant
+        
+        else:
+            self.delete()
+            return 1
+
+        
+    def supprime_aieul(self, n: int):
+        """
+        Supprime le nœuds situé n étage au dessus de self. Vu les contraintes cascade, ça va supprimer tous les cousins du même coup.
+        """
+        if n == 0:
+            self.delete()
+        else:
+            self.père.supprime_aieul(n-1)
+
+            
+    def supprime_étage(self, prof: int):
+        """
+        Supprime l’étage à la profondeur prof.
+        """
+        if prof == 0:
+            print(self.delete())
+        else:
+            for f in self.fils:
+                f.supprime_étage(prof-1)
+
+
+    def supprime(self):
+
+        hauteur = int(math.log(ArbreArête.objects.all().count(), 4))  # Approximation de la hauteur
+        for prof in range(hauteur-5, 0, -1):
+            print(f"(Suppression de l’étage {prof})")
+            self.supprime_étage(prof)
+        
+        print("Suppression de la racine")
+        print(self.delete())
+    
 
 
 class SegmentArête(models.Model):
@@ -622,7 +672,7 @@ class Zone(models.Model):
             for ligne in entrée:
                 ar, p_détour, étapes_texte, interdites_texte, utilisateur, zone = ligne.strip().split("|")
                 ch = Chemin_d(
-                    ar = ar=="True",
+                    ar= ar=="True",
                     p_détour=float(p_détour),
                     étapes_texte=étapes_texte,
                     interdites_texte=interdites_texte,

@@ -3,6 +3,7 @@
 
 import os
 import osmnx
+import math
 
 from time import perf_counter
 from pprint import pprint, pformat
@@ -38,22 +39,22 @@ from initialisation.amenities import charge_lieux_of_ville#, ajoute_ville_et_rue
 #     return res
 
 
-def supprimeArbreArêteDeLaBase():
+def supprimeTousArbresArêtesDeLaBase():
     """
-    Efface l’arbre arête de la base, en commençant par les feuilles.
+    Efface tous les arbres arêtes de la base.
     """
-    a = mo.ArbreArête.racine()
-    while a.fils:
-        supprime_objets_par_lots(a.toutes_les_feuilles())
-    a.delete()
-
+    if mo.ArbreArête.objects.all().count() > 0:        
+        a = mo.ArbreArête.racine()
+        a.supprime()
+        supprimeTousArbresArêtesDeLaBase()
+    
 
 def quadArbreArêtesDeLaBase():
     """
     Crée l’arbre de toutes les arêtes de la base et l’enregistre dans celle-ci.
     """
     print("Suppression de l’ancien arbre")
-    supprimeArbreArêteDeLaBase()
+    supprimeTousArbresArêtesDeLaBase()
     print("Création de l’arbre de toute la base")
     print(" Récupération de toutes les arêtes")
     l = list(Arête.objects.all())

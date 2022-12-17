@@ -475,10 +475,14 @@ class QuadrArbreArête(Quadrarbre):
         print(f"Fini. {len(feuilles)} feuilles et {len(nœuds)} nœuds.\n")
 
         print("Sauvegarde des nœuds")
-        num_étage = 0
-        for étage in nœuds:
+        # La racine
+        nœuds[0][0].save()
+        num_étage = 1
+        for étage in nœuds[1:]:     # De haut en bas
             print(f"étage {num_étage}")
             num_étage += 1
+            for n in étage:
+                n.père_id = n.père.id
             sauv_objets_par_lots(étage)
 
         print("Ajout du feuille_id dans les feuilles (pour vieille version de Django)")
