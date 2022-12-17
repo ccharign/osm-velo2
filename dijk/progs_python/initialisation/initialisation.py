@@ -43,7 +43,7 @@ def supprimeTousArbresArêtesDeLaBase():
     """
     Efface tous les arbres arêtes de la base.
     """
-    if mo.ArbreArête.objects.all().count() > 0:        
+    if mo.ArbreArête.objects.all().count() > 0:
         a = mo.ArbreArête.racine()
         a.supprime()
         supprimeTousArbresArêtesDeLaBase()
