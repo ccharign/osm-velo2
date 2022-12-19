@@ -280,7 +280,7 @@ class Arête(models.Model):
         longueur (float)
         cycla (float) : cyclabilité calculée par l'IA. None par défaut.
         cycla_défaut (float) : cyclabilité obtenue par les données présentes dans osm. Via la fonction vers_django.cycla_défaut lors du remplissage de la base.
-        rue (Rue). Ce champ est-il utile ?
+        rue (Rue). Pour l’instant pas utilisé.
         geom (string). Couples lon,lat séparés par des ;
         nom (str)
         villes ( ManyToMany)
@@ -480,7 +480,7 @@ class ArbreArête(models.Model, qa.Quadrarbre):
         Renvoie la racine de l’arbre de toute la base. Obtenu en remontant depuis le premier élément de la base.
         """
         return cls.objects.all().first().ancètre()
-
+    
     
     def segment(self):
         """
@@ -492,8 +492,8 @@ class ArbreArête(models.Model, qa.Quadrarbre):
             return segments[0]
         else:
             raise ValueError("{self} ne semble pas être une feuille. J’ai obtenu {len(segments)} segments associés. Ce sont {segments}.")
-
-        
+    
+    
     def arête_la_plus_proche(self, coords: (float, float)):
         """
         Sortie : (arête django la plus proche de coords, distance)
@@ -501,7 +501,7 @@ class ArbreArête(models.Model, qa.Quadrarbre):
         a, d = self.étiquette_la_plus_proche(coords)  # a est une ArêteSimplifiée
         a_d = Arête.objects.get(pk=a.pk)
         return a_d, d
-
+    
     
     @transaction.atomic
     def supprime_n_feuilles(self, n: int):
@@ -510,7 +510,7 @@ class ArbreArête(models.Model, qa.Quadrarbre):
         Sortie : nombre de feuilles supprimées
         (Utile pour supprimer l’arbre sur un système avec peu de mémoire)
         """
-
+        
         if self.fils:
             n_restant = n
             for f in self.fils:
@@ -967,9 +967,14 @@ class Lieu(models.Model):
             arbre_arêtes un Q arbre d’arêtes
         Effet:
             l’arête la plus proche de self est ajoutée dans l’attribut arête.
+            Enregistre aussi la ville de l’arête. Pour simplifier, c’est la première ville qui est prise dans le cas où l’arête est sur une frontière.
             La modif n’est *pas* sauvegardée, pour permettre un bulk_update ultérieur.
         """
-        self.arête = arbre_arêtes.arête_la_plus_proche((self.lon, self.lat))[0]
+        a, _ = arbre_arêtes.étiquette_la_plus_proche(self.coords())  # a est une ArêteSimplifiée
+        a_d = Arête.objects.get(pk=a.pk)
+        self.arête = a_d
+        self.ville = self.arête.villes.first()
+        
 
 
     # def ajoute_ville_et_rue(self, bavard=0):

@@ -413,7 +413,7 @@ def lieux_of_ville(ville, bavard=0, force=False):
     res = []
     tous_les_id_osm = set([i for i, in mo.Lieu.objects.all().values_list("id_osm")])
     for catégorie_lieu in ["amenity", "shop", "tourism", "leisure"]:
-        print(f"Recherche des lieux pour la catégorie {catégorie_lieu}\n")
+        print(f"\nRecherche des lieux pour la catégorie {catégorie_lieu}")
         requête = récup_catégorie_lieu(
             catégorie_lieu,
             préfixe_requête=f'area[name="{ville.nom_complet}"]->.searchArea;',
@@ -432,7 +432,7 @@ def lieux_of_ville(ville, bavard=0, force=False):
 def lieux_of_bb(bb, bavard=0):
     """
     Entrée : bb (float×float×float×float)
-    Sortie : liste de dico des lieux (amenity, shop, tourism) obtenus en cherchant la ville dans overpass.
+    Sortie : liste de dico des lieux (amenity, shop, tourism, leisure) obtenus en cherchant la ville dans overpass.
     Les clefs de chaque dico sont :
         - id_osm
         - lon

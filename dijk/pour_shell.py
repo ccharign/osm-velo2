@@ -13,8 +13,8 @@ from progs_python.initialisation.initialisation import charge_fichier_cycla_déf
 from progs_python.initialisation.communes import charge_villes
 import progs_python.utils as utils
 import progs_python.initialisation.amenities as amen
-from progs_python.utils import lecture_tous_les_chemins, réinit_cycla
-from progs_python.initialisation.amenities import ajoute_ville_et_rue_manquantes
+from progs_python.utils import lecture_tous_les_chemins
+
 
 #osmnx.config(use_cache=True, log_console=True)
 osmnx.settings.use_cache = True

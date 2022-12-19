@@ -10,6 +10,7 @@ from dijk.progs_python.params import DONNÉES
 from dijk.progs_python.recup_donnees import lieux_of_ville, adresses_of_liste_lieux
 from dijk.progs_python.quadrarbres import QuadrArbreArête
 from dijk.models import TypeLieu, Lieu, Zone, Ville, Ville_Zone
+import dijk.models as mo
 from dijk.progs_python.petites_fonctions import morceaux_tableaux
 from dijk.progs_python.lecture_adresse.normalisation0 import int_of_code_insee, partie_commune
 
@@ -77,54 +78,52 @@ def ajoute_ville_et_rue(ll, taille_paquets=1000, force=False, bavard=0):
         force, si True, écrase les données déjà présentes.
         taille_paquets : nb de lieux à envoyer à la fois à data.gouv.
     """
-    for i, l in enumerate(ll):
-        try:
-            l.pk
-        except Exception as e:
-            print(f"{l} n’a pas de pk.\n{e}. C’était le lieu d’indice {i}.\n")
-            raise e
+
     nb_traités = 0
     nb_problèmes = 0
     for paquet in morceaux_tableaux(ll, taille_paquets):
         print(f"{nb_traités} lieux traités")
         nb_traités += taille_paquets
-        try:
-            données = adresses_of_liste_lieux(paquet, bavard=bavard)
-        except:
-            print(f"Échec pour la récupération du dernier paquet de {len(paquet)} lieux.")
-        à_maj = []
-        for l, d in zip(paquet, données):
-            if l.adresse and not force:
-                print(f"Données déjà présentes, je laisse les vieilles.\nAdresse osm :{l.adresse}\n Adresse data.gouv : {d}\n")
-            else:
-                try:
-                    l.adresse = (d["result_housenumber"]+" "+d["result_name"]).strip()
-                    l.ville = Ville.objects.get(code_insee=int_of_code_insee(d["result_citycode"]))
-                    à_maj.append(l)
-                except ValueError:
-                    #print(f"Problème pour {l} : {e}.\n Voici le résultat reçu : \n{pformat(d)}")
-                    try:
-                        l.adresse = (d["result_housenumber"]+" "+d["result_name"]).strip()
-                        l.ville = Ville.objects.get(nom_norm=partie_commune(d["result_city"]), code=d["result_postcode"])
-                        à_maj.append(l)
-                    except Exception as e:
-                        nb_problèmes += 1
-                        LOG(f"Problème pour {l}\n  Données reçues : {pformat(d)}\n Erreur : {e}", type_de_log="pb", bavard=2)
-        print(f"La récupération de l’adresse a échoué pour {nb_problèmes} lieux.")
-        print(f"Enregistrement des modifs ({len(à_maj)} lieux).\n)")
+
+        
+        
+        # try:
+        #     données = adresses_of_liste_lieux(paquet, bavard=bavard)
+        # except:
+        #     print(f"Échec pour la récupération du dernier paquet de {len(paquet)} lieux.")
+        # à_maj = []
+        # for l, d in zip(paquet, données):
+        #     if l.adresse and not force:
+        #         print(f"Données déjà présentes, je laisse les vieilles.\nAdresse osm :{l.adresse}\n Adresse data.gouv : {d}\n")
+        #     else:
+        #         try:
+        #             l.adresse = (d["result_housenumber"]+" "+d["result_name"]).strip()
+        #             l.ville = Ville.objects.get(code_insee=int_of_code_insee(d["result_citycode"]))
+        #             à_maj.append(l)
+        #         except ValueError:
+        #             #print(f"Problème pour {l} : {e}.\n Voici le résultat reçu : \n{pformat(d)}")
+        #             try:
+        #                 l.adresse = (d["result_housenumber"]+" "+d["result_name"]).strip()
+        #                 l.ville = Ville.objects.get(nom_norm=partie_commune(d["result_city"]), code=d["result_postcode"])
+        #                 à_maj.append(l)
+        #             except Exception as e:
+        #                 nb_problèmes += 1
+        #                 LOG(f"Problème pour {l}\n  Données reçues : {pformat(d)}\n Erreur : {e}", type_de_log="pb", bavard=2)
+        # print(f"La récupération de l’adresse a échoué pour {nb_problèmes} lieux.")
+        # print(f"Enregistrement des modifs ({len(à_maj)} lieux).\n)")
         Lieu.objects.bulk_update(à_maj, ["ville", "adresse"])
 
 
-def ajoute_ville_et_rue_manquantes(bavard=1):
-    """
-    Essaie de rajouter ville et adresse des lieux dans la base qui n’en ont pas.
-    """
-    close_old_connections()
-    à_traiter = Lieu.objects.filter(ville__isnull=True)
-    LOG(f"{len(à_traiter)} lieux n’ont pas de Ville.")
-    ajoute_ville_et_rue(à_traiter, bavard=bavard-1)
-    à_traiter = Lieu.objects.filter(ville__isnull=True)
-    LOG(f"Maintenant {len(à_traiter)} lieux n’ont pas de Ville.")
+# def ajoute_ville_et_rue_manquantes(bavard=1):
+#     """
+#     Essaie de rajouter ville et adresse des lieux dans la base qui n’en ont pas.
+#     """
+#     close_old_connections()
+#     à_traiter = Lieu.objects.filter(ville__isnull=True)
+#     LOG(f"{len(à_traiter)} lieux n’ont pas de Ville.")
+#     ajoute_ville_et_rue(à_traiter, bavard=bavard-1)
+#     à_traiter = Lieu.objects.filter(ville__isnull=True)
+#     LOG(f"Maintenant {len(à_traiter)} lieux n’ont pas de Ville.")
 
     
 def charge_lieux_of_ville(v_d, arbre_a=None, bavard=0, force=False):
@@ -145,28 +144,32 @@ def charge_lieux_of_ville(v_d, arbre_a=None, bavard=0, force=False):
     #Lieu.objects.bulk_update(ll, ["nom"])
     
     # 2) Ajout de villes
-    LOG(f"Récupération des noms de ville et des adresses via data.gouv pour les {len(ll)} lieux obtenus", bavard=1)
-    ajoute_ville_et_rue(ll, bavard=bavard-1)
+    # LOG(f"Récupération des noms de ville et des adresses via data.gouv pour les {len(ll)} lieux obtenus", bavard=1)
+    # ajoute_ville_et_rue(ll, bavard=bavard-1)
 
     
     # 3) Ajout de l’arête la plus proche
-    lieux_de_la_bonne_ville = Lieu.objects.filter(ville=v_d)
+    #lieux_de_la_bonne_ville = Lieu.objects.filter(ville=v_d)
     
-    LOG("Calcul des arêtes les plus proches de chaque Lieu.", bavard=bavard)
+    LOG("Calcul des arêtes les plus proches de chaque Lieu.", bavard=1)
     if not arbre_a:
-        try:
-            z_d = Ville_Zone.objects.filter(ville=v_d).first().zone
-            dossier_données = os.path.join(DONNÉES, str(z_d))
-            chemin = os.path.join(dossier_données, f"arbre_arêtes_{z_d}")
-            arbre_a = QuadrArbreArête.of_fichier(chemin)
-        except Exception as e:
-            print(f"Erreur dans la récupération de l’arbre des arêtes : {e}")
-            arbre_a = QuadrArbreArête.of_ville(v_d)
-        
-    for l in lieux_de_la_bonne_ville:
+        # try:
+        #     z_d = Ville_Zone.objects.filter(ville=v_d).first().zone
+        #     dossier_données = os.path.join(DONNÉES, str(z_d))
+        #     chemin = os.path.join(dossier_données, f"arbre_arêtes_{z_d}")
+        #     arbre_a = QuadrArbreArête.of_fichier(chemin)
+        # except Exception as e:
+        #     print(f"Erreur dans la récupération de l’arbre des arêtes : {e}")
+        #     arbre_a = QuadrArbreArête.of_ville(v_d)
+        arbre_a = mo.ArbreArête.racine()
+
+    nb = 0
+    for l in ll:
+        nb += 1
         l.ajoute_arête_la_plus_proche(arbre_a)
+        if nb%50==0: print(f"{nb} lieux traités")
     LOG("Enregistrement des arêtes les plus proches", bavard=1)
-    Lieu.objects.bulk_update(lieux_de_la_bonne_ville, ["arête"])
+    Lieu.objects.bulk_update(ll, ["arête", "ville"])
 
     LOG(f"charge_lieux_of_ville({v_d}) fini !")
     
@@ -175,7 +178,8 @@ def charge_lieux_of_ville(v_d, arbre_a=None, bavard=0, force=False):
 def charge_lieux_of_zone(z_t, force=False):
     close_old_connections()
     z_d = Zone.objects.get(nom=z_t)
+    arbre_a = QuadrArbreArête.of_list_darêtes_d(z_d.arêtes())
     for rel in z_d.ville_zone_set.all():
-        charge_lieux_of_ville(rel.ville, force=force)
+        charge_lieux_of_ville(rel.ville, force=force, arbre_a=arbre_a)
         print("Pause de 10s pour overpass")
         time.sleep(10)
