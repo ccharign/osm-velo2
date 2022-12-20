@@ -888,7 +888,7 @@ class Lieu(models.Model):
     type_lieu = models.ForeignKey(TypeLieu, on_delete=models.CASCADE)
     ville = models.ForeignKey(Ville, on_delete=models.CASCADE, blank=True, default=None, null=True)
     #rue = models.ForeignKey(Rue, on_delete=models.CASCADE, blank=True, default=None, null=True)
-    adresse = models.TextField(blank=True, default=None, null=True)
+    #adresse = models.TextField(blank=True, default=None, null=True)
     lon = models.FloatField()
     lat = models.FloatField()
     horaires = models.TextField(blank=True, default=None, null=True)
@@ -913,7 +913,9 @@ class Lieu(models.Model):
         Renvoie les deux Sommets de l’arête la plus proche.
         """
         return set((self.arête.départ, self.arête.arrivée))
-        
+
+    def adresse(self):
+        return f"{self.arête.nom}"
     
     def toutes_les_infos(self):
         """
@@ -936,13 +938,13 @@ class Lieu(models.Model):
     
         
     def __str__(self):
-        return f"{self.nom} ({self.type_lieu}){self.adresse}, {self.ville_ou_pas()}"
+        return f"{self.nom} ({self.type_lieu}){self.adresse()}, {self.ville_ou_pas()}"
 
     def str_pour_formulaire(self):
         """
         Renvoie la chaîne  « nom, ville »
         """
-        return f"{self.nom}, {self.adresse}, {self.ville}"
+        return f"{self.nom}, {self.adresse()}, {self.ville}"
 
     def marqueur_leaflet(self, nomCarte):
         """
@@ -1010,10 +1012,11 @@ class Lieu(models.Model):
 
     
     @classmethod
-    def of_dico(cls, d, tous_les_id_osm=None, créer_type=False):
+    def of_dico(cls, d, arbre_a, tous_les_id_osm=None, créer_type=False):
         """
         Entrée:
             d (str-> T dico)
+            arbre_a, R-arbre d’arêtes dans lequel chercher l’arête la plus proche.
 
         Sortie (Lieu×bool×bool) :
             (l, créé, utile) : (l’objet, l’objet ne figurait pas dans la base, l’objet figurait mais des modifs ont été détectées.)
@@ -1083,11 +1086,15 @@ class Lieu(models.Model):
         res.type_lieu = tl
 
         # Adresse
-        if "addr:street" in d:
-            res.adresse = d["addr:street"]
-            if "addr:housenumber" in d:
-                res.adresse = d["addr:housenumber"] + res.adresse
+        # Géré via l’arête maintenant... Éventuellemen mettre le numéro ?
+        # if "addr:street" in d:
+        #     res.adresse = d["addr:street"]
+        #     if "addr:housenumber" in d:
+        #         res.adresse = d["addr:housenumber"] + res.adresse
+
         
+        # Arête et ville
+        res.ajoute_arête_la_plus_proche(arbre_a)
 
 
 

@@ -136,22 +136,6 @@ def charge_lieux_of_ville(v_d, arbre_a=None, bavard=0, force=False):
 
     LOG(f"Lieux de {v_d}", bavard=1)
 
-    # 1) Récup ou création des Lieux
-    LOG("Récupération des lieux via overpass", bavard=1)
-    ll = lieux_of_ville(v_d, bavard=bavard, force=force)
-
-    # POur débug
-    #Lieu.objects.bulk_update(ll, ["nom"])
-    
-    # 2) Ajout de villes
-    # LOG(f"Récupération des noms de ville et des adresses via data.gouv pour les {len(ll)} lieux obtenus", bavard=1)
-    # ajoute_ville_et_rue(ll, bavard=bavard-1)
-
-    
-    # 3) Ajout de l’arête la plus proche
-    #lieux_de_la_bonne_ville = Lieu.objects.filter(ville=v_d)
-    
-    LOG("Calcul des arêtes les plus proches de chaque Lieu.", bavard=1)
     if not arbre_a:
         # try:
         #     z_d = Ville_Zone.objects.filter(ville=v_d).first().zone
@@ -163,13 +147,31 @@ def charge_lieux_of_ville(v_d, arbre_a=None, bavard=0, force=False):
         #     arbre_a = QuadrArbreArête.of_ville(v_d)
         arbre_a = mo.ArbreArête.racine()
 
-    nb = 0
-    for l in ll:
-        nb += 1
-        l.ajoute_arête_la_plus_proche(arbre_a)
-        if nb%50==0: print(f"{nb} lieux traités")
-    LOG("Enregistrement des arêtes les plus proches", bavard=1)
-    Lieu.objects.bulk_update(ll, ["arête", "ville"])
+        
+    # 1) Récup ou création des Lieux
+    LOG("Récupération des lieux via overpass", bavard=1)
+    ll = lieux_of_ville(v_d, arbre_a, bavard=bavard, force=force)
+
+
+    # 2) Ajout de villes
+    # LOG(f"Récupération des noms de ville et des adresses via data.gouv pour les {len(ll)} lieux obtenus", bavard=1)
+    # ajoute_ville_et_rue(ll, bavard=bavard-1)
+
+    
+    # 3) Ajout de l’arête la plus proche
+    #lieux_de_la_bonne_ville = Lieu.objects.filter(ville=v_d)
+    
+    # LOG("Calcul des arêtes les plus proches de chaque Lieu.", bavard=1)
+
+
+    # nb = 0
+    # for l in ll:
+    #     nb += 1
+    #     l.ajoute_arête_la_plus_proche(arbre_a)
+    #     if nb%50==0: print(f"{nb} lieux traités")
+        
+    # LOG("Enregistrement des arêtes les plus proches", bavard=1)
+    # Lieu.objects.bulk_update(ll, ["arête", "ville"])
 
     LOG(f"charge_lieux_of_ville({v_d}) fini !")
     

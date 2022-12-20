@@ -2,7 +2,6 @@
 
 import time
 tic0 = time.perf_counter()
-from glob import glob
 import os
 import traceback
 import json

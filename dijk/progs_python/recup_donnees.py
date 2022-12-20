@@ -368,11 +368,12 @@ def coords_of_objet_overpy(o, type_objet_osm: str):
         return float(o.center_lon), float(o.center_lat)
 
 
-def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, tous_les_id_osm=None, force=False, bavard=0):
+def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, arbre_a, tous_les_id_osm=None, force=False, bavard=0):
     """
     Entrées:
         req : une requête overpass
         catégorie_lieu : la catégorie de lieux concernés (shop, amenity, tourism...)
+        arbre_a : R-arbre d’arête dans lequel chercher l’arête la plus proche de chaque lieu.
     Sortie (Lieu list × Lieu list) : (nouveaux lieu (à bulk_creater), lieux à màj)
     Paramètres:
         force, si True on mets à jour même les lieux déjà présents dans la base et avec le même json_nettoyé
@@ -386,7 +387,6 @@ def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, tous_les_id
     
     à_créer, à_màj = [], []
     for x, type_objet_osm in [(n, "nœud") for n in rés_req.nodes] + [(w, "way") for w in rés_req.ways] + [(r, "rel") for r in rés_req.relations]:
-        #if catégorie_lieu in x.tags:  # Sinon c’est que c’est un nœud d’un way rajouté par le > dans le requête overpass. (ne devrait plus se produire maintenant que j’utilise « out center » au lieu de « > ».)
         lon, lat = coords_of_objet_overpy(x, type_objet_osm)
         d = {"id_osm": x.id,
              "lon": lon, "lat": lat,
@@ -394,7 +394,7 @@ def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, tous_les_id
              "catégorie": catégorie_lieu,
              }
         d.update(x.tags)
-        l, créé, utile = mo.Lieu.of_dico(d, tous_les_id_osm=tous_les_id_osm, créer_type=True)
+        l, créé, utile = mo.Lieu.of_dico(d, arbre_a, tous_les_id_osm=tous_les_id_osm, créer_type=True)
         if créé:
             à_créer.append(l)
         elif utile or force:
@@ -402,7 +402,7 @@ def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, tous_les_id
     return à_créer, à_màj
 
 
-def lieux_of_ville(ville, bavard=0, force=False):
+def lieux_of_ville(ville, arbre_a, bavard=0, force=False):
     """
     Entrée : ville (objet avec un attribut nom_complet)
     Sortie (Lieu list) : liste de Lieux (amenity, shop, tourism) obtenus en cherchant la ville dans overpass.
@@ -419,11 +419,11 @@ def lieux_of_ville(ville, bavard=0, force=False):
             préfixe_requête=f'area[name="{ville.nom_complet}"]->.searchArea;',
             bavard=bavard
         )
-        à_c, à_m = traitement_req_récup_lieux(requête, catégorie_lieu, tous_les_id_osm, force=force)
+        à_c, à_m = traitement_req_récup_lieux(requête, catégorie_lieu, arbre_a, tous_les_id_osm, force=force)
         print(f"(lieux_of_ville) Création de {len(à_c)} nouveaux lieux")
         mo.Lieu.objects.bulk_create(à_c)
         print(f"(lieux_of_ville) Màj des {len(à_m)} lieux modifiés")
-        mo.Lieu.objects.bulk_update(à_m, ["nom", "horaires", "tél", "type_lieu", "json_initial", "json_nettoyé"])
+        mo.Lieu.objects.bulk_update(à_m, ["nom", "horaires", "tél", "type_lieu", "json_initial", "json_nettoyé", "ville", "arête"])
         res.extend(à_c+à_m)
         tous_les_id_osm.update((l.id_osm for l in à_c))
     return res
