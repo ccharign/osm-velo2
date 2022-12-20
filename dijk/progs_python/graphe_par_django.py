@@ -222,9 +222,9 @@ class Graphe_django():
         """
         Supprime de la base les sommets desquels aucune arête ne part.
         """
-        à_supprimer=[]
+        à_supprimer = []
         for s_d in self.dico_Sommet.values():
-            if len(s_d.voisins_nus())==0:
+            if len(s_d.voisins_nus()) == 0:
                 à_supprimer.append(s_d)
         print(f"Sommets à supprimer : {à_supprimer}")
         with transaction.atomic():
@@ -239,31 +239,30 @@ class Graphe_django():
         Paramètres :
             tol (int) : nb max de fautes de frappe. Si aucune ville à au plus tol fautes de frappe, lève l’exception VillePasTrouvée.
         """
-        noms_proches=self.arbre_villes.mots_les_plus_proches(no.partie_commune(nom), d_max=tol)[0]
-        if len(noms_proches)==0:
+        noms_proches = self.arbre_villes.mots_les_plus_proches(no.partie_commune(nom), d_max=tol)[0]
+        if len(noms_proches) == 0:
             raise VillePasTrouvée(f"Pas trouvé de ville à moins de {tol} fautes de frappe de {nom}. Voici les villes que je connais : {self.arbre_villes.tous_les_mots()}.")
-        elif len(noms_proches)>1:
+        elif len(noms_proches) > 1:
             raise VillePasTrouvée(f"Jai plusieurs villes à même distance de {nom}. Il s’agit de {noms_proches}.")
         else:
-            nom_norm,=noms_proches
+            nom_norm, = noms_proches
             return Ville.objects.get(nom_norm=nom_norm)
     
-
-
     
     def meilleure_arête(self, s, t, p_détour):
         """
         Renvoie l'arête (instance d'Arête) entre s et t de longueur corrigée minimale.
         """
-        #arêtes = Arête.objects.filter(départ__id_osm=s, arrivée__id_osm=t)
         données = ((a.longueur_corrigée(p_détour), a) for (v, a) in self.dico_voisins[s] if v==t)
         _, a = min(données)
         return a
 
+    
     def longueur_meilleure_arête(self, s, t, p_détour):
         longueurs = (a.longueur_corrigée(p_détour) for (v, a) in self.dico_voisins[s] if v==t)
         return min(longueurs)
-        
+
+    
     def geom_arête(self, s, t, p_détour):
         """
         Renvoie la géométrie de la plus courte arête de s à t, compte tenu de la proportion de détour indiquée.
@@ -271,21 +270,25 @@ class Graphe_django():
         a = self.meilleure_arête(s, t, p_détour)
         return a.géométrie(), a.nom
 
+    
     def incr_cyclabilité(self, a, p_détour, dc):
-        """ 
+        """
         Augmente la cyclabilité de l'arête a (couple de nœuds), ou l'initialise si elle n'était pas encore définie.
         Met à jour self.cycla_max si besoin
         Formule appliquée : *= (1+dc)
         """
-        s,t = a
+        s, t = a
         a_d = self.meilleure_arête(s, t, p_détour)
         a_d.incr_cyclabilité(dc)
         a_d.save()
-        #self.cycla_max = max(self.cycla_max, a_d.cycla)
+        # Il faudrait avoir la zone...
+        # if dc > 0:
+        #     self.cycla_max = max(self.cycla_max, a_d.cycla)
+        # else:
+        #     self.cycla_min = min(self.cycla_min, a_d.cycla)
 
         
     def calcule_cycla_min_max(self, z_d, arêtes=None):
-        assert False, "déprécié"
         if not arêtes:
             arêtes = z_d.arêtes()
             

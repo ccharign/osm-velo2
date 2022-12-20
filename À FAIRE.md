@@ -1,8 +1,6 @@
 
 À FAIRE :
 
-charger les bib_js dans la page d’entrée
-
 Désorienter les arêtes dans l’arbre
 
 Supprimer folium de carte_cycla pour pouvoir le supprimer définitivement.

@@ -393,11 +393,16 @@ class QuadrArbreArête(Quadrarbre):
         """
         Entrée : l, liste de mo.Arête. Plus précisèment, les objets de l doivent avoir une méthode « géométrie » qui renvoie une liste de coords, et un attribut pk (clef primaire).
         Sortie : arbre quad contenant les ArêteSimplifiée obtenues en découpant les Arêtes selon leur géom.
+        Les arêtes sont désorientées : une seule est gardée en cas d’aller-retour.
         """
         lf = []
+        déjà_vues = set()
         for a_d in l:
             for (d, a) in deuxConséc(a_d.géométrie()):
-                lf.append(ArêteSimplifiée(d, a, a_d.pk))
+                (d, a) = sorted((d, a))
+                if not (d, a) in déjà_vues:
+                    lf.append(ArêteSimplifiée(d, a, a_d.pk))
+                    déjà_vues.add((d, a))
         return cls.of_list(lf)
     
 

@@ -238,29 +238,29 @@ def dessine(listes_chemins, g, z_d, ad_départ, ad_arrivée, où_enregistrer, ba
 
 
 
-def dessine_chemin(c, g, où_enregistrer=os.path.join(TMP, "chemin.html"), ouvrir=False, bavard=0):
-    """
-    Entrées :
-       - c (instance de Chemin)
-       - g (instance de Graphe)
-       - p_détour (float ou float list) : liste des autres p_détour pour lesquels lancer et afficher le calcul.
-       - où_enregistrer : adresse où enregistrer le html produit.
-       - ouvrir (bool) : Si True, lance le navigateur sur la page créée.
+# def dessine_chemin(c, g, où_enregistrer=os.path.join(TMP, "chemin.html"), ouvrir=False, bavard=0):
+#     """
+#     Entrées :
+#        - c (instance de Chemin)
+#        - g (instance de Graphe)
+#        - p_détour (float ou float list) : liste des autres p_détour pour lesquels lancer et afficher le calcul.
+#        - où_enregistrer : adresse où enregistrer le html produit.
+#        - ouvrir (bool) : Si True, lance le navigateur sur la page créée.
 
-    Effet : Crée une carte html avec le chemin direct en rouge, et le chemin compte tenu de la cyclabilité en bleu.
-    Sortie : Longueur du chemin, du chemin direct.
-    """
+#     Effet : Crée une carte html avec le chemin direct en rouge, et le chemin compte tenu de la cyclabilité en bleu.
+#     Sortie : Longueur du chemin, du chemin direct.
+#     """
 
-    # Calcul des chemins
-    c_complet, _ = dijkstra.chemin_étapes_ensembles(g, c)
-    longueur = g.longueur_itinéraire(c_complet, c.p_détour)
+#     # Calcul des chemins
+#     c_complet, _ = dijkstra.chemin_étapes_ensembles(g, c)
+#     longueur = g.longueur_itinéraire(c_complet, c.p_détour)
     
-    départ, arrivée = c_complet[0], c_complet[-1]
-    c_direct, _ = dijkstra.chemin(g, départ, arrivée, 0)
-    longueur_direct = g.longueur_itinéraire(c_direct, 0)
+#     départ, arrivée = c_complet[0], c_complet[-1]
+#     c_direct, _ = dijkstra.chemin(g, départ, arrivée, 0)
+#     longueur_direct = g.longueur_itinéraire(c_direct, 0)
 
-    dessine([(c_complet, "blue", c.p_détour), (c_direct,"red", 0)], g, où_enregistrer, ouvrir=ouvrir)
-    return longueur, longueur_direct
+#     dessine([(c_complet, "blue", c.p_détour), (c_direct,"red", 0)], g, où_enregistrer, ouvrir=ouvrir)
+#     return longueur, longueur_direct
 
 
 def moyenne(t):

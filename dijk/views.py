@@ -297,9 +297,8 @@ def confirme_nv_chemin(requête):
     """
     Traitement du formulaire d’enregistrement d’un nouveau chemin.
     """
-    nb_lectures = 10
+    nb_lectures = 30
 
-    
     try:
         données = récup_données(requête.POST, forms.EnregistrerContrib)
         z_d, étapes, étapes_interdites, _ = z_é_i_d(g, données)
@@ -313,7 +312,6 @@ def confirme_nv_chemin(requête):
             c_d.dernier_p_modif = prop_modif
             c_d.save()
 
-
         chemins = []
         for id_chemin in requête.POST.keys():
             if id_chemin[:2] == "ps" and requête.POST[id_chemin] == "on":
@@ -322,8 +320,10 @@ def confirme_nv_chemin(requête):
 
         if données["autre_p_détour"]:
             traite_un_chemin(données["autre_p_détour"])
-                
 
+        LOG("Calcul des nouveaux cycla_min et cycla_max", bavard=1)
+        g.calcule_cycla_min_max(z_d)
+        
         return render(requête, "dijk/merci.html", {"chemin": chemins, "zone_t": z_d.nom})
     
     except Exception as e:

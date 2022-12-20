@@ -1,9 +1,9 @@
 # -*- coding:utf-8 -*-
-#from module_graphe import Graphe
-#from recup_donnees import coords_lieu
-import dijkstra
-from params import LOG_PB, LOG
+
 from django.db.transaction import atomic
+
+from dijk.progs_python import dijkstra
+from params import LOG_PB, LOG
 
 ETA = 0.1
 
@@ -19,7 +19,7 @@ def dico_arêtes(iti):
     Entrée : iti (int list)
     Sortie : ensemble de ses arêtes.
     """
-    res=set()
+    res = set()
     for a in liste_arêtes(iti):
         res.add(a)
     return res

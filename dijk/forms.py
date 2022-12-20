@@ -23,13 +23,10 @@ class RechercheBase(forms.Form):
     Classe mère pour les formulaires de recherche d’itinéraire
     """
     départ = forms.CharField(label="Départ", required=False)
-    #coords_départ = forms.CharField(widget=forms.HiddenInput(), required=False)
     données_cachées_départ = forms.CharField(widget=forms.HiddenInput(), required=False)  # Sera rempli par l’autocomplétion
     partir_de_ma_position = forms.BooleanField(label="Partir de ma position", required=False, initial=False)
     arrivée = forms.CharField(label="Arrivée")
-    #coords_arrivée = forms.CharField(widget=forms.HiddenInput(), required=False)
     données_cachées_arrivée = forms.CharField(widget=forms.HiddenInput(), required=False)
-    #zone_t = forms.CharField(widget=forms.HiddenInput())
     zone = forms.ModelChoiceField(queryset=mo.Zone.objects.all(), widget=forms.HiddenInput())
     marqueurs_é = forms.CharField(widget=forms.HiddenInput(), required=False)  # Pour les marqueurs d’étapes précédents.
     marqueurs_i = forms.CharField(widget=forms.HiddenInput(), required=False)  # Pour les marqueurs d’étape interdite précédents.
@@ -48,8 +45,8 @@ class RelanceRapide(RechercheBase):
     """
     Pour relancer rapidement une recherche.
     """
-    départ = forms.CharField(widget=forms.HiddenInput())
-    arrivée = forms.CharField(widget=forms.HiddenInput())
+    départ = forms.CharField(widget=forms.HiddenInput(), required=False)
+    arrivée = forms.CharField(widget=forms.HiddenInput(), required=False)
     étapes = forms.CharField(widget=forms.HiddenInput(), required=False)
     rues_interdites = forms.CharField(widget=forms.HiddenInput(), required=False)
     pourcentage_détour = forms.CharField(widget=forms.HiddenInput())
@@ -60,8 +57,8 @@ class ToutCaché(RechercheBase):
     """
     Pour ce formulaire, tout est caché. Utilisé pour « trajet retour ».
     """
-    départ = forms.CharField(widget=forms.HiddenInput())
-    arrivée = forms.CharField(widget=forms.HiddenInput())
+    départ = forms.CharField(widget=forms.HiddenInput(), required=False)
+    arrivée = forms.CharField(widget=forms.HiddenInput(), required=False)
     pourcentage_détour = forms.CharField(widget=forms.HiddenInput())
     étapes = forms.CharField(widget=forms.HiddenInput(), required=False)
     rues_interdites = forms.CharField(widget=forms.HiddenInput(), required=False)
