@@ -961,19 +961,24 @@ class Lieu(models.Model):
     #     super().save(self, *args, **kwargs)
 
 
-    def ajoute_arête_la_plus_proche(self, arbre_arêtes):
+    def ajoute_arête_la_plus_proche(self, arbre_arêtes, dmax=30):
         """
         Entrée :
             arbre_arêtes un Q arbre d’arêtes
+
         Effet:
             l’arête la plus proche de self est ajoutée dans l’attribut arête.
             Enregistre aussi la ville de l’arête. Pour simplifier, c’est la première ville qui est prise dans le cas où l’arête est sur une frontière.
             La modif n’est *pas* sauvegardée, pour permettre un bulk_update ultérieur.
+
+        Param :
+            dmax, distance max entre coords et l’arête la plus proche pour que l’arête et la ville soient enregistrés. En mètres.
         """
-        a, _ = arbre_arêtes.étiquette_la_plus_proche(self.coords())  # a est une ArêteSimplifiée
-        a_d = Arête.objects.get(pk=a.pk)
-        self.arête = a_d
-        self.ville = self.arête.villes.first()
+        a, d = arbre_arêtes.étiquette_la_plus_proche(self.coords())  # a est une ArêteSimplifiée
+        if d < dmax:
+            a_d = Arête.objects.get(pk=a.pk)
+            self.arête = a_d
+            self.ville = self.arête.villes.first()
         
 
 
