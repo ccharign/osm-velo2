@@ -77,6 +77,9 @@ def découpe_chaîne_de_nœuds(c):
 
 
 class Ville(models.Model):
+    """
+    lieux_calculés (date) : pour enregistrer la dernière fois que les lieux ont été mis à jour.
+    """
     nom_complet = models.CharField(max_length=100)
     nom_norm = models.CharField(max_length=100)
     code = models.IntegerField(null=True)
@@ -86,6 +89,7 @@ class Ville(models.Model):
     superficie = models.FloatField(null=True, default=None, blank=True)
     géom_texte = models.TextField(null=True, default=None, blank=True)
     données_présentes = models.BooleanField(default=False)
+    lieux_calculés = models.DateField(null=True, default=None, blank=True)
     #zone = models.ManyToManyField(Zone) # pb car la classe Zone n’est pas encore définie.
 
     class Meta:
@@ -897,7 +901,7 @@ class Lieu(models.Model):
     json_initial = models.TextField(blank=True, default=None, null=True)
     json_nettoyé = models.TextField(blank=True, default=None, null=True)
     arête = models.ForeignKey(Arête, on_delete=models.CASCADE, blank=True, default=None, null=True)  # Arête la plus proche
-
+    
 
     def __hash__(self):
         return self.id_osm

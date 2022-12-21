@@ -544,7 +544,8 @@ def pour_complétion(requête, nbMax=15):
         dans_la_base = Rue.objects.filter(nom_norm__icontains=rue, ville__in=req_villes).prefetch_related("ville")
         for rue_trouvée in dans_la_base:
             res.ajoute(chaîne_à_renvoyer(rue_trouvée.nom_complet, rue_trouvée.ville.nom_complet),
-                       àCacher={"type": "rue", "pk": rue_trouvée.pk, "num": num, "bis_ter": bis_ter, "coords": ""})
+                       àCacher={"type": "rue", "pk": rue_trouvée.pk, "num": num, "bis_ter": bis_ter, "coords": ""}
+                       )
 
         
         

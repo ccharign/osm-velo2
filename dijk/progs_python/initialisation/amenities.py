@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 import time
+import datetime
 import os
 from pprint import pformat
 
@@ -137,51 +138,29 @@ def charge_lieux_of_ville(v_d, arbre_a=None, bavard=0, force=False):
     LOG(f"Lieux de {v_d}", bavard=1)
 
     if not arbre_a:
-        # try:
-        #     z_d = Ville_Zone.objects.filter(ville=v_d).first().zone
-        #     dossier_données = os.path.join(DONNÉES, str(z_d))
-        #     chemin = os.path.join(dossier_données, f"arbre_arêtes_{z_d}")
-        #     arbre_a = QuadrArbreArête.of_fichier(chemin)
-        # except Exception as e:
-        #     print(f"Erreur dans la récupération de l’arbre des arêtes : {e}")
-        #     arbre_a = QuadrArbreArête.of_ville(v_d)
         arbre_a = mo.ArbreArête.racine()
-
         
-    # 1) Récup ou création des Lieux
     LOG("Récupération des lieux via overpass", bavard=1)
     ll = lieux_of_ville(v_d, arbre_a, bavard=bavard, force=force)
 
-
-    # 2) Ajout de villes
-    # LOG(f"Récupération des noms de ville et des adresses via data.gouv pour les {len(ll)} lieux obtenus", bavard=1)
-    # ajoute_ville_et_rue(ll, bavard=bavard-1)
-
-    
-    # 3) Ajout de l’arête la plus proche
-    #lieux_de_la_bonne_ville = Lieu.objects.filter(ville=v_d)
-    
-    # LOG("Calcul des arêtes les plus proches de chaque Lieu.", bavard=1)
-
-
-    # nb = 0
-    # for l in ll:
-    #     nb += 1
-    #     l.ajoute_arête_la_plus_proche(arbre_a)
-    #     if nb%50==0: print(f"{nb} lieux traités")
-        
-    # LOG("Enregistrement des arêtes les plus proches", bavard=1)
-    # Lieu.objects.bulk_update(ll, ["arête", "ville"])
+    v_d.lieux_calculés = datetime.date.today()
+    v_d.save()
 
     LOG(f"charge_lieux_of_ville({v_d}) fini !")
     
     
 
 def charge_lieux_of_zone(z_t, force=False):
+    """
+    Params:
+        force, si Vrai force la mise à jour des lieux déjà présents, et des lieux des villes pour lesquelles lieux_calculés est aujourd’hui.
+        L’option force=False est pratique pour relancer le calcul sur les villes qui ont échoué à un premier essai.
+    """
     close_old_connections()
     z_d = Zone.objects.get(nom=z_t)
     arbre_a = QuadrArbreArête.of_list_darêtes_d(z_d.arêtes())
     for rel in z_d.ville_zone_set.all():
-        charge_lieux_of_ville(rel.ville, force=force, arbre_a=arbre_a)
-        print("Pause de 10s pour overpass")
-        time.sleep(10)
+        if force or rel.ville.lieux_calculés < datetime.date.today():
+            charge_lieux_of_ville(rel.ville, force=force, arbre_a=arbre_a)
+            print("Pause de 10s pour overpass")
+            time.sleep(10)
