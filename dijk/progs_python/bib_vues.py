@@ -61,9 +61,10 @@ def z_é_i_d(g, données):
 
     # Le départ (possiblement des coords gps)
     if "partir_de_ma_position" in données and données["partir_de_ma_position"]:
-        coords = tuple(map(float, données["localisation"].split(";")))
+        coords = tuple(map(float, données["localisation"].split(",")))
         assert len(coords) == 2, f"coords n'est pas de longueur 2 {coords}"
         données["départ_coords"] = str(coords)[1:-1]
+        breakpoint()
         départ = ÉtapeArête.of_coords(coords, g, z_d)
     else:
         départ = Étape.of_dico(données, "départ", g, z_d)

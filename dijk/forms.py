@@ -24,7 +24,7 @@ class RechercheBase(forms.Form):
     """
     départ = forms.CharField(label="Départ", required=False)
     données_cachées_départ = forms.CharField(widget=forms.HiddenInput(), required=False)  # Sera rempli par l’autocomplétion
-    partir_de_ma_position = forms.BooleanField(label="Partir de ma position", required=False, initial=False)
+    partir_de_ma_position = forms.BooleanField(label="Partir de ma position", required=False, initial=False, widget=forms.HiddenInput())
     arrivée = forms.CharField(label="Arrivée")
     données_cachées_arrivée = forms.CharField(widget=forms.HiddenInput(), required=False)
     zone = forms.ModelChoiceField(queryset=mo.Zone.objects.all(), widget=forms.HiddenInput())
