@@ -285,7 +285,7 @@ def dessine_cycla(g, z_d, où_enregistrer, bavard=0):
     
 ### Apprentissage ###
 
-def lecture_tous_les_chemins(g, z_t=None, n_lectures_max=20, bavard=2):
+def lecture_tous_les_chemins(g, z_t=None, n_lectures_max=20, bavard=1):
     """
     Lance l’apprentissage sur chaque chemin de la zone. Si None, parcourt toutes les zones de g.
     On lit n_lectures_max fois la liste de tous les chemins, ceux qui n’ont pas été modifiés étant retirés de la liste.
@@ -311,13 +311,18 @@ def lecture_tous_les_chemins(g, z_t=None, n_lectures_max=20, bavard=2):
         LOG(f"\n{len(à_lire)} chemins restant à lire.")
         à_lire_après = []
         for c in à_lire:
-            n_modif, l = ap.lecture_meilleur_chemin(g, c, bavard=bavard)
-            c.c_d.dernier_p_modif = n_modif / l
-            LOG(f"\nLecture de {c}. {n_modif} arêtes modifiées, distance = {l}.\n\n\n", bavard=bavard)
-            if n_modif > 0:
-                à_lire_après.append(c)
-            else:
-                c.c_d.save()
+            try:
+                n_modif, l = ap.lecture_meilleur_chemin(g, c, bavard=bavard-1)
+                c.c_d.dernier_p_modif = n_modif / l
+                LOG(f"\nLecture de {c}.\n {n_modif} arêtes modifiées, distance = {l}.\n\n", bavard=bavard)
+                if n_modif > 0:
+                    à_lire_après.append(c)
+                else:
+                    c.c_d.save()
+            except Exception as e:
+                print(f"Problème pour le chemin {c}\n {e}.\n Voulez-vous le supprimer de la base (o/n)?")
+                if input("") == "o":
+                    c.c_d.delete()
         à_lire = à_lire_après
 
     # sauvegarde des dernier_p_modif pour les chemins où ce n’est pas arrivé à 0.

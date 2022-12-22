@@ -476,7 +476,7 @@ def recharge_lieux_of_zone(zone, bavard=0):
     lieux = Lieu.objects.filter(ville__in=villes)
     lieux.delete()
 
-    charge_lieux_of_liste_ville(villes, quadArbreAretesDeZone(zone, sauv=False))
+    charge_lieux_of_liste_ville(villes, QuadrArbreArête.of_list_darêtes_d(zone.arêtes(), sauv=False))
     
 
 def charge_fichier_cycla_défaut(g, chemin=os.path.join(RACINE_PROJET, "progs_python/initialisation/données_à_charger/rues et cyclabilité.txt"), zone="Pau_agglo"):
@@ -493,13 +493,13 @@ def charge_fichier_cycla_défaut(g, chemin=os.path.join(RACINE_PROJET, "progs_py
                 if ligne[:6]=="cycla ":
                     cycla = 1.1**int(ligne[6:].strip())
                     print(f"\n\nRues de cyclabilité {cycla}")
-                elif ligne.strip()=="":
+                elif ligne.strip() == "":
                     None
-                elif ligne[:2]=="à ":
+                elif ligne[:2] == "à ":
                     v_d = Ville.objects.get(nom_norm=partie_commune(ligne[2:].strip().replace(":","")))
                     print(f"\n  Ville {v_d}")
                 else:
-                    nom_n, nom_osm,_ = normalise_rue(g, z_d, ligne.strip(), v_d)
+                    nom_n, nom_osm, _ = normalise_rue(g, z_d, ligne.strip(), v_d)
                     print(f"    {nom_osm}")
                     rue = Rue.objects.get(nom_norm=nom_n, ville=v_d)
                     sommets = frozenset(g.dico_Sommet[s] for s in rue.nœuds())

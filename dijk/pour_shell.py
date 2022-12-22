@@ -20,13 +20,13 @@ from progs_python.utils import lecture_tous_les_chemins
 osmnx.settings.use_cache = True
 osmnx.settings.log_console = True
 
-def entraine_tout():
+def entraine_tout(bavard=0):
     """
     Lance la lecture de tous les chemins de la base.
     """
     for z_d in mo.Zone.objects.all():
         v.g.charge_zone(z_d.nom)
-    lecture_tous_les_chemins(v.g)
+    lecture_tous_les_chemins(v.g, bavard=bavard)
 
 
 def mise_à_jour():
