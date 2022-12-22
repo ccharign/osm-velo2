@@ -3,22 +3,20 @@
 ### Fonctions diverses pour utiliser le logiciel
 
 from time import perf_counter
-import subprocess
-import os
 from django.db import transaction, close_old_connections
 import gpxpy
 from branca.element import Element
 
-from petites_fonctions import chrono, deuxConséc, LOG
-tic=perf_counter()
+
 import folium
-chrono(tic, "folium", bavard=2)
+
 from folium.plugins import Fullscreen, LocateControl
 
-import dijk.models as mo
-from dijk.models import Zone, Chemin_d, Arête
+from dijk.progs_python.petites_fonctions import chrono, deuxConséc, LOG
 
-from params import TMP
+import dijk.models as mo
+from dijk.models import Chemin_d, Arête
+
 
 tic=perf_counter()
 from mon_folium import folium_of_chemin, ajoute_marqueur, folium_of_arêtes, couleur_of_cycla, color_dict, NB_COUL
@@ -30,7 +28,6 @@ tic=perf_counter()
 import chemins
 chrono(tic, "chemins", bavard=2)
 
-from lecture_adresse.normalisation import normalise_rue, normalise_ville
 import apprentissage as ap
 
 
@@ -297,7 +294,7 @@ def lecture_tous_les_chemins(g, z_t=None, n_lectures_max=20, bavard=2):
     if z_t is None:
         à_parcourir = g.zones
     else:
-        z=g.charge_zone(z_t)
+        z = g.charge_zone(z_t)
         à_parcourir = [z]
 
     # Liste des chemins à lire
@@ -305,7 +302,7 @@ def lecture_tous_les_chemins(g, z_t=None, n_lectures_max=20, bavard=2):
     for z in à_parcourir:
         print(f"\nEntrainement sur la zone {z}")
         for c_d in Chemin_d.objects.filter(zone=z):
-            c = chemins.Chemin.of_django(c_d, g , bavard=bavard-1)
+            c = chemins.Chemin.of_django(c_d, g, bavard=bavard-1)
             c.c_d = c_d
             à_lire.append(c)
 
@@ -314,10 +311,10 @@ def lecture_tous_les_chemins(g, z_t=None, n_lectures_max=20, bavard=2):
         LOG(f"\n{len(à_lire)} chemins restant à lire.")
         à_lire_après = []
         for c in à_lire:
-            n_modif,l = ap.lecture_meilleur_chemin(g, c, bavard=bavard)
+            n_modif, l = ap.lecture_meilleur_chemin(g, c, bavard=bavard)
             c.c_d.dernier_p_modif = n_modif / l
             LOG(f"\nLecture de {c}. {n_modif} arêtes modifiées, distance = {l}.\n\n\n", bavard=bavard)
-            if n_modif>0:
+            if n_modif > 0:
                 à_lire_après.append(c)
             else:
                 c.c_d.save()

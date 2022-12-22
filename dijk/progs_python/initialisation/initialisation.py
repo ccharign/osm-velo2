@@ -82,12 +82,12 @@ def quadArbreArêtesDeVille(v_d: mo.Ville):
     """
     Renvoie le plus petit sous-arbre de la base contenant les arêtes de v_d.
     """
-    return quadarbre_of_arêtes(v_d.arêtes())
+    return QuadrArbreArête.of_list_darêtes_d(v_d.arêtes())
 
 
-def quadArbreArêtesDeZone(z_d, bavard=0):
+def quadArbreArêtesDeZone(z_d: mo.Zone, bavard=0):
     print(f"(Arbre des arêtes de la zone {z_d})")
-    return quadarbre_of_arêtes(z_d.arêtes())
+    return QuadrArbreArête.of_list_darêtes_d(z_d.arêtes())
 
 
 def quadArbreArêtesDeToutesLesZones():
@@ -184,8 +184,11 @@ def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
     print("\n\nCalcul des nœuds de chaque rue")
     dico_rues, places_piétonnes = extrait_nœuds_des_rues(g, bavard=bavard-1)  # dico ville -> rue_n -> (rue, liste nœuds) # Seules les rues avec nom de ville, donc dans g_strict seront calculées.
     print(f"\nPlaces piétonnes trouvées : {places_piétonnes}\n")
-    print("Écriture des nœuds des rues dans la base.")
+
     close_old_connections()
+    print("Suppression des anciennes rues")
+    print(Rue.objects.filter(ville=ville_d).delete())
+    print("Ajout des nouvelles rues.")
     vd.charge_dico_rues_nœuds(ville_d, dico_rues[ville_d.nom_complet])
 
     ## Arbrex lex des rues
@@ -227,7 +230,6 @@ def ajoute_ville(nom: str, code: int, nom_zone: str, force=False, pays="France",
 
 def charge_ville(ville_d, zone_d,
                  force=False,
-                 recalculer_arbre_arêtes_de_la_zone=True,
                  rajouter_les_lieux=True,
                  pays="France", bavard=2, rapide=0
                  ):
@@ -241,14 +243,14 @@ def charge_ville(ville_d, zone_d,
     NB : actuellement, les places piétonnes sont récupérées via la fonction noeuds_des_rues, et la procédure place_en_clique est programmée, mais elle n’est pas lancée, car sur Pau en tout cas, cela ne semble pas pertinent (cf la place Clemenceau).
 
     Paramètres:
-        - force : si vrai, recharge les données même si le champ données_présentes valait True.
+        - force : si vrai, recharge les données même si le champ données_présentes de ville_d valait True.
         - rapide (int) : indique la stratégie en cas de données déjà présentes.
              pour tout  (s,t) sommets voisins dans g,
                 0 -> efface toutes les arêtes de s vers t et remplace par celles de g
                 1 -> regarde si les arête entre s et t dans g correspondent à celles dans la base, et dans ce cas ne rien faire.
                         « correspondent » signifie : même nombre et mêmes noms.
                 2 -> si il y a quelque chose dans la base pour (s,t), ne rien faire.
-        - recalculer_arbre_arêtes_de_la_zone (bool) : si vrai le fichier contenant l’arbre quad des arêtes de la zone est recalculé (~4s pour Pau_agglo sur ma vieille machine)
+        - rajouter_les_lieux : si Vrai,récupère les lieux sur overpass et crée les objets associés.
     """
 
     assert isinstance(ville_d, Ville) and isinstance(zone_d, Zone)
@@ -265,19 +267,12 @@ def charge_ville(ville_d, zone_d,
     if not ville_d.données_présentes or force:
         # création et enregistrement du graphe de la ville
         arêtes_créées, arêtes_màj = charge_graphe_de_ville(ville_d, pays=pays, bavard=bavard-1, rapide=rapide)
-        #vd.ajoute_arêtes_de_ville(ville_d, arêtes_créées, arêtes_màj)
         modif = True
 
-        
-    ## Arbre q des arêtes
-    if modif or recalculer_arbre_arêtes_de_la_zone or rajouter_les_lieux:  # Pour rajouter les lieux il faut être sûr que l’arbre des arêtes est à jour
-        # Si recalculer_arbre_arêtes_de_la_zone est Faux, c’est que le calcul de l’arbre des arêtes sera lancé par crée_zone.
-        arbre_a = crée_les_arbres_darêtes([ville_d], bavard=bavard-1)[zone_d]
-        modif = True
-        
     ## Lieux
     if rajouter_les_lieux:
-        # De même, si rajouter_les_lieux est faux, c’est que c’est crée_zone qui s’en charge (pour éviter de recalculer l’arbre des arêtes à chaque ville.)
+        # Si rajouter_les_lieux est faux, c’est que c’est crée_zone qui s’en charge (pour éviter de recalculer l’arbre des arêtes à chaque ville.)
+        arbre_a = quadArbreArêtesDeVille(ville_d)
         charge_lieux_of_ville(ville_d, arbre_a=arbre_a)
         modif = True
     
@@ -434,16 +429,13 @@ def crée_zone(liste_villes_str, zone: str,
     for v_d in liste_villes_d:
         _, données_ajoutées = charge_ville(
             v_d, z_d,
-            bavard=bavard, rapide=rapide, recalculer_arbre_arêtes_de_la_zone=False, rajouter_les_lieux=False
+            bavard=bavard, rapide=rapide, rajouter_les_lieux=False
         )
         if données_ajoutées or force_lieux:
             villes_modifiées.append(v_d)
 
     # Arbre quad des arêtes
-    if villes_modifiées:
-        arbre_a = crée_les_arbres_darêtes(villes_modifiées, bavard=bavard)[z_d]
-    else:
-        arbre_a = quadArbreAretesDeZone(z_d, sauv=False)
+    arbre_a = quadArbreArêtesDeZone(z_d, bavard=bavard)
     
 
     # Lieux (besoin de l’arbre des arêtes)
@@ -452,10 +444,12 @@ def crée_zone(liste_villes_str, zone: str,
     if échec_lieux:
         print("Problème sur les villes :")
         pprint(échec_lieux)
-    else:
-        print("\nFini!")
-    #print("Je lance ajoute_ville_et_rue_manquantes pour faire un deuxième essai de recherche des adresses des lieux sur toute la base..")
-    #ajoute_ville_et_rue_manquantes(bavard=bavard-1)
+
+
+    # ArbreArête de la base
+    quadArbreArêtesDeLaBase()
+
+    print("(crée_zone) fini!")
 
 
 def charge_lieux_of_liste_ville(villes, arbre_a: QuadrArbreArête) -> list:

@@ -144,29 +144,29 @@ def relance_rapide(requête):
     z_d, étapes, étapes_interdites, ps_détour = z_é_i_d(g, données)
     
     
-    départ = étapes[0]
-    arrivée = étapes[-1]
+    # départ = étapes[0]
+    # arrivée = étapes[-1]
 
-    é_inter = []
-    é_interdites = []
+    # é_inter = []
+    # é_interdites = []
     
-    for c, v in requête.GET.items():
-        if "étape_coord" in c:
-            num = int(re.match("étape_coord([0-9]*)", c).groups()[0])
-            print(num)
-            coords = tuple(map(float, v.split(",")))
-            a, _ = g.arête_la_plus_proche(coords, z_d)
-            é_inter.append((num, ÉtapeArête.of_arête(a, coords)))
+    # for c, v in requête.GET.items():
+    #     if "étape_coord" in c:
+    #         num = int(re.match("étape_coord([0-9]*)", c).groups()[0])
+    #         coords = tuple(map(float, v.split(",")))
+    #         a, _ = g.arête_la_plus_proche(coords, z_d)
+    #         é_inter.append((num, ÉtapeArête.of_arête(a, coords)))
             
-        elif "interdite_coord" in c:
-            coords = tuple(map(float, v.split(",")))
-            a, _ = g.arête_la_plus_proche(coords, z_d)
-            é_interdites.append(ÉtapeArête.of_arête(a, coords))
-    LOG(f"(views.relance_rapide) étapes_interdites : {étapes_interdites}")
-    é_inter.sort()
-    étapes = [départ] + [é for _, é in é_inter] + [arrivée]
+    #     elif "interdite_coord" in c:
+    #         coords = tuple(map(float, v.split(",")))
+    #         a, _ = g.arête_la_plus_proche(coords, z_d)
+    #         é_interdites.append(ÉtapeArête.of_arête(a, coords))
+    # LOG(f"(views.relance_rapide) étapes_interdites : {étapes_interdites}")
+    # é_inter.sort()
+    
+    # étapes = [départ] + [é for _, é in é_inter] + [arrivée]
     return calcul_itinéraires(requête, ps_détour, z_d,
-                              étapes, étapes_interdites=é_interdites,
+                              étapes, étapes_interdites=étapes_interdites,
                               données=données,
                               bavard=3)
 
@@ -214,6 +214,7 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_interdites=[
         ps_détour = list(map( lambda x: float(x)/100, requête.GET["pourcentage_détour"].split(";")) )
         
     try:
+
         données.update(itinéraire_of_étapes(
             étapes, ps_détour, g, z_d,
             rajouter_iti_direct=len(étapes) > 2,
@@ -356,7 +357,7 @@ def choix_cycla(requête):
         # On est arrivé ici après remplissage du formulaire
         form = forms.CarteCycla(requête.GET)
         if form.is_valid():
-            données=form.cleaned_data
+            données = form.cleaned_data
             return carte_cycla(requête, données)
     else:
         # Formulaire pas encore rempli (premier appel)

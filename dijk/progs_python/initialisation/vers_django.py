@@ -510,13 +510,13 @@ def charge_dico_rues_nœuds(ville_d, dico):
     Effet :
         remplit la table dijk_rue. Si une rue était déjà présente, elle sera supprimée.
     """
-    rues_à_créer=[]
+    rues_à_créer = []
     for rue_n, (rue, nœuds) in dico.items():
         #rue_n = prétraitement_rue(rue)
         assert rue_n == prétraitement_rue(rue_n), f"La rue suivante n’était pas normalisée : {rue_n}"
         nœuds_texte = ",".join(map(str, nœuds))
-        vieilles_rues = Rue.objects.filter(nom_norm=rue_n, ville=ville_d)
-        vieilles_rues.delete()
+        # vieilles_rues = Rue.objects.filter(nom_norm=rue_n, ville=ville_d)
+        # vieilles_rues.delete()
         rue_d = Rue(nom_complet=rue, nom_norm=rue_n, ville=ville_d, nœuds_à_découper=nœuds_texte)
         rues_à_créer.append(rue_d)
     Rue.objects.bulk_create(rues_à_créer)

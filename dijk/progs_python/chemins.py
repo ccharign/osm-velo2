@@ -64,7 +64,6 @@ class Étape():
         Si de la forme 'Arêtelon;lat', renvoie l’objet de type ÉtapeArête correspondant à ces coords.
         Sinon lit l’adresse et renvoie l’objet de type Étape classique.
         """
-        res = cls()
 
         # 1) Voyons si le texte venait d’un ÉtapeArête.__str__
         essai = re.match("^Arête(.*),(.*)", texte)
@@ -81,7 +80,7 @@ class Étape():
 
         
         # Cas général : le texte est une adresse.
-        return ÉtapeAdresse(texte, g, z_d, bavard=bavard)
+        return ÉtapeAdresse.of_texte(texte, g, z_d, bavard=bavard)
 
 
     @classmethod
@@ -161,6 +160,9 @@ class ÉtapeAdresse(Étape):
         self.adresse = None
         self.nœuds = set()
         self.nom = ""
+
+    def str_pour_chemin(self):
+        return str(self)
         
 
     @classmethod
@@ -249,14 +251,14 @@ class ÉtapeArête(Étape):
         return cls.of_arête(a, coords, ad=ad)
     
     
-    def __str__(self):
+    def str_pour_chemin(self):
         """
         Sera utilisé pour enregistrement dans la base.
         """
         return f"Arête{self.coords_ini[0]},{self.coords_ini[1]}"
     
         
-    def joli_texte(self):
+    def __str__(self):
         """
         Pour affichage utilisateur.
         """
@@ -275,6 +277,13 @@ class ÉtapeLieu(Étape):
         self.nom = l.nom
         self.nœuds = set((l.arête.départ.id_osm, l.arête.arrivée.id_osm))
         self.adresse = l.adresse
+
+    def str_pour_chemin(self):
+        """
+        Sera utilisé pour enregistrement dans la base.
+        NB : au chargement du chemin, deviendra une ÉtapeAdresse.
+        """
+        return f"Arête{self.lieu.lon},{self.lieu.lat}"
 
 
     
@@ -335,9 +344,9 @@ class Chemin():
     def vers_django(self, utilisateur=None, bavard=0):
         """
         Transfert le chemin dans la base.
-        Sortie : l’instance de Chemin_d créée.
+        Sortie : l’instance de Chemin_d créée, ou celle déjà présente le cas échéant.
         """
-        étapes_t = ";".join(map(str, self.étapes))
+        étapes_t = ";".join(é.str_pour_chemin() for é in self.étapes)
         rues_interdites_t = self.noms_rues_interdites
         début, fin = étapes_t[:255], étapes_t[-255:]
         interdites_début, interdites_fin = rues_interdites_t[:255], rues_interdites_t[-255:]
@@ -377,7 +386,7 @@ class Chemin():
         """
 
         ## Extraction des données
-        AR_t, pourcentage_détour_t, étapes_t,rues_interdites_t = ligne.strip().split("|")
+        AR_t, pourcentage_détour_t, étapes_t, rues_interdites_t = ligne.strip().split("|")
         p_détour = int(pourcentage_détour_t)/100.
         AR = bool(AR_t)
         return cls.of_données(g, AR, p_détour, étapes_t, rues_interdites_t, bavard=bavard)
@@ -393,7 +402,7 @@ class Chemin():
             - rues_interdites_t (str) : rues interdites, séparées par ;
         """
         
-        #rues interdites
+        # rues interdites
         if len(rues_interdites_t) > 0:
             noms_rues = rues_interdites_t.split(";")
             étapes_interdites = (Étape.of_texte(n, g, z_d, nv_cache=2) for n in noms_rues)
@@ -403,16 +412,9 @@ class Chemin():
         
         # étapes
         noms_étapes = étapes_t.split(";")
-        n_pb = 0
         étapes = []
         for c in noms_étapes:
-        #    try:
-                étapes.append(Étape.of_texte(c.strip(), g, z_d, nv_cache=2, bavard=bavard-1))
-        #     except Exception as e:
-        #         LOG_PB(f"Échec pour l’étape {c} : {e}")
-        #         n_pb+=1
-        # if n_pb/len(noms_étapes) > tol:
-        #     raise ÉchecChemin(f"{n_pb} erreurs pour la lecture de {ligne}.")
+            étapes.append(Étape.of_texte(c.strip(), g, z_d, nv_cache=2, bavard=bavard-1))
 
         
         ## Création de l’objet Chemin
@@ -426,7 +428,7 @@ class Chemin():
         Enregistre le chemin dans la base.
         """
         c = Chemin_d(p_détour=self.p_détour,
-                     étapes=";".join(map(str, self.étapes)),
+                     étapes=";".join(é.str_pour_chemin() for é in self.étapes),
                      ar=self.AR,
                      interdites=self.noms_rues_interdites,
                      )
