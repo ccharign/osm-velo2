@@ -853,6 +853,7 @@ class CacheNomRue(models.Model):
 
 class TypeLieu(models.Model):
     """
+    Enregistre un type de lieu osm.
     catégorie est le nom du tag osm (amenity, shop, tourism...)
     nom_osm est la valeur de ce tag.
     """
