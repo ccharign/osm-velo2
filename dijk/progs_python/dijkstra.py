@@ -62,7 +62,7 @@ def itinéraire(g, départ: int, arrivée: int, p_détour: float, bavard=0):
             s = pred[s]
             chemin.append(s)
         chemin.reverse()
-        if bavard>0:
+        if bavard > 0:
             LOG(f"(dijkstra.chemin) pour aller de {départ} à {arrivée} avec proportion détour de {p_détour} j’ai trouvé\n {chemin}")
         return chemin, dist[arrivée]
     else:
@@ -74,6 +74,7 @@ def itinéraire(g, départ: int, arrivée: int, p_détour: float, bavard=0):
 
 #######################################################################
 ########## En prenant pour étapes des *ensembles* de sommets ##########
+########## Passer par une arête de l’étape ############################
 #######################################################################
 
 
@@ -142,7 +143,7 @@ def vers_une_étape(g, départ, arrivée, p_détour, dist, pred, première_étap
             sommetsFinalsTraités.add(s)
             fini = len(sommetsFinalsTraités) == len(arrivée)
             
-        if s in départ and not première_étape and len(départ)>1:
+        if s in départ and not première_étape and len(départ) > 1:
             boucle_par_arêtes_doubles(s)
         else:
             boucle_simple(s)
@@ -223,14 +224,110 @@ def iti_étapes_ensembles(g, c, bavard=0):
 
 ## Emploi typique : passer par une boulangerie.
 
-# À FAIRE
 
-
-def iti_passe_par_un_sommet(g, étapes, bavard=0):
+def iti_qui_passe_par_un_sommet(g, c, étapes_interdites, bavard=0):
     """
     Entrées :
-        étapes (Étapes list)
+        
     
     Sortie (int list × float) : plus court chemin passant par un *sommet* de chaque étape, longueur d’icelui.
     """
+    correction_max = 1. / formule_pour_correction_longueur(1., g.cycla_max[c.zone], c.p_détour)
+    étapes = list(reversed(c.étapes))
+    dist = {s: 0. for s in étapes.pop()}
+    return vers_une_étape_par_un_sommet(
+        g,
+        c.p_détour,
+        correction_max,
+        [],
+        dist,
+        étapes,
+        interdites=étapes_interdites
+    )
     
+
+def vers_une_étape_par_un_sommet(g,
+                                 p_détour: float,
+                                 correction_max: float,
+                                 précs_préds: list[dict],
+                                 dist: dict[int, float],
+                                 étapes_restantes: list[set],
+                                 interdites: dict,
+                                 bavard=0):
+    """
+    J’appelle ci-dessous « le chemin » le chemin total pour lequel on cherche un itinéraire; au premier lancement de cette fonction récursive étapes_restantes est la liste des étapes de ce chemin. Au dernier appel, cette liste est un singleton.
+
+    Entrées:
+        g, graphe
+        précs_préds, liste des dicos de prédécesseurs pour les étapes précédentes
+        dist : dico sommet->distance au départ du chemin initial. Contient initialement les distance entre le départ du chemin et la dernière étape atteinte.
+        étapes_restantes, liste des prochaines étapes à atteindre. On commence par la fin (par des pop)
+        interdites, dico s-> voisins interdits depuis s
+
+    Sortie:
+        itinéraire depuis le départ du chemin et la dernière étape.
+    """
+
+    but_actuel = étapes_restantes.pop()
+    préc = {}
+    atteints = set()            # Sommets du but_actuel déjà atteints
+    précs_préds.append(préc)
+
+    # Initialisation du tas
+    à_visiter = []
+    for (s, d) in dist.items():
+        heappush(à_visiter, (d, s))
+
+
+    # Boucle principale
+    while len(à_visiter) != 0:
+        d, s = heappop(à_visiter)
+
+        # Sommet d’arrivée
+        if s in but_actuel:
+            if len(étapes_restantes) == 0:
+                # On est arrivé au bout du chemin!
+                return chemin_reconstruit_par_un_sommet(s, précs_préds)
+            else:
+                atteints.add(s)
+                if len(atteints) == len(but_actuel):
+                    # étape actuelle finie, on passe à la suivante
+                    return vers_une_étape_par_un_sommet(
+                        g,
+                        p_détour,
+                        correction_max,
+                        précs_préds,
+                        {t: dist[t] for t in but_actuel},  # Réinitialiser dist
+                        étapes_restantes,
+                        interdites,
+                        bavard=bavard
+                    )
+
+        # Traitement des voisins de s
+        for (t, l) in g.voisins(s, p_détour, interdites=interdites):
+            if d + l < dist.get(t, float("inf")):
+                # Passer par t vaut le coup
+                préc[t] = s
+                dist[t] = d + l
+                heappush(à_visiter, (d+l, t))  # Doublons dans à_visiter pas graves
+
+                
+    # Sortie de boucle sans avoir atteint la destination
+    raise RuntimeError("Étape pas atteinte : {but_actuel}")
+
+
+
+def chemin_reconstruit_par_un_sommet(sa: int, précs_préds: list[dict]):
+    """
+    
+    """
+    if len(précs_préds) == 0:
+        return []
+    else:
+        préc = précs_préds.pop()
+        res, s = [sa], sa
+        while s in préc:
+            s = préc[s]
+            res.append(s)
+        res.extend(chemin_reconstruit_par_un_sommet(s, précs_préds))
+        return res
