@@ -77,9 +77,6 @@ def sous_le_capot(requête):
     return render(requête, "dijk/sous_le_capot.html", {})
 
 
-# def visualisation_nv_chemin(requête):
-#     return render(requête, "dijk/iti_folium.html", {})
-
 
 
 
@@ -122,9 +119,10 @@ def recherche(requête, zone_t, bavard=1):
                                       bavard=1
                                       )
         else:
-            # form pas valide
+            # Form pas valide
             print(form_recherche.errors)
     else:
+        # Form pas rempli
         form_recherche = forms.Recherche(initial=données)
     return render(requête, "dijk/recherche.html",
                   {"ville": z_d.ville_défaut, "zone_t": zone_t, "recherche": form_recherche}
@@ -143,28 +141,6 @@ def relance_rapide(requête):
     données = récup_données(requête.GET, forms.RelanceRapide)
     z_d, étapes, étapes_interdites, ps_détour = z_é_i_d(g, données)
     
-    
-    # départ = étapes[0]
-    # arrivée = étapes[-1]
-
-    # é_inter = []
-    # é_interdites = []
-    
-    # for c, v in requête.GET.items():
-    #     if "étape_coord" in c:
-    #         num = int(re.match("étape_coord([0-9]*)", c).groups()[0])
-    #         coords = tuple(map(float, v.split(",")))
-    #         a, _ = g.arête_la_plus_proche(coords, z_d)
-    #         é_inter.append((num, ÉtapeArête.of_arête(a, coords)))
-            
-    #     elif "interdite_coord" in c:
-    #         coords = tuple(map(float, v.split(",")))
-    #         a, _ = g.arête_la_plus_proche(coords, z_d)
-    #         é_interdites.append(ÉtapeArête.of_arête(a, coords))
-    # LOG(f"(views.relance_rapide) étapes_interdites : {étapes_interdites}")
-    # é_inter.sort()
-    
-    # étapes = [départ] + [é for _, é in é_inter] + [arrivée]
     return calcul_itinéraires(requête, ps_détour, z_d,
                               étapes, étapes_interdites=étapes_interdites,
                               données=données,
@@ -211,7 +187,10 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_interdites=[
     """
     
     if isinstance(ps_détour, str):
-        ps_détour = list(map( lambda x: float(x)/100, requête.GET["pourcentage_détour"].split(";")) )
+        ps_détour = list(map(
+            lambda x: float(x)/100,
+            requête.GET["pourcentage_détour"].split(";")
+        ))
         
     try:
 
@@ -254,12 +233,12 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_interdites=[
 
         texte_étapes_inter = énumération_texte(noms_étapes[1:-1])
 
-        coords_départ = g.coords_of_id_osm(données["itinéraires"][-1].liste_sommets[0])  # coords du début de l’iti avec le plus grand p_détour
-        coords_arrivée = g.coords_of_id_osm(données["itinéraires"][-1].liste_sommets[-1])
-        marqueurs_à_rajouter = [
-            étapes[0].marqueur_leaflet(coords_départ),
-            étapes[-1].marqueur_leaflet(coords_arrivée)
-        ]
+        # coords_départ = g.coords_of_id_osm(données["itinéraires"][-1].liste_sommets[0])  # coords du début de l’iti avec le plus grand p_détour
+        # coords_arrivée = g.coords_of_id_osm(données["itinéraires"][-1].liste_sommets[-1])
+        # marqueurs_à_rajouter = [
+        #     étapes[0].marqueur_leaflet(coords_départ),
+        #     étapes[-1].marqueur_leaflet(coords_arrivée)
+        # ]
         
         return render(requête,
                       "dijk/résultat_itinéraire_sans_carte.html",
@@ -272,8 +251,8 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_interdites=[
                            "enregistrer_contrib": forms.EnregistrerContrib(initial=données),
                            "trajet_retour": forms.ToutCaché(initial=données),
                            "fouine": requête.session.get("fouine", None),
-                           "js_itinéraires": [iti.vers_leaflet() for iti in données["itinéraires"]] + marqueurs_à_rajouter
-                         }
+                           "js_itinéraires": [iti.vers_leaflet() for iti in données["itinéraires"]] # + marqueurs_à_rajouter
+                       }
                        }
                       )
 
@@ -281,6 +260,7 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_interdites=[
     except (PasTrouvé, recup_donnees.LieuPasTrouvé) as e:
         return vueLieuPasTrouvé(requête, e)
     except Exception as e:
+
         traceback.print_exc()
         return autreErreur(requête, e)
 

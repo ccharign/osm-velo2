@@ -29,13 +29,18 @@ class Itinéraire():
         liste_arêtes (Arête list)
         longeur (float), longeur ressentie
         couleur (str)
+        marqueurs (list[str]), liste de marqueurs à afficher. Il s’agit du code leaflet à mettre dans la partie script de la page html.
     """
     
-    def __init__(self, g, sommets, longeur: float, couleur: str, p_détour: float):
+    def __init__(self, g, sommets, longeur: float, couleur: str, p_détour: float, marqueurs=None):
         self.liste_sommets = sommets
         self.liste_arêtes = g.liste_Arête_of_iti(sommets, p_détour)
         self.longueur = longeur
         self.couleur = couleur
+        if marqueurs:
+            self.marqueurs = marqueurs
+        else:
+            self.marqueurs = []
 
     def longueur_vraie(self):
         """
@@ -57,7 +62,8 @@ class Itinéraire():
         Sortie (str) : code js pour afficher l’itinéraire.
         """
         return f"""
-        var ligne = L.polyline({[[lat,lon] for lon,lat in self.liste_coords()]}, {{color: '{self.couleur}'}}).addTo({nom_carte});
+        L.polyline({[[lat,lon] for lon,lat in self.liste_coords()]}, {{color: '{self.couleur}'}}).addTo({nom_carte});
+        {" ".join(m for m in self.marqueurs)}
         """
 
     def bbox(self, g):
