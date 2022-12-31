@@ -49,7 +49,7 @@ function marqueur_avec_popup(lon, lat, infos, carte){
     //
 
     let contenu ="";
-    for (champ of ["nom", "horaires", "tél" ]){
+    for (champ of ["nom", "adresse", "horaires", "tél" ]){
 	if (infos[champ]){
 	    contenu += infos[champ]+"<br>";
 	}
