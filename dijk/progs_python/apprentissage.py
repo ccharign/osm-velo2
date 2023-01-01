@@ -31,8 +31,8 @@ def lecture_meilleur_chemin(g, chemin, bavard=0):
     Entrée : le chemin à suivre, instance de Chemin.
     Effet : Compare chemin avec le chemin renvoyé par g.chemin. Multiplie par 1+ETA la cyclabilité de chaque arrête présente dans chemin mais pas dans l'autre et multiplie par 1-ETA chaque arrête présente dans l'autre et pas dans chemin.
     Sortie : nb d'arêtes modifiées, longueur du trajet direct
-
     """
+    assert not chemin.étapes_sommets, "Les étapes chemins avec étapes_sommets ne sont pas conçus pour être utilisés dans l’apprentissage."
     
     LOG(f"\n\n(lecture_meilleur_chemin) Chemin reçu : {chemin}", bavard=bavard)
     iti_complet, _ = g.itinéraire_sommets(chemin, bavard=bavard-1)

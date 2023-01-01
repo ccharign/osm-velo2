@@ -8,8 +8,6 @@ import gpxpy
 from branca.element import Element
 
 
-import folium
-
 from folium.plugins import Fullscreen, LocateControl
 
 from dijk.progs_python.petites_fonctions import chrono, deuxConséc, LOG
@@ -18,13 +16,13 @@ import dijk.models as mo
 from dijk.models import Chemin_d, Arête
 
 
-tic=perf_counter()
+tic = perf_counter()
 from mon_folium import folium_of_chemin, ajoute_marqueur, folium_of_arêtes, couleur_of_cycla, color_dict, NB_COUL
 chrono(tic, "mon_folium", bavard=2)
 
 import dijkstra
 
-tic=perf_counter()
+tic = perf_counter()
 import chemins
 chrono(tic, "chemins", bavard=2)
 
@@ -45,14 +43,14 @@ def liste_Arête_of_iti(g, iti, p_détour):
 
 DICO_PROFIl = {
     0: ("Le plus court",
-       "Le trajet le plus court tenant compte des contraintes indiquées."
-       ),
-    15: ("Intermédiaire",
-        "Un cycliste de profil « intermédiaire » rallonge en moyenne ses trajets de 10% pour éviter les rues désagréables. Il rallongera son trajet de 15% pour remplacer un itinéraire entièrement non aménagé par un itinéraire entièrement sur piste cyclable."
+        "Le trajet le plus court tenant compte des contraintes indiquées."
         ),
+    15: ("Intermédiaire",
+         "Un cycliste de profil « intermédiaire » rallonge en moyenne ses trajets de 10% pour éviter les rues désagréables. Il rallongera son trajet de 15% pour remplacer un itinéraire entièrement non aménagé par un itinéraire entièrement sur piste cyclable."
+         ),
     30: ("Priorité confort",
-        "Un cycliste de profil « priorité confort » rallonge en moyenne ses trajets de 15% pour passer par les zones plus agréables. Il pourra faire un détour de 30% pour remplacer un itinéraire entièrement non aménagé par un itinéraire entièrement sur piste cyclable."
-        )
+         "Un cycliste de profil « priorité confort » rallonge en moyenne ses trajets de 15% pour passer par les zones plus agréables. Il pourra faire un détour de 30% pour remplacer un itinéraire entièrement non aménagé par un itinéraire entièrement sur piste cyclable."
+         )
 }
 
 
@@ -65,6 +63,7 @@ def légende_et_aide(p_détour):
 
 
 def itinéraire_of_étapes(étapes,
+                         étapes_sommets,
                          ps_détour,
                          g,
                          z_d,
@@ -94,8 +93,8 @@ def itinéraire_of_étapes(étapes,
     
     interdites = chemins.arêtes_interdites(g, z_d, étapes_interdites, bavard=bavard)
     
-    def traite_un_chemin(c, coul, légende, aide):
-        iti = g.itinéraire(c, coul, bavard=bavard-2)
+    def traite_un_chemin(c, légende, aide):
+        iti = g.itinéraire(c, bavard=bavard-2)
         itinéraires.append(iti)
         longueur = int(iti.longueur_vraie())
         
@@ -105,15 +104,16 @@ def itinéraire_of_étapes(étapes,
                       "longueur": longueur,
                       "temps": int(longueur/15000*60),  # Moyenne de 15km/h disons
                       "longueur_ressentie": int(iti.longueur),
-                      "couleur": coul,
+                      "couleur": c.couleur,
                       "gpx": gpx_of_iti(iti, bavard=bavard-1)}
                      )
 
     tic = perf_counter()
     for i, p in enumerate(ps_détour):
-        c = chemins.Chemin(z_d, étapes, p, False, interdites=interdites)
         coul = color_dict[(i*NB_COUL)//np]
-        traite_un_chemin(c, coul, *légende_et_aide(p))
+        c = chemins.Chemin(z_d, étapes, étapes_sommets, p, coul, False, interdites=interdites)
+        
+        traite_un_chemin(c, *légende_et_aide(p))
         tic = chrono(tic, f"dijkstra {c} et sa longueur")
 
     if ps_détour[0] == 0.:
@@ -121,9 +121,8 @@ def itinéraire_of_étapes(étapes,
         
     d, a = étapes[0], étapes[-1]
     if rajouter_iti_direct:
-        cd = chemins.Chemin(z_d, [d, a], 0, False)
-        coul = "#000000"
-        traite_un_chemin(cd, coul, "Trajet direct", "Le trajet le plus court, sans prendre en compte les étapes imposées.")
+        cd = chemins.Chemin(z_d, [d, a], [], 0,  "#000000", False)
+        traite_un_chemin(cd, "Trajet direct", "Le trajet le plus court, sans prendre en compte les étapes imposées.")
         tic = chrono(tic, "Calcul de l'itinéraire direct.")
         longueur_ch_direct = stats[-1]["longueur"]
 

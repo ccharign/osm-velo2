@@ -20,7 +20,7 @@ class ChoixZone(forms.Form):
 
 class RechercheBase(forms.Form):
     """
-    Classe mère pour les formulaires de recherche d’itinéraire
+    Classe mère pour les formulaires de recherche d’itinéraire.
     """
     départ = forms.CharField(label="Départ", required=False)
     données_cachées_départ = forms.CharField(widget=forms.HiddenInput(), required=False)  # Sera rempli par l’autocomplétion
@@ -30,6 +30,9 @@ class RechercheBase(forms.Form):
     zone = forms.ModelChoiceField(queryset=mo.Zone.objects.all(), widget=forms.HiddenInput())
     marqueurs_é = forms.CharField(widget=forms.HiddenInput(), required=False)  # Pour les marqueurs d’étapes précédents.
     marqueurs_i = forms.CharField(widget=forms.HiddenInput(), required=False)  # Pour les marqueurs d’étape interdite précédents.
+    étapes = forms.CharField(widget=forms.HiddenInput(), required=False)
+    rues_interdites = forms.CharField(widget=forms.HiddenInput(), required=False)
+    passer_par = forms.ModelChoiceField(queryset=mo.GroupeTypeLieu.objects.all(), required=False, widget=forms.HiddenInput())
     
 
 
@@ -37,6 +40,7 @@ class Recherche(RechercheBase):
     """
     Recherche initiale.
     """
+    passer_par = forms.ModelChoiceField(queryset=mo.GroupeTypeLieu.objects.all(), label="(facultatif) Passer par un(e) : ", required=False)
     #partir_de_ma_position = forms.BooleanField(label="Partir de ma position", required=False, initial=False)
     # pourcentage_détour = forms.CharField(widget=forms.HiddenInput())
 
@@ -45,10 +49,8 @@ class RelanceRapide(RechercheBase):
     """
     Pour relancer rapidement une recherche.
     """
-    départ = forms.CharField(widget=forms.HiddenInput(), required=False)
-    arrivée = forms.CharField(widget=forms.HiddenInput(), required=False)
-    étapes = forms.CharField(widget=forms.HiddenInput(), required=False)
-    rues_interdites = forms.CharField(widget=forms.HiddenInput(), required=False)
+    # départ = forms.CharField(widget=forms.HiddenInput(), required=False)
+    arrivée = forms.CharField(label="Arrivée", required=False)
     pourcentage_détour = forms.CharField(widget=forms.HiddenInput())
     partir_de_ma_position = forms.BooleanField(widget=forms.HiddenInput(), required=False, initial=False)
 
@@ -60,8 +62,6 @@ class ToutCaché(RechercheBase):
     départ = forms.CharField(widget=forms.HiddenInput(), required=False)
     arrivée = forms.CharField(widget=forms.HiddenInput(), required=False)
     pourcentage_détour = forms.CharField(widget=forms.HiddenInput())
-    étapes = forms.CharField(widget=forms.HiddenInput(), required=False)
-    rues_interdites = forms.CharField(widget=forms.HiddenInput(), required=False)
     partir_de_ma_position = forms.BooleanField(widget=forms.HiddenInput(), required=False, initial=False)
 
 
@@ -79,6 +79,7 @@ class EnregistrerContrib(ToutCaché):
     autre_p_détour = forms.IntegerField(label="Optionnel : autre profil cycliste", help_text="N’importe quel nombre strictement positif sachant que  pour « priorité confort, cette valeur est à 30 et pour « intermédiaire » elle est à 15.", required=False, min_value=1, widget=forms.HiddenInput())
     AR = forms.BooleanField(label="Valable aussi pour le retour ?", required=False)
 
+    
 # Nom osm des lieux proposés dans le formulaire.
 TYPE_AMEN_POUR_AUTOUR_DE_MOI = [
     "pharmacy", "post_office", "doctors", "bank", "fast_food",

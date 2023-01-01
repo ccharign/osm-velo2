@@ -1,14 +1,70 @@
-#! usr/bin/python3
 # -*- coding:utf-8 -*-
 
-from petites_fonctions import deuxConséc
+
 from heapq import heappush, heappop  # pour faire du type List une structure de tas-min
 import copy
-from params import LOG_PB, LOG
+from dijk.progs_python.params import LOG_PB, LOG
 from dijk.models import formule_pour_correction_longueur
+from dijk.progs_python.petites_fonctions import deuxConséc
+
 
 class PasDeChemin(Exception):
     pass
+
+
+
+class Itinéraire():
+    """
+    Pour enregistrer le résultat d’un Dijkstra.
+
+    Attributs:
+        liste_sommets (tuple[int])
+        liste_arêtes (Arête list)
+        longueur (float), longueur ressentie
+        couleur (str)
+        marqueurs (list[str]), liste de marqueurs à afficher. Il s’agit du code leaflet à mettre dans la partie script de la page html.
+    """
+    
+    def __init__(self, g, sommets: tuple[int], longueur: float, couleur: str, p_détour: float, marqueurs=None):
+        self.liste_sommets = sommets
+        self.liste_arêtes = g.liste_Arête_of_iti(sommets, p_détour)
+        self.longueur = longueur
+        self.couleur = couleur
+        if marqueurs:
+            self.marqueurs = marqueurs
+        else:
+            self.marqueurs = []
+
+    def longueur_vraie(self):
+        """
+        Renvoie la longeur physique de l’itinéraire.
+        """
+        return sum(a.longueur for a in self.liste_arêtes)
+
+    def liste_coords(self):
+        """
+        Sortie  ((float×float) list) : liste des (lon,lat) décrivant l’itinéraire.
+        """
+        res = []
+        for a in self.liste_arêtes:
+            res.extend(a.géométrie())
+        return res
+
+    def vers_leaflet(self, nom_carte="laCarte"):
+        """
+        Sortie (str) : code js pour afficher l’itinéraire.
+        """
+        return f"""
+        L.polyline({[[lat,lon] for lon,lat in self.liste_coords()]}, {{color: '{self.couleur}'}}).addTo({nom_carte});
+        {" ".join(m for m in self.marqueurs)}
+        """
+
+    def bbox(self, g):
+        cd = g.coords_of_id_osm(self.liste_sommets[0])
+        ca = g.coords_of_id_osm(self.liste_sommets[-1])
+        o, e = sorted((cd[0], ca[0]))  # lon
+        s, n = sorted((cd[1], ca[1]))  # lat
+        return s, o, n, e
 
 
 
@@ -40,7 +96,7 @@ def itinéraire(g, départ: int, arrivée: int, p_détour: float, bavard=0):
     assert isinstance(départ, int) and isinstance(arrivée, int), f"Le départ ou l’arrivée n’était pas un int. départ : {départ}, arrivée : {arrivée}."
     dist = {départ: 0.}  # dist[s] contient l'estimation actuelle de d(départ, i) si s est gris, et la vraie valeur si s est noir.
     pred = {départ: -1}
-    àVisiter =[(0., départ)]  # tas des sommets à visiter. Doublons autorisés.
+    àVisiter = [(0., départ)]  # tas des sommets à visiter. Doublons autorisés.
 
     fini = False
     while len(àVisiter) > 0 and not fini:
@@ -225,25 +281,31 @@ def iti_étapes_ensembles(g, c, bavard=0):
 ## Emploi typique : passer par une boulangerie.
 
 
-def iti_qui_passe_par_un_sommet(g, c, étapes_interdites, bavard=0):
+def iti_qui_passe_par_un_sommet(g, c, bavard=0):
     """
     Entrées :
         
     
-    Sortie (int list × float) : plus court chemin passant par un *sommet* de chaque étape, longueur d’icelui.
+    Sortie (Itinéraire) : plus court itinéraire passant par un sommet de chaque étape, longueur d’icelui.
+    Pour l’instant, les étapes intermédaires classiques sont ignorées : seules sont prises en compte le départ, l’arrivée, et les étapes_sommets.
     """
     correction_max = 1. / formule_pour_correction_longueur(1., g.cycla_max[c.zone], c.p_détour)
-    étapes = list(reversed(c.étapes))
-    dist = {s: 0. for s in étapes.pop()}
-    return vers_une_étape_par_un_sommet(
+    étapes = [c.arrivée()] + list(reversed(c.étapes_sommets))  # La fonction vers_une_étape_par_un_sommet prend les étapes à atteindre avec la première à droite et la dernière à gauche.
+    dist = {s: 0. for s in c.départ().nœuds}
+    (sommets, marqueurs), longueur = vers_une_étape_par_un_sommet(
         g,
         c.p_détour,
         correction_max,
         [],
         dist,
         étapes,
-        interdites=étapes_interdites
+        étapes + [c.départ()],  # toutes_les_étapes, sert à la reconstruction de l’iti, et à l’ajout des marqueurs
+        interdites=c.interdites,
+        bavard=bavard
     )
+    #assert all(t in g.dico_voisins for (s, t) in deuxConséc(sommets)), "Itinéraire pas valide"
+
+    return Itinéraire(g, tuple(reversed(sommets)), longueur, c.couleur, c.p_détour, marqueurs=marqueurs)
     
 
 def vers_une_étape_par_un_sommet(g,
@@ -252,6 +314,7 @@ def vers_une_étape_par_un_sommet(g,
                                  précs_préds: list[dict],
                                  dist: dict[int, float],
                                  étapes_restantes: list[set],
+                                 toutes_les_étapes: list[set],
                                  interdites: dict,
                                  bavard=0):
     """
@@ -262,16 +325,20 @@ def vers_une_étape_par_un_sommet(g,
         précs_préds, liste des dicos de prédécesseurs pour les étapes précédentes
         dist : dico sommet->distance au départ du chemin initial. Contient initialement les distance entre le départ du chemin et la dernière étape atteinte.
         étapes_restantes, liste des prochaines étapes à atteindre. On commence par la fin (par des pop)
+        toutes_les_étapes, liste des étapes du chemin (utile juste pour mettre les marqueurs à la fin)
         interdites, dico s-> voisins interdits depuis s
 
     Sortie:
-        itinéraire depuis le départ du chemin et la dernière étape.
+        ((liste des sommets, marqueurs), longeur) de l’itinéraire
+
+    Effet de bord: étapes_restantes et toutes_les_étapes sont vidées.
     """
 
     but_actuel = étapes_restantes.pop()
     préc = {}
     atteints = set()            # Sommets du but_actuel déjà atteints
     précs_préds.append(préc)
+    # len(étapes_restantes) + len(précs_préds) est constant, donc égal à len(toutes_les_étapes)-1
 
     # Initialisation du tas
     à_visiter = []
@@ -283,11 +350,11 @@ def vers_une_étape_par_un_sommet(g,
     while len(à_visiter) != 0:
         d, s = heappop(à_visiter)
 
-        # Sommet d’arrivée
+        # Cas d’un sommet d’arrivée
         if s in but_actuel:
             if len(étapes_restantes) == 0:
                 # On est arrivé au bout du chemin!
-                return chemin_reconstruit_par_un_sommet(s, précs_préds)
+                return chemin_reconstruit_par_un_sommet(g, s, toutes_les_étapes, précs_préds), d
             else:
                 atteints.add(s)
                 if len(atteints) == len(but_actuel):
@@ -297,8 +364,9 @@ def vers_une_étape_par_un_sommet(g,
                         p_détour,
                         correction_max,
                         précs_préds,
-                        {t: dist[t] for t in but_actuel},  # Réinitialiser dist
+                        {t: dist[t] for t in but_actuel.nœuds},  # Réinitialiser dist
                         étapes_restantes,
+                        toutes_les_étapes,
                         interdites,
                         bavard=bavard
                     )
@@ -309,25 +377,44 @@ def vers_une_étape_par_un_sommet(g,
                 # Passer par t vaut le coup
                 préc[t] = s
                 dist[t] = d + l
-                heappush(à_visiter, (d+l, t))  # Doublons dans à_visiter pas graves
-
-                
+                heappush(à_visiter, (d+l, t))  # Doublons dans à_visiter pas graves car log(n**2) = O(log n)
+    
+    
     # Sortie de boucle sans avoir atteint la destination
-    raise RuntimeError("Étape pas atteinte : {but_actuel}")
+    raise RuntimeError(f"Étape pas atteinte : {but_actuel}")
 
 
 
-def chemin_reconstruit_par_un_sommet(sa: int, précs_préds: list[dict]):
+def chemin_reconstruit_par_un_sommet(g, sa: int, étapes: list, précs_préds: list[dict]):
+    """
+    Entrées:
+        sa, sommet d’arrivée
+        étapes, liste des étapes depuis le début du chemin jusqu’à sa inclus. L’étape de sa en fin (sera poppée).
+        précs_préds, liste des tableaux préc correspondant aux étapes.
+
+    Sortie: (liste des sommets de sa inclus jusqu’au début du chemin, liste des marqueurs)
+
+    Effet de bord : étapes et précs_préds sont vidées.
     """
     
-    """
+    assert len(étapes) == len(précs_préds)+1
+    étape = étapes.pop()
+    marqueur = étape.marqueur_leaflet(g.coords_of_id_osm(sa))
+    
     if len(précs_préds) == 0:
-        return []
+        return [sa], [marqueur]
+    
     else:
         préc = précs_préds.pop()
         res, s = [sa], sa
         while s in préc:
             s = préc[s]
             res.append(s)
-        res.extend(chemin_reconstruit_par_un_sommet(s, précs_préds))
-        return res
+        res.pop()
+        # res contient maintenant le trajet depuis l’étape préc (exclus) jusqu’à sa (inclus)
+        # s est le sommet de l’étape préc par lequel on est passé.
+
+        avant, marqueurs = chemin_reconstruit_par_un_sommet(g, s, étapes, précs_préds)
+        res.extend(avant)
+        marqueurs.append(marqueur)
+        return res, marqueurs

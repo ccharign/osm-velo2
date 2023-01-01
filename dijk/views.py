@@ -108,12 +108,14 @@ def recherche(requête, zone_t, bavard=1):
             # Formulaire rempli et valide
             données.update(form_recherche.cleaned_data)
             LOG(f"(views.recherche) départ (données) : {données['départ']}", bavard=bavard)
-            z_d, étapes, étapes_interdites, ps_détour = z_é_i_d(g, données)
+            
+            z_d, étapes, étapes_interdites, étapes_sommets, ps_détour = z_é_i_d(g, données)
             # données a éventuellement été complété avec des coords de l’adresse
             LOG(f"(views.recherche) étapes récupérées : {[str(é) for é in étapes]}", bavard=bavard)
 
             return calcul_itinéraires(requête, ps_détour, z_d,
                                       étapes,
+                                      étapes_sommets,
                                       étapes_interdites=étapes_interdites,
                                       données=données,
                                       bavard=1
@@ -139,10 +141,10 @@ def relance_rapide(requête):
     """
 
     données = récup_données(requête.GET, forms.RelanceRapide)
-    z_d, étapes, étapes_interdites, ps_détour = z_é_i_d(g, données)
+    z_d, étapes, étapes_interdites, étapes_sommets, ps_détour = z_é_i_d(g, données)
     
     return calcul_itinéraires(requête, ps_détour, z_d,
-                              étapes, étapes_interdites=étapes_interdites,
+                              étapes, étapes_sommets, étapes_interdites=étapes_interdites,
                               données=données,
                               bavard=3)
 
@@ -155,7 +157,7 @@ def trajet_retour(requête):
     """
 
     données = récup_données(requête.GET, forms.ToutCaché)
-    z_d, étapes, étapes_interdites, ps_détour = z_é_i_d(g, données)
+    z_d, étapes, étapes_interdites, étapes_sommets, ps_détour = z_é_i_d(g, données)
     
     #  Échange départ-arrivée dans le dico de données
     données["départ"], données["arrivée"] = données["arrivée"], données["départ"]
@@ -167,6 +169,7 @@ def trajet_retour(requête):
 
     return calcul_itinéraires(requête, ps_détour, z_d,
                               étapes,
+                              étapes_sommets,
                               étapes_interdites=étapes_interdites,
                               données=données
                               )
@@ -177,7 +180,7 @@ def trajet_retour(requête):
 ### Fonction principale
 
 
-def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_interdites=[], données={}, bavard=0):
+def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_sommets, étapes_interdites=[], données={}, bavard=0):
     """
     Entrées : ps_détour (float list ou str)
               z_d (models.Zone)
@@ -185,6 +188,8 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_interdites=[
               étapes_interdites (chemin.Étape list or None), ne passer par aucune arête inclue dans une de ces étapes.
               données : données du formulaire précédent. Sera utilisé pour préremplir les formulaires de relance de recherche et d’enregistrement.
     """
+
+    assert isinstance(étapes_sommets, list)
     
     if isinstance(ps_détour, str):
         ps_détour = list(map(
@@ -195,13 +200,12 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_interdites=[
     try:
 
         données.update(itinéraire_of_étapes(
-            étapes, ps_détour, g, z_d,
+            étapes, étapes_sommets, ps_détour, g, z_d,
             rajouter_iti_direct=len(étapes) > 2,
             étapes_interdites=étapes_interdites,
-            bavard=1
+            bavard=bavard
         ))
         noms_étapes = données["noms_étapes"]
-        print(f"(calcul_itinéraires) nom des étapes {noms_étapes}")
         rues_interdites = données["rues_interdites"]
         
 

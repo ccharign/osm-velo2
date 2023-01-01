@@ -21,58 +21,6 @@ class VillePasTrouvée(Exception):
     pass
 
 
-class Itinéraire():
-    """
-    Pour enregistrer le résultat d’un Dijkstra.
-    Attributs:
-        liste_sommets (int list)
-        liste_arêtes (Arête list)
-        longeur (float), longeur ressentie
-        couleur (str)
-        marqueurs (list[str]), liste de marqueurs à afficher. Il s’agit du code leaflet à mettre dans la partie script de la page html.
-    """
-    
-    def __init__(self, g, sommets, longeur: float, couleur: str, p_détour: float, marqueurs=None):
-        self.liste_sommets = sommets
-        self.liste_arêtes = g.liste_Arête_of_iti(sommets, p_détour)
-        self.longueur = longeur
-        self.couleur = couleur
-        if marqueurs:
-            self.marqueurs = marqueurs
-        else:
-            self.marqueurs = []
-
-    def longueur_vraie(self):
-        """
-        Renvoie la longeur physique de l’itinéraire.
-        """
-        return sum(a.longueur for a in self.liste_arêtes)
-
-    def liste_coords(self):
-        """
-        Sortie  ((float×float) list) : liste des (lon,lat) décrivant l’itinéraire.
-        """
-        res = []
-        for a in self.liste_arêtes:
-            res.extend(a.géométrie())
-        return res
-
-    def vers_leaflet(self, nom_carte="laCarte"):
-        """
-        Sortie (str) : code js pour afficher l’itinéraire.
-        """
-        return f"""
-        L.polyline({[[lat,lon] for lon,lat in self.liste_coords()]}, {{color: '{self.couleur}'}}).addTo({nom_carte});
-        {" ".join(m for m in self.marqueurs)}
-        """
-
-    def bbox(self, g):
-        cd = g.coords_of_id_osm(self.liste_sommets[0])
-        ca = g.coords_of_id_osm(self.liste_sommets[-1])
-        o, e = sorted((cd[0], ca[0]))  # lon
-        s, n = sorted((cd[1], ca[1]))  # lat
-        return s, o, n, e
-
     
 class Graphe_django():
     """
@@ -216,7 +164,6 @@ class Graphe_django():
         return s.coords()
 
     def coords_of_id_osm(self, s):
-        #return Sommet.objects.get(id_osm=s).coords()
         return self.dico_Sommet[s].coords()
 
 
@@ -259,9 +206,12 @@ class Graphe_django():
         """
         Renvoie l'arête (instance d'Arête) entre s et t de longueur corrigée minimale.
         """
-        données = ((a.longueur_corrigée(p_détour), a) for (v, a) in self.dico_voisins[s] if v==t)
-        _, a = min(données)
-        return a
+        données = tuple((a.longueur_corrigée(p_détour), a) for (v, a) in self.dico_voisins[s] if v==t)
+        if len(données) > 0:
+            _, a = min(données)
+            return a
+        else:
+            raise RuntimeError(f"({s}, {t}) ne semble pas être une arête.")
 
     
     def longueur_meilleure_arête(self, s, t, p_détour):
@@ -316,17 +266,24 @@ class Graphe_django():
 
         
     def liste_Arête_of_iti(self, iti, p_détour):
-        return [self.meilleure_arête(s,t,p_détour) for (s,t) in deuxConséc(iti)]
+        return [self.meilleure_arête(s, t, p_détour) for (s, t) in deuxConséc(iti)]
 
     
-    def itinéraire(self, chemin, couleur, bavard=0):
+    def itinéraire(self, chemin, bavard=0):
         """
         Entrée : chemin (Chemin)
         Sortie : iti_d, l_ressentie (liste d'Arêtes, float)
         """
-        iti, l_ressentie = dijkstra.iti_étapes_ensembles(self, chemin, bavard=bavard)
-        #return self.liste_Arête_of_iti(iti, chemin.p_détour), l_ressentie
-        return Itinéraire(self, iti, l_ressentie, couleur, chemin.p_détour)
+        if chemin.étapes_sommets:
+            return dijkstra.iti_qui_passe_par_un_sommet(self, chemin, bavard=bavard)
+        else:
+            iti, l_ressentie = dijkstra.iti_étapes_ensembles(self, chemin, bavard=bavard)
+            return dijkstra.Itinéraire(self, iti, l_ressentie, chemin.couleur, chemin.p_détour)
+            
+        # assert all(t in self.dico_voisins for (s, t) in deuxConséc(iti)), "Itinéraire pas valide"
+
+        
+    
 
     def itinéraire_sommets(self, chemin, bavard=0):
         """

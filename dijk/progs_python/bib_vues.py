@@ -50,14 +50,20 @@ def récup_données(dico, cls_form, validation_obligatoire=True):
 def z_é_i_d(g, données):
     """
     Entrée (dico) : résultat d’un GET ou d’un POST d’un formulaire de recherche d’itinéraire.
-    Sortie (Zone, Étapes list, Étapes list, float list) : (zone, étapes, étapes_interdites, ps_détours)
+    Sortie (Zone, Étapes list, Étapes list, Étapes list, float list) : (zone, étapes, étapes_interdites, étapes_sommets, ps_détours)
+       - étapes est la liste ordonnée des étapes desquelles emprunter au moins une arête
+       - étapes_interdites est la liste non ordonnée des étapes desquelles n’emprunter aucune arête
+       - étapes_sommets est la liste non ordonnée des étapes desquelles emprunter au moins un sommet.
     Effet :
        la zone est chargée si pas déjà le cas.
        données est éventuellement complété dans le cas d’une adresse venant d’une autocomplétion par les coords de l’adresse.
     """
     
     z_d = g.charge_zone(données["zone"])
-    ps_détour = list(map( lambda x: float(x)/100, données["pourcentage_détour"].split(";")) )
+    ps_détour = list(map(
+        lambda x: float(x)/100,
+        données["pourcentage_détour"].split(";")
+    ))
 
     # Le départ (possiblement des coords gps)
     if "partir_de_ma_position" in données and données["partir_de_ma_position"]:
@@ -102,7 +108,13 @@ def z_é_i_d(g, données):
     # Pour les étapes interdites, on peut rassembler celles des clics et celles du form car pas de pb d’ordre.
     é_interdites += [Étape.of_texte(r, g, z_d) for r in données["rues_interdites"].strip().split(";") if len(r)>0]
 
-    return z_d, étapes, é_interdites, ps_détour
+
+    # Étapes sommet
+    étapes_sommets = []
+    if données["passer_par"]:
+        étapes_sommets.append(Étape.of_groupe_type_lieux(données["passer_par"], z_d))
+
+    return z_d, étapes, é_interdites, étapes_sommets, ps_détour
 
 
 def bool_of_checkbox(dico, clef):

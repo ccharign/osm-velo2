@@ -169,13 +169,17 @@
 
 {% block script %}
 <script>
+  // Création de la carte
   laCarte = carte_bb{{bbox}};
-  
+
+  // Ajout de l’itinéraire
   {% for code_js in js_itinéraires %}
   {{code_js | safe}}
   {% endfor %}
-  
+
+  // Ajout des fonctionalités pour les marqueurs d’étapes
   gèreLesClics(laCarte);
+  // Ajout des marqueurs d’étapes venant de recherches précédentes qui ont été enregistrés en hidden dans le form
   form_recherche = document.getElementById("relance_rapide");
   marqueurs_of_form(form_recherche, laCarte);
 </script>

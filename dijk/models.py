@@ -851,6 +851,18 @@ class CacheNomRue(models.Model):
             return res
 
 
+
+        
+##################################################
+########## Gestion des lieux ##########
+##################################################
+
+"""
+Trois modèles : Lieu, TypeLieu et GroupeTypeLieu
+"""
+
+
+
 class TypeLieu(models.Model):
     """
     Enregistre un type de lieu osm.
@@ -869,7 +881,6 @@ class TypeLieu(models.Model):
     def __str__(self):
         return f"{self.nom_français} ({self.catégorie})"
 
-
     def __hash__(self):
         return self.nom_osm.__hash__()
 
@@ -881,7 +892,20 @@ class TypeLieu(models.Model):
 
 
 
-## Faire des regroupements, comme « logement », « restauration »
+class GroupeTypeLieu(models.Model):
+    """
+    Pour enregistrer un rassemblement de types de lieux, pour usage dans un formulaire.
+    """
+    nom = models.CharField(max_length=50, unique=True)
+    description = models.TextField(blank=True, null=True, default=None)
+    type_lieu = models.ManyToManyField(TypeLieu)
+
+    def __str__(self):
+        return self.nom
+
+    def lieux(self, z_d: Zone):
+        return Lieu.objects.filter(type_lieu__in=self.type_lieu.all(), ville__in=z_d.villes())
+
 
 class Lieu(models.Model):
     """
@@ -892,8 +916,6 @@ class Lieu(models.Model):
     nom = models.TextField(blank=True, default=None, null=True)
     type_lieu = models.ForeignKey(TypeLieu, on_delete=models.CASCADE)
     ville = models.ForeignKey(Ville, on_delete=models.CASCADE, blank=True, default=None, null=True)
-    #rue = models.ForeignKey(Rue, on_delete=models.CASCADE, blank=True, default=None, null=True)
-    #adresse = models.TextField(blank=True, default=None, null=True)
     lon = models.FloatField()
     lat = models.FloatField()
     horaires = models.TextField(blank=True, default=None, null=True)

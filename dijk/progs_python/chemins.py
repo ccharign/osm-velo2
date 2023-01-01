@@ -3,14 +3,13 @@ import re
 import json
 from pprint import pprint
 
-from dijk.progs_python.petites_fonctions import milieu
-
-from params import LOG_PB, LOG
 from dijk.models import Chemin_d, Arête, Lieu
+
+from dijk.progs_python.petites_fonctions import milieu
+from params import LOG
 
 from lecture_adresse.normalisation0 import découpe_adresse
 from lecture_adresse.normalisation import Adresse
-
 from lecture_adresse.recup_noeuds import nœuds_of_étape, un_seul_nœud
 
 
@@ -38,6 +37,12 @@ class Étape():
         
     def __str__(self):
         return self.nom
+
+    def __contains__(self, nœud):
+        return nœud in self.nœuds
+
+    def __len__(self):
+        return len(self.nœuds)
     
 
     def infos(self):
@@ -45,8 +50,7 @@ class Étape():
         Renvoie un dico avec les infos connues. Sera utilisé notamment pour les marqueurs leaflet.
         """
         res = {}
-        if self.nom:
-            res["nom"] = self.nom
+        res["nom"] = str(self)
         return res
 
         
@@ -146,7 +150,19 @@ class Étape():
             # ÉtapeAdresse
             LOG("Ni lieu ni arête détecté : je renvoie une ÉtapeAdresse")
             return ÉtapeAdresse.of_texte(d[champ], g, z_d)
-    
+
+        
+    @classmethod
+    def of_groupe_type_lieux(cls, gtl, z_d):
+        """
+        Étape contenant tous les lieux d’un certain groupe de types de lieux dela zone.
+        """
+        res = cls()
+        lieux = gtl.lieux(z_d)
+        res.nœuds = set(l.arête.départ.id_osm for l in lieux)
+        res.nom = str(gtl)
+        return res
+        
     
     
 class ÉtapeAdresse(Étape):
@@ -163,6 +179,9 @@ class ÉtapeAdresse(Étape):
 
     def str_pour_chemin(self):
         return str(self)
+
+    def __str__(self):
+        return str(self.adresse)
         
 
     @classmethod
@@ -311,13 +330,14 @@ def arêtes_interdites(g, z_d, étapes_interdites, bavard=0):
         interdites.update(
             dico_arête_of_nœuds(g,
                                 é.nœuds
-            )
+                                )
         )
     return interdites
 
 
 class Chemin():
     """ Attributs : - p_détour (float)
+                    - couleur (str), couleur à utiliser pour le tracer sur la carte
                     - étapes (Étape list), liste de nœuds
                     - interdites : arêtesi interdites. dico s->sommets interdits depuis s
                     - noms_rues_interdites : str, noms des rues interdites séparées par ; (pour l’enregistrement en csv)
@@ -325,10 +345,13 @@ class Chemin():
                     - texte (None ou str), texte d'où vient le chemin (pour déboguage)
                     - zone (models.Zone)
     """
-    def __init__(self, z_d, étapes, p_détour, AR, interdites={}, texte_interdites=""):
-        assert p_détour>=0 and p_détour<=2, "Y aurait-il confusion entre la proportion et le pourcentage de détour?"
+    def __init__(self, z_d, étapes, étapes_sommets, p_détour, couleur: str, AR, interdites={}, texte_interdites=""):
+        assert isinstance(étapes_sommets, list)
+        assert p_détour >= 0 and p_détour <= 2, "Y aurait-il confusion entre la proportion et le pourcentage de détour?"
         self.étapes = étapes
+        self.étapes_sommets = étapes_sommets
         self.p_détour = p_détour
+        self.couleur = couleur
         self.AR = AR
         self.texte = None
         self.interdites = interdites
@@ -346,6 +369,7 @@ class Chemin():
         Transfert le chemin dans la base.
         Sortie : l’instance de Chemin_d créée, ou celle déjà présente le cas échéant.
         """
+        assert not self.étapes_sommets, "Les étapes chemins avec étapes_sommets ne sont pas conçus pour être enregistrés."
         étapes_t = ";".join(é.str_pour_chemin() for é in self.étapes)
         rues_interdites_t = self.noms_rues_interdites
         début, fin = étapes_t[:255], étapes_t[-255:]
@@ -418,7 +442,7 @@ class Chemin():
 
         
         ## Création de l’objet Chemin
-        chemin = cls(z_d, étapes, p_détour, AR, interdites=interdites, texte_interdites=rues_interdites_t)
+        chemin = cls(z_d, étapes, [], p_détour, AR, interdites=interdites, texte_interdites=rues_interdites_t)
         chemin.texte = étapes_t
         return chemin
 

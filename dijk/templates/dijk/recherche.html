@@ -19,14 +19,14 @@
 
   <form action = "{% url 'recherche' zone_t %}" method="get" id="recherche">
 
-    <div class="form-group">
+    <!-- <div class="form-group"> -->
 
       {% bootstrap_form recherche %}
       {% buttons submit='C’est parti' %}{% endbuttons %}
       
-      <div class="help-block">  La ville par défaut est {{ville}}. Pour indiquer un emplacement dans une autre ville, préciser celle-ci après une virgule. Exemples : « 84 avenue de Buros », « rue du souvenir, Lons », « mairie, Saint Etienne de Crossey » ou « The Ritz, London ».
-      </div>
-    </div>
+      <!-- <div class="help-block">  La ville par défaut est {{ville}}. Pour indiquer un emplacement dans une autre ville, préciser celle-ci après une virgule. Exemples : « 84 avenue de Buros », « rue du souvenir, Lons », « mairie, Saint Etienne de Crossey » ou « The Ritz, London ». -->
+      <!-- </div> -->
+    <!-- </div> -->
 
 
     <br><br>
@@ -38,26 +38,26 @@
   
   <br>
   
-  <div class="form-group">
-    <label for="étapes"> Étapes, séparées par des point-virgules :</label>
-    <div class="input-group">
-      <input type="text" class="form-control" id="étapes" name="étapes" >
-      <span class="input-group-addon" data-toggle="popover" title="Étapes" data-trigger="hover" data-placement="left"
-            data-content="L’algo renverra un itinéraire passant par au moins un tronçon de chacune des étapes indiquées. Ne pas indiquer une rue que vous voulez juste traverser.">?</span>
-    </div>
-  </div>
+  <!-- <div class="form-group"> -->
+  <!--   <label for="étapes"> Étapes, séparées par des point-virgules :</label> -->
+  <!--   <div class="input-group"> -->
+  <!--     <input type="text" class="form-control" id="étapes" name="étapes" > -->
+  <!--     <span class="input-group-addon" data-toggle="popover" title="Étapes" data-trigger="hover" data-placement="left" -->
+  <!--           data-content="L’algo renverra un itinéraire passant par au moins un tronçon de chacune des étapes indiquées. Ne pas indiquer une rue que vous voulez juste traverser.">?</span> -->
+  <!--   </div> -->
+  <!-- </div> -->
   
   
-  <div class="form-group">
-    <label for="rues_interdites"> Rues à éviter, séparées par des point-virgules :</label>
-    <div class="input-group">
-      <input type="text" class="form-control" id="rues_interdites" name="rues_interdites" >
-      <span class="input-group-addon" data-toggle="popover" data-placement="left" title="Rues à éviter" data-trigger="hover"
-            data-content="L’algo renverra un itinéraire qui ne suit aucune portion des rues indiquées. Il pourra toutefois en croiser une.">?</span>
-    </div>
-  </div>
+  <!-- <div class="form-group"> -->
+  <!--   <label for="rues_interdites"> Rues à éviter, séparées par des point-virgules :</label> -->
+  <!--   <div class="input-group"> -->
+  <!--     <input type="text" class="form-control" id="rues_interdites" name="rues_interdites" > -->
+  <!--     <span class="input-group-addon" data-toggle="popover" data-placement="left" title="Rues à éviter" data-trigger="hover" -->
+  <!--           data-content="L’algo renverra un itinéraire qui ne suit aucune portion des rues indiquées. Il pourra toutefois en croiser une.">?</span> -->
+  <!--   </div> -->
+  <!-- </div> -->
   
-  <br>
+  <!-- <br> -->
   
   <div class="form-group">
     <label for="pourcentage_détour"> Profil cycliste  : </label>

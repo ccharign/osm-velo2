@@ -7,7 +7,6 @@ Ces fonctions seront cachées dans la console.
 
 
 import re
-import json
 from pprint import pformat, pprint
 
 from django.db import transaction, close_old_connections
@@ -16,18 +15,13 @@ from django.db.models import Q
 from dijk.models import Ville, Rue, Sommet, Arête, Chemin_d, Ville_Zone, Zone
 from dijk.progs_python.lecture_adresse.normalisation import prétraitement_rue, partie_commune
 from params import LOG
-from petites_fonctions import union, intersection, distance_euc, sauv_objets_par_lots
+from petites_fonctions import intersection, sauv_objets_par_lots
 from lecture_adresse.arbresLex import ArbreLex
 
 
 
 
 
-#################################
-###    Pour vérifications     ###
-#################################
-
-# À faire...
 
 
 
@@ -56,18 +50,18 @@ def arbre_des_villes(zone_d=None):
     return res
 
 
-def ajoute_code_postal(nom, code):
-    """
-    Ajoute ou corrige le code postal de la ville.
-    Sortie (models.Ville)
-    """
-    essai = Ville.objects.filter(nom_norm=partie_commune(nom)).first()
-    if essai:
-        essai.code=code
-        essai.save()
-        return essai
-    else:
-        raise RuntimeError(f"Ville pas trouvée dans la base INSEE : {nom}, {(code)}")
+# def ajoute_code_postal(nom, code):
+#     """
+#     Ajoute ou corrige le code postal de la ville.
+#     Sortie (models.Ville)
+#     """
+#     essai = Ville.objects.filter(nom_norm=partie_commune(nom)).first()
+#     if essai:
+#         essai.code=code
+#         essai.save()
+#         return essai
+#     else:
+#         raise RuntimeError(f"Ville pas trouvée dans la base INSEE : {nom}, {(code)}")
 
         
 def nv_ville(nom, code, zone_d, tol=3):
@@ -108,7 +102,8 @@ def liste_attributs(g):
             for a in g[s][t].values():
                 for att, val in a.items():
                     if att not in ["name", "length", "geometry", "osmid"]:
-                        if att not in res:res[att]=set()
+                        if att not in res:
+                            res[att] = set()
                         res[att].add(str(val))
     return res
 
@@ -125,6 +120,7 @@ def tuple_valeurs(a, att):
     else:
         return ()
 
+    
 def désoriente(g, bavard=0):
     """
     Entrée : g (Graphe_nx)
@@ -149,7 +145,9 @@ def désoriente(g, bavard=0):
         if s not in gx[t]:
             return False
         else:
-            inverses_de_a = tuple(a_i for a_i in gx[t][s].values() if a.get("name", None)==a_i.get("name", None))
+            inverses_de_a = tuple(
+                a_i for a_i in gx[t][s].values() if a.get("name", None)==a_i.get("name", None)
+            )
             if len(inverses_de_a) == 1:
                 return True
             elif len(inverses_de_a) == 0:
@@ -535,7 +533,7 @@ def cycla_défaut_of_csv(chemin, bavard=0):
         Effet : met à valeur la cycla_défaut de toutes les arêtes de la rue.
         """
         for a in rue_d.arêtes.all():
-            a.cycla_défaut=valeur
+            a.cycla_défaut = valeur
             a.save()
 
     
@@ -556,17 +554,17 @@ def met_en_clique(g, nœuds, nom, cycla_défaut=1.1, bavard=0):
         s_d = Sommet.objects.get(id_osm=s)
         for t in nœuds:
             t_d = Sommet.objects.get(id_osm=t)
-            if t!=s:
+            if t != s:
                 if not Arête.objects.filter(départ__id_osm=s, arrivée__id_osm=t).exists():
                     a = Arête(
-                        départ = s_d,
-                        arrivée = t_d,
-                        longueur = g.d_euc(s,t),
-                        geom = f"{s_d.lon},{s_d.lat};{t_d.lon},{t_d.lat}",
-                        cycla_défaut= cycla_défaut
+                        départ=s_d,
+                        arrivée=t_d,
+                        longueur=g.d_euc(s, t),
+                        geom=f"{s_d.lon},{s_d.lat};{t_d.lon},{t_d.lat}",
+                        cycla_défaut=cycla_défaut
                     )
                     a.save()
-                    cpt+=1
+                    cpt += 1
     print(f"{cpt} nouvelles arêtes créées.")
     
     
@@ -574,7 +572,9 @@ def place_en_clique(g, v_d):
     """
     Effet : Transforme en clique toutes les places.
     """
-    for r in Rue.objects.filter( Q(nom_complet__icontains="place") | Q(nom_complet__icontains="square"), ville=v_d):
+    for r in Rue.objects.filter(
+            Q(nom_complet__icontains="place") | Q(nom_complet__icontains="square"),
+            ville=v_d):
         print(f"Mise en clique : {r}")
         met_en_clique(g, r.nœuds(), r.nom_complet)
     
