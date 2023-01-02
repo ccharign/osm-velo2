@@ -23,3 +23,12 @@ Installation
  - patience encore, l’appli va télécharger et analyser les données osm de toutes les villes indiquées...
 
 
+Algos
+=====
+
+D’un point de vue algoritgmique, on trouvera ici:
+
+- quelques variantes de Dijkstra : passer par un sommet d’une étape intermédiaire (aller de A à B en passant par une boulangerie) ou par une arête (aller de A à B en empruntant la rue R);
+- des arbres lexicographique et le calcul de la distance de Levenshtein (pour trouver le nom de rue le plus proche de celui tapé par l’utilisateur);
+- des Q-arbres et le calcul de l’arête la plus proche par branch and bound;
+- un petit réseau de neurones.
