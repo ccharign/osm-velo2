@@ -26,7 +26,7 @@ Installation
 Algos
 =====
 
-D’un point de vue algoritgmique, on trouvera ici:
+D’un point de vue algorithmique, on trouvera ici:
 
 - quelques variantes de Dijkstra : passer par un sommet d’une étape intermédiaire (aller de A à B en passant par une boulangerie) ou par une arête (aller de A à B en empruntant la rue R);
 - des arbres lexicographique et le calcul de la distance de Levenshtein (pour trouver le nom de rue le plus proche de celui tapé par l’utilisateur);
