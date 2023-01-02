@@ -5,6 +5,8 @@
  Ce projet permet d'utiliser les données d'openstreetmap pour calculer des itinéraires cyclables. Il se présente sous la forme d’une appli Django.
 
  Son intérêt est d'implémenter une partie apprentissage supervisé : après récupération d'une banque d'itinéraires entrés par des cyclistes, une note de cyclabilité est attribuée à chaque tronçon, et les itinéraires sont calculés en en tenant compte.
+ 
+ Les lieux publics (point d’eau, boutiques, cafés, lieux culturels ou sportif, administration...) présents sur openstreetmap sont également proposés à l’autocomplétion, et les informations présentes (horaires, téléphone, ...) affichées.
 
  Il est testable ici : http://trajet.pauavelo.fr/
 
@@ -23,3 +25,12 @@ Installation
  - patience encore, l’appli va télécharger et analyser les données osm de toutes les villes indiquées...
 
 
+Algos
+=====
+
+D’un point de vue algorithmique, on trouvera ici:
+
+- quelques variantes de Dijkstra : passer par un sommet d’une étape intermédiaire (aller de A à B en passant par une boulangerie) ou par une arête (aller de A à B en empruntant la rue R);
+- des arbres lexicographiques et le calcul de la distance de Levenshtein (pour trouver le nom de rue le plus proche de celui tapé par l’utilisateur);
+- des Q-arbres et le calcul de l’arête la plus proche par branch and bound;
+- un petit réseau de neurones.
