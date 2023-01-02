@@ -2,7 +2,7 @@
 
 import re
 
-from dijk.progs_python.chemins import Étape, ÉtapeArête
+from dijk.progs_python.chemins import Étape, ÉtapeArête, ÉtapeEnsLieux
 
 
 
@@ -70,7 +70,6 @@ def z_é_i_d(g, données):
         coords = tuple(map(float, données["localisation"].split(",")))
         assert len(coords) == 2, f"coords n'est pas de longueur 2 {coords}"
         données["départ_coords"] = str(coords)[1:-1]
-        breakpoint()
         départ = ÉtapeArête.of_coords(coords, g, z_d)
     else:
         départ = Étape.of_dico(données, "départ", g, z_d)
@@ -112,7 +111,7 @@ def z_é_i_d(g, données):
     # Étapes sommet
     étapes_sommets = []
     if données["passer_par"]:
-        étapes_sommets.append(Étape.of_groupe_type_lieux(données["passer_par"], z_d))
+        étapes_sommets.append(ÉtapeEnsLieux(données["passer_par"], z_d))
 
     return z_d, étapes, é_interdites, étapes_sommets, ps_détour
 
@@ -125,7 +124,7 @@ def bool_of_checkbox(dico, clef):
     """
     return clef in dico and dico[clef] == "on"
 
-    
+
 def énumération_texte(l):
     """
     Entrée : liste de str
@@ -137,40 +136,4 @@ def énumération_texte(l):
         return l[0]
     else:
         return ", ".join(l[:-1]) + " et " + l[-1]
-
-    
-# def sans_style(texte):
-#     """
-#     Entrée : du code html (str)
-#     Sortie : le code sans les lignes entourées de balises <style>...</style>
-#     """
-    
-#     x = re.findall("(.*?)<style>.*?</style>(.*)", texte)  # ? : non greedy
-#     if x:
-#         return x[0][0] + sans_style(x[0][1])
-#     else:
-#         return texte
-
-    
-# def récup_head_body_script(chemin):
-#     """ Entrée : adresse d’un fichier html
-#         Sortie : la partie body de celui-ci
-#     """
-#     with open(chemin) as entrée:
-#         tout=entrée.read()
-        
-#         head, suite = tout.split("</head>")
-#         lignes_head = head.split("<head>")[1].split("\n")
-#         à_garder = []
-#         for ligne in lignes_head:
-#             if not ("bootstrap in ligne"):
-#                 à_garder.append(ligne)
-#         head_final = "\n".join(à_garder)
-        
-        
-#         body, suite = suite.split("</body>")
-#         body = body.split("<body>")[1]
-
-#         script = suite.split("<script>")[1].split("</script>")[0]
-#     return head, body, script
 

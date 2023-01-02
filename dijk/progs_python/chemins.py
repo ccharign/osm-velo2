@@ -1,9 +1,21 @@
 # -*- coding:utf-8 -*-
+
+"""
+Ce module définit les classes Chemin et Étape.
+  - un Chemin représente une recherche utilisateur. Il contient une liste d’étapes.
+  - une Étape contient une liste de nœuds. On voudra passer par une arête ou un sommet selon les cas de chaque étape.
+
+rema : Les fonctions de dijkstra.py prennent des Chemins et renvoient des « Itinéraires » (classe définie dans dijkstra.py).
+
+NB: ce sont les chemins qui sont enregistrés dans la base.
+"""
+
+
 import re
 import json
 from pprint import pprint
 
-from dijk.models import Chemin_d, Arête, Lieu
+from dijk.models import Chemin_d, Arête, Lieu, Sommet
 
 from dijk.progs_python.petites_fonctions import milieu
 from params import LOG
@@ -61,6 +73,14 @@ class Étape():
         lon, lat = coords
         return f"""marqueur_avec_popup({lon}, {lat}, {self.infos()}, {nomCarte});"""
 
+    
+    def marqueur_leaflet_of_sommet(self, s: int, nomCarte="laCarte"):
+        """
+        Renvoie le code js pour créer un marqueur pour cette étape. Marqueur situé sur le sommet s.
+        """
+        s_d = Sommet.objects.get(id_osm=s)
+        return self.marqueur_leaflet(s_d.coords(), nomCarte=nomCarte)
+    
 
     @classmethod
     def of_texte(cls, texte, g, z_d, nv_cache=1, bavard=0):
@@ -127,7 +147,7 @@ class Étape():
                 ad = Adresse.of_pk_rue(données_supp)
 
                 res = ÉtapeAdresse.of_adresse(g, ad, bavard=bavard)
-                # ad.coords a pu être rempli.
+                # ad.coords a pu être rempli par la ligne ci-dessus
                 if ad.coords and not données_supp["coords"]:
                     print(f"Coordonnées trouvées dans ad. Je les enregistre dans {'données_cachées_'+champ}")
                     données_supp["coords"] = ad.coords
@@ -135,7 +155,6 @@ class Étape():
                 return res
             
             
-
         elif ch_coords in d and d[ch_coords]:
             # ÉtapeArête
             coords = tuple(map(float, d[ch_coords].split(",")))
@@ -152,17 +171,7 @@ class Étape():
             return ÉtapeAdresse.of_texte(d[champ], g, z_d)
 
         
-    @classmethod
-    def of_groupe_type_lieux(cls, gtl, z_d):
-        """
-        Étape contenant tous les lieux d’un certain groupe de types de lieux dela zone.
-        """
-        res = cls()
-        lieux = gtl.lieux(z_d)
-        res.nœuds = set(l.arête.départ.id_osm for l in lieux)
-        res.nom = str(gtl)
-        return res
-        
+
     
     
 class ÉtapeAdresse(Étape):
@@ -303,6 +312,25 @@ class ÉtapeLieu(Étape):
         NB : au chargement du chemin, deviendra une ÉtapeAdresse.
         """
         return f"Arête{self.lieu.lon},{self.lieu.lat}"
+
+    
+class ÉtapeEnsLieux(Étape):
+    """
+    Pour enregistrer un ensemble de lieux.
+    Attribut en plus :
+        dico_lieux (dict[int, Lieu]), dico id_osm d’un sommet -> lieu correspondant
+    Méthode particulière : marqueur_leaflet_of_sommet qui place le marqueur sur le lieu correspondant au sommet indiqué.
+    """
+
+    def __init__(self, gtl, z_d):
+        super.__init__()
+        self.dico_lieux = {l.arête.départ.id_osm: l for l in gtl.lieux()}
+        self.nœuds = self.dico_lieux  # Pas un set, mais l’appartenance et l’itération fonctionneront pareil...
+        self.nom = str(gtl)
+    
+ 
+    
+
 
 
     
