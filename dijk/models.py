@@ -2,15 +2,14 @@ import json
 from pprint import pformat
 import os
 import math
-from itertools import chain
 
 from django.db import models, close_old_connections, transaction
+
 from dijk.progs_python.params import LOG, DONNÉES
 from dijk.progs_python.lecture_adresse.normalisation0 import partie_commune
 from dijk.progs_python.petites_fonctions import distance_euc
-
-#from dijk.progs_python.quadrarbres import fonction_distance_pour_feuille, Quadrarbre
 import dijk.progs_python.quadrarbres as qa
+
 
 def objet_of_dico(
         cls, d,
