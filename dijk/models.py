@@ -536,7 +536,7 @@ class ArbreArête(models.Model, qa.Quadrarbre):
         else:
             self.père.supprime_aieul(n-1)
 
-            
+    
     def supprime_étage(self, prof: int):
         """
         Supprime l’étage à la profondeur prof.
@@ -604,14 +604,6 @@ class Zone(models.Model):
     def villes(self):
         return tuple(rel.ville for rel in Ville_Zone.objects.filter(zone=self).prefetch_related("ville"))
 
-    # def arêtes(self):
-    #     """
-    #     Générateur des arêtes de self.
-    #     Beaucoup trop lent !
-    #     """
-    #     for v in self.villes():
-    #         for a in v.arête_set.all():
-    #             yield a
 
     def arêtes(self):
         """
@@ -628,19 +620,11 @@ class Zone(models.Model):
             for s in v.sommet_set.all():
                 yield s
 
-                
-    # def quadArbreArêtes(self, bavard=0):
-    #     dossier_données = os.path.join(DONNÉES, str(self))
-    #     chemin = os.path.join(dossier_données, f"arbre_arêtes_{self}")
-    #     LOG(f"Chargement de l’arbre quad des arêtes depuis {chemin}", bavard=bavard)
-    #     return QuadrArbreArête.of_fichier(chemin)
-
-
     
     def ajoute_ville(self, ville):
         rel = Ville_Zone(ville=ville, zone=self)
         rel.save()
-                
+    
     def __str__(self):
         return self.nom
     
@@ -762,14 +746,15 @@ class Chemin_d(models.Model):
         self.interdites_début = self.interdites_texte[:min(len(self.étapes_texte), 255)]
         self.fin = self.étapes_texte[-min(len(self.étapes_texte), 255):]
         self.interdites_fin = self.interdites_texte[-min(len(self.étapes_texte), 255):]
-        super(Chemin_d, self).save()
-                                     
+        super().save()
+
+    
     def sauv(self):
         """
         Sauvegarde le chemin si pas déjà présent.
         Si déjà présent, et si un utilisateur est renseigné dans self, met à jour l’utisateur.
         """
-        déjà_présent, c_d = self.déjà_présent
+        déjà_présent, c_d = self.déjà_présent()
         if déjà_présent and self.utilisateur:
             c_d.utilisateur = self.utilisateur
             c_d.save()
@@ -977,16 +962,6 @@ class Lieu(models.Model):
         Renvoie le code js pour créer un marqueur leaflet pour ce lieu.
         """
         return f"""marqueur_avec_popup({self.lon}, {self.lat}, {self.json_nettoyé}, {nomCarte});"""
-
-
-    # def save(self, *args, **kwargs):
-    #     """
-    #     Avant la sauvegarde normale, complète les champs ville et rue.
-    #     """
-        
-    #     if not self.ville:
-    #         self.ajoute_ville_et_rue()
-    #     super().save(self, *args, **kwargs)
 
 
     def ajoute_arête_la_plus_proche(self, arbre_arêtes, dmax=30):

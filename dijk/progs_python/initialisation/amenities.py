@@ -18,6 +18,24 @@ from dijk.progs_python.lecture_adresse.normalisation0 import int_of_code_insee, 
 from params import LOG
 
 
+
+def initGroupesTypesLieux(chemin="dijk/données/données_à_charger/groupesTypesLieux.csv"):
+    """
+    Créer les groupe de types de lieux et les enregistrer dans la base.
+    """
+    with open(chemin) as entrée:
+        for ligne in entrée:
+            nom, trucs = ligne.strip().split("|")
+            gtl = mo.GroupeTypeLieu(nom=nom)
+            gtl.save()
+            for categorie in trucs.split(";"):
+                nom_categorie, types_à_découper = categorie.split(":")
+                for tl in types_à_découper.split(","):
+                    tld = mo.TypeLieu.objects.get(catégorie=nom_categorie, nom_osm=tl)
+                    gtl.type_lieu.add(tld)
+            gtl.save()
+
+
 def charge_type_lieux(ld):
     """
     ld (liste de dico), contient le résultat d’un récup_amenities

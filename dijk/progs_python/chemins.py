@@ -313,23 +313,29 @@ class ÉtapeLieu(Étape):
         """
         return f"Arête{self.lieu.lon},{self.lieu.lat}"
 
+    def __str__(self):
+        return str(self.lieu)
     
 class ÉtapeEnsLieux(Étape):
     """
     Pour enregistrer un ensemble de lieux.
-    Attribut en plus :
-        dico_lieux (dict[int, Lieu]), dico id_osm d’un sommet -> lieu correspondant
-    Méthode particulière : marqueur_leaflet_of_sommet qui place le marqueur sur le lieu correspondant au sommet indiqué.
+
+    Attributs particuliers:
+        nœuds est dans cette sous-classe un dico id_osm d’un sommet -> Lieu correspondant
+
+    Méthode particulière :
+        marqueur_leaflet_of_sommet qui place le marqueur sur le lieu correspondant au sommet indiqué.
     """
 
     def __init__(self, gtl, z_d):
-        super.__init__()
-        self.dico_lieux = {l.arête.départ.id_osm: l for l in gtl.lieux()}
+        super().__init__()
+        self.dico_lieux = {l.arête.départ.id_osm: l for l in gtl.lieux(z_d)}
         self.nœuds = self.dico_lieux  # Pas un set, mais l’appartenance et l’itération fonctionneront pareil...
         self.nom = str(gtl)
     
  
-    
+    def marqueur_leaflet_of_sommet(self, s, nomCarte="laCarte"):
+        return self.nœuds[s].marqueur_leaflet(nomCarte)
 
 
 

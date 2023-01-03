@@ -1,11 +1,10 @@
 # -*- coding:utf-8 -*-
 
 import time
-tic0 = time.perf_counter()
+
 import os
 import traceback
 import json
-import re
 from pprint import pprint
 
 from django.shortcuts import render
@@ -15,7 +14,7 @@ from django.db.models import Subquery, Q
 from dijk import forms
 
 from .progs_python.params import LOG
-from .progs_python.petites_fonctions import chrono, bbox_autour, get_full_class_name
+from .progs_python.petites_fonctions import chrono, get_full_class_name
 
 from .progs_python.chemins import Chemin, ÉtapeArête
 
@@ -32,7 +31,7 @@ from .progs_python.lecture_adresse.normalisation0 import découpe_adresse
 
 from .models import Chemin_d, Zone, Rue, Ville_Zone, Cache_Adresse, CacheNomRue, Lieu, Ville
 
-chrono(tic0, "Chargement total\n\n", bavard=3)
+
 
 
 
@@ -111,7 +110,7 @@ def recherche(requête, zone_t, bavard=1):
             
             z_d, étapes, étapes_interdites, étapes_sommets, ps_détour = z_é_i_d(g, données)
             # données a éventuellement été complété avec des coords de l’adresse
-            LOG(f"(views.recherche) étapes récupérées : {[str(é) for é in étapes]}", bavard=bavard)
+            
 
             return calcul_itinéraires(requête, ps_détour, z_d,
                                       étapes,

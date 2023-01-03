@@ -332,6 +332,8 @@ def vers_une_étape_par_un_sommet(g,
         ((liste des sommets, marqueurs), longeur) de l’itinéraire
 
     Effet de bord: étapes_restantes et toutes_les_étapes sont vidées.
+
+    NB: l’algo va essayer d’atteindre *tous* les sommets d’une étape avant de passer à la suivante -> pas du tout optimal!
     """
 
     but_actuel = étapes_restantes.pop()
@@ -380,8 +382,21 @@ def vers_une_étape_par_un_sommet(g,
                 heappush(à_visiter, (d+l, t))  # Doublons dans à_visiter pas graves car log(n**2) = O(log n)
     
     
-    # Sortie de boucle sans avoir atteint la destination
-    raise RuntimeError(f"Étape pas atteinte : {but_actuel}")
+    # Sortie de boucle sans avoir atteint tous les sommets de la destination
+    if len(atteints) == 0:
+        raise RuntimeError(f"Étape pas atteinte : {but_actuel}")
+    else:
+        return vers_une_étape_par_un_sommet(
+            g,
+            p_détour,
+            correction_max,
+            précs_préds,
+            {t: dist[t] for t in atteints},  # Réinitialiser dist
+            étapes_restantes,
+            toutes_les_étapes,
+            interdites,
+            bavard=bavard
+        )
 
 
 
@@ -399,7 +414,7 @@ def chemin_reconstruit_par_un_sommet(g, sa: int, étapes: list, précs_préds: l
     
     assert len(étapes) == len(précs_préds)+1
     étape = étapes.pop()
-    marqueur = étape.marqueur_leaflet(g.coords_of_id_osm(sa))
+    marqueur = étape.marqueur_leaflet_of_sommet(sa)
     
     if len(précs_préds) == 0:
         return [sa], [marqueur]

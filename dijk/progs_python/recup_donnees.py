@@ -5,17 +5,15 @@
 import time
 import requests
 import json
-import os
 import urllib.parse
-#from io import BytesIO
 from pprint import pprint, pformat
 import subprocess
 
 import geopy
 import overpy
 
-from params import LOG_PB  #, CHEMIN_RUE_NUM_COORDS
-from petites_fonctions import LOG, bbox_autour
+from params import LOG_PB
+from petites_fonctions import LOG
 import dijk.models as mo
 
 

@@ -25,6 +25,7 @@ from initialisation.amenities import charge_lieux_of_ville#, ajoute_ville_et_rue
 #from initialisation.communes import charge_villes
 
 
+
 ##########################################################################
 ### Fonctions pour (ré)initialiser ou ajouter une nouvelle ville ou zone.
 ################################################################################
