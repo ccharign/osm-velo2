@@ -15,7 +15,7 @@ import re
 import json
 from pprint import pprint
 
-from dijk.models import Chemin_d, Arête, Lieu, Sommet
+from dijk.models import Chemin_d, Arête, Lieu, Sommet, GroupeTypeLieu
 
 from dijk.progs_python.petites_fonctions import milieu
 from params import LOG
@@ -118,6 +118,7 @@ class Étape():
             - si d["données_cachées_"+champ] contient des infos:
                  - si ["type"]=="lieu", renvoie l’objet ÉtapeLieu correspondant au lieu de pk dans ["pk"]
                  - si ["type"]=="rue", renvoie l’objet ÉtapeAdresse obtenue en utilisant la rue de pk dans ["pk"]
+                 - si ["type"]=="gtl", renvoie l’objet ÉtapeEnsLieux obtenue en utilisant la rue de pk dans ["pk"]
 
             - S’il existe un champ nommé 'coords_'+champ et qu’il est rempli, sera utilisé pour obtenir directement les sommets via arête_la_plus_proche. L’objet renvoyé sera alors une ÉtapeArête
 
@@ -139,7 +140,6 @@ class Étape():
         if données_supp and "type" in données_supp:
             if données_supp["type"] == "lieu":
                 # ÉtapeLieu
-                LOG(f"(Étape.of_dico) Lieu détecté :{données_supp['pk']}", bavard=bavard)
                 return ÉtapeLieu(Lieu.objects.get(pk=int(données_supp["pk"])))
 
             elif données_supp["type"] == "rue":
@@ -153,6 +153,9 @@ class Étape():
                     données_supp["coords"] = ad.coords
                     d["données_cachées_"+champ] = json.dumps(données_supp)
                 return res
+
+            elif données_supp["type"] == "gtl":
+                return ÉtapeEnsLieux.of_gtl_pk(données_supp["pk"], z_d)
             
             
         elif ch_coords in d and d[ch_coords]:
@@ -316,6 +319,7 @@ class ÉtapeLieu(Étape):
     def __str__(self):
         return str(self.lieu)
     
+
 class ÉtapeEnsLieux(Étape):
     """
     Pour enregistrer un ensemble de lieux.
@@ -332,12 +336,19 @@ class ÉtapeEnsLieux(Étape):
         self.dico_lieux = {l.arête.départ.id_osm: l for l in gtl.lieux(z_d)}
         self.nœuds = self.dico_lieux  # Pas un set, mais l’appartenance et l’itération fonctionneront pareil...
         self.nom = str(gtl)
+        assert self.nœuds, f"Aucun lieu trouvé pour {gtl}!"
     
  
     def marqueur_leaflet_of_sommet(self, s, nomCarte="laCarte"):
         return self.nœuds[s].marqueur_leaflet(nomCarte)
 
 
+    @classmethod
+    def of_gtl_pk(cls, pk, z_d):
+        """
+        Renvoie l’objet ÉtapeEnsLieux correspondant aux lieux d’un type dans le gtl de pk pk et dans la zone z_d.
+        """
+        return cls(GroupeTypeLieu.objects.get(pk=pk), z_d)
 
     
 
@@ -476,7 +487,7 @@ class Chemin():
 
         
         ## Création de l’objet Chemin
-        chemin = cls(z_d, étapes, [], p_détour, AR, interdites=interdites, texte_interdites=rues_interdites_t)
+        chemin = cls(z_d, étapes, [], p_détour, "black", AR, interdites=interdites, texte_interdites=rues_interdites_t)
         chemin.texte = étapes_t
         return chemin
 
@@ -503,12 +514,8 @@ class Chemin():
                   étapes_interdites (Étape list)
         Sortie : instance de Chemin
         """
-        # étapes = [Étape.of_texte(é, g, z_d, nv_cache=nv_cache) for é in noms_étapes]
-
-
-        #étapes_interdites = (Étape.of_texte(é, g, z_d, nv_cache=nv_cache) for é in noms_rues_interdites)
         noms_rues_interdites = [str(é) for é in étapes_interdites]
-        return cls(z_d, étapes, pourcentage_détour/100, AR,
+        return cls(z_d, étapes, [], pourcentage_détour/100, "black", AR,
                    interdites=arêtes_interdites(g, z_d, étapes_interdites),
                    texte_interdites=";".join(noms_rues_interdites)
                    )
@@ -516,6 +523,7 @@ class Chemin():
     
     def départ(self):
         return self.étapes[0]
+    
     def arrivée(self):
         return self.étapes[-1]
 

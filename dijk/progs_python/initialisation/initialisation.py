@@ -21,8 +21,8 @@ from petites_fonctions import chrono, LOG, supprime_objets_par_lots
 
 import initialisation.vers_django as vd
 from quadrarbres import QuadrArbreSommet, QuadrArbreArête
-from initialisation.amenities import charge_lieux_of_ville#, ajoute_ville_et_rue_manquantes
-#from initialisation.communes import charge_villes
+from initialisation.amenities import charge_lieux_of_ville
+
 
 
 

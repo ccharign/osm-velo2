@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 
 import time
-
+import re
 import os
 import traceback
 import json
@@ -29,7 +29,7 @@ from .progs_python.utils import dessine_cycla, itinéraire_of_étapes
 from .progs_python.graphe_par_django import Graphe_django
 from .progs_python.lecture_adresse.normalisation0 import découpe_adresse
 
-from .models import Chemin_d, Zone, Rue, Ville_Zone, Cache_Adresse, CacheNomRue, Lieu, Ville
+from .models import Chemin_d, Zone, Rue, Ville_Zone, Cache_Adresse, CacheNomRue, Lieu, Ville, GroupeTypeLieu
 
 
 
@@ -227,8 +227,8 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_sommets, ét
         données.update({"étapes": ";".join(noms_étapes[1:-1]),
                         "rues_interdites": ";".join(rues_interdites),
                         "pourcentage_détour": ";".join(map(lambda p: str(int(p*100)), ps_détour)),
-                        "départ": étapes[0].adresse,
-                        "arrivée": étapes[-1].adresse,
+                        "départ": str(étapes[0]),
+                        "arrivée": str(étapes[-1]),
                         "zone_t": z_d.nom,
                         "marqueurs_i": texte_marqueurs(étapes_interdites),  # Sera mis en hidden dans le formulaire relance_rapide
                         "marqueurs_é": texte_marqueurs(étapes, supprime_début_et_fin=True),  # idem
@@ -284,7 +284,9 @@ def confirme_nv_chemin(requête):
 
     try:
         données = récup_données(requête.POST, forms.EnregistrerContrib)
-        z_d, étapes, étapes_interdites, _ = z_é_i_d(g, données)
+        z_d, étapes, étapes_interdites, étapes_sommets, _ = z_é_i_d(g, données)
+        if étapes_sommets:
+            raise RuntimeError("Ne pas enregistrer avec des étapes « passer par »")
         AR = bool_of_checkbox(requête.POST, "AR")
         
         def traite_un_chemin(pourcentage_détour: int):
@@ -430,6 +432,7 @@ def autreErreur(requête, e):
 
 
 def pour_complétion(requête, nbMax=15):
+    
     """
     Renvoie la réponse nécessitée par autocomplete.
     Laisse tel quel la partie avant le dernier ;
@@ -440,11 +443,10 @@ def pour_complétion(requête, nbMax=15):
     class Résultat():
         """
         Pour enregistrer le résultat à renvoyer.
-        Un nouvel élément d n’est ajouté que si self.f_hach(d) n’est pas déjà présent et si le nb de résultats est < self.n_max
+        Un nouvel élément d n’est ajouté que si son label n’est pas déjà présent et si le nb de résultats est < self.n_max
         """
         def __init__(self, n_max):
             self.res = []
-            #self.f_hach = f_hach
             self.n_max = n_max
             self.déjà_présent = set()
             self.nb = 0
@@ -453,16 +455,16 @@ def pour_complétion(requête, nbMax=15):
         def __len__(self):
             return self.nb
 
-        def ajoute(self, àAfficher, àCacher=None):
+        def ajoute(self, réponse: dict):
             """
             Entrées:
-                 àAfficher : texte à afficher dans les choix d’autocomplétion
-                 àCacher (dico) : données supplémentaires qui seront mises en json dans un champ caché.
+            réponse doit avoir au moins une clef « label » et optionnellement une clef « àCacher » à laquelle est associé un json.
             """
             if self.nb < self.n_max:
+                àAfficher = réponse["label"]
                 if àAfficher not in self.déjà_présent:
                     self.déjà_présent.add(àAfficher)
-                    self.res.append({"label": àAfficher, "àCacher": json.dumps(àCacher)})
+                    self.res.append(réponse)
                     self.nb += 1
             else:
                 self.trop_de_rés = True
@@ -474,7 +476,7 @@ def pour_complétion(requête, nbMax=15):
                 return json.dumps(self.res)
             
 
-    
+
     mimeType = "application/json"
     if "term" in requête.GET:
 
@@ -492,9 +494,11 @@ def pour_complétion(requête, nbMax=15):
         tout = requête.GET["term"].split(";")
         à_chercher = prétraitement_rue(tout[-1])
         num, bis_ter, rue, déb_ville = découpe_adresse(à_chercher)
-        print(f"Recherche de {rue}")
+        
         début = " ".join(x for x in [num, bis_ter] if x)
         if début: début += " "
+
+        print(f"Recherche de {rue}")
         
         def chaîne_à_renvoyer(adresse, ville=None, parenthèse=None):
             res = ";".join(tout[:-1] + [début+adresse])
@@ -505,7 +509,6 @@ def pour_complétion(requête, nbMax=15):
 
         # Villes de la zone z_id
         villes = Ville_Zone.objects.filter(zone=z_id, ville__nom_norm__icontains=déb_ville)
-        print(f"villes : {[Ville.objects.get(pk=v) for v, in villes.values_list('ville')]}. Zone : {z_d}.")
         req_villes = Subquery(villes.values("ville"))
 
         
@@ -516,19 +519,26 @@ def pour_complétion(requête, nbMax=15):
         # dans_l_arbre = g.arbre_lex_zone[z_d].complétion(à_chercher, tol=2, n_max_rés=nbMax)
         # print(dans_l_arbre)
 
+        # Recherche dans les gtls:
+        essais = re.findall("(une?) (.*)", rue)
+        if len(essais) == 1:
+            déterminant, texte = essais[0]
+            gtls = GroupeTypeLieu.objects.filter(nom__istartswith=essais[0][1], féminin=déterminant=="une")
+            for gtl in gtls:
+                res.ajoute(gtl.pour_autocomplète())
         
         # Recherche dans les lieux
         lieux = Lieu.objects.filter(nom__icontains=rue, ville__in=req_villes).prefetch_related("ville", "type_lieu")
         print(f"{len(lieux)} lieux trouvées")
         for l in lieux:
-            res.ajoute(l.str_pour_formulaire(), àCacher={"type": "lieu", "pk": l.pk})
+            res.ajoute(l.pour_autocomplète())
         
         
         # Recherche dans les rues de la base
         dans_la_base = Rue.objects.filter(nom_norm__icontains=rue, ville__in=req_villes).prefetch_related("ville")
         for rue_trouvée in dans_la_base:
-            res.ajoute(chaîne_à_renvoyer(rue_trouvée.nom_complet, rue_trouvée.ville.nom_complet),
-                       àCacher={"type": "rue", "pk": rue_trouvée.pk, "num": num, "bis_ter": bis_ter, "coords": ""}
+            res.ajoute({"label": chaîne_à_renvoyer(rue_trouvée.nom_complet, rue_trouvée.ville.nom_complet),
+                        "àCacher": json.dumps({"type": "rue", "pk": rue_trouvée.pk, "num": num, "bis_ter": bis_ter, "coords": ""})}
                        )
 
         
@@ -551,7 +561,7 @@ def pour_complétion(requête, nbMax=15):
     else:
         return HttpResponse("fail", mimeType)
 
-        
+
     
 
 
@@ -590,6 +600,7 @@ def rapport_de_bug(requête):
         form = forms.RapportDeBug()
         return render(requête, "dijk/rapport_de_bug.html", {"form": form})
 
+    
 
 ### Autour de moi ###
 
@@ -599,19 +610,12 @@ def autourDeMoi(requête):
     """
     if requête.GET:
         données = récup_données(requête.GET, forms.AutourDeMoi, validation_obligatoire=False)
-        lon, lat = map(float, données["localisation"].split(","))
         bbox = tuple(map(float, données["bbox"].split(",")))
-        print(f"bbox : {bbox}")
-
-        print("Types de lieux à chercher :")
-        for tl in données["type_lieu"]:
-            print(f"    {tl}")
             
         lieux = recup_donnees.lieux_of_types_lieux(bbox, données["type_lieu"].all(), bavard=3)
         
         LOG(f"{len(lieux)} lieux trouvés", bavard=1)
         données["marqueurs"] = [l.marqueur_leaflet("laCarte") for l in lieux]
-        pprint(données["marqueurs"])
         return render(requête, "dijk/autourDeMoi.html", données)
     else:
         form = forms.AutourDeMoi()

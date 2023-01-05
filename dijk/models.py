@@ -883,12 +883,24 @@ class GroupeTypeLieu(models.Model):
     nom = models.CharField(max_length=50, unique=True)
     description = models.TextField(blank=True, null=True, default=None)
     type_lieu = models.ManyToManyField(TypeLieu)
+    féminin = models.BooleanField()
 
     def __str__(self):
         return self.nom
 
     def lieux(self, z_d: Zone):
         return Lieu.objects.filter(type_lieu__in=self.type_lieu.all(), ville__in=z_d.villes())
+
+    def déterminant(self):
+        if self.féminin:
+            return "une"
+        else:
+            return "un"
+
+    def pour_autocomplète(self):
+        return {"label": self.déterminant() + " " + self.nom,
+                "àCacher": json.dumps({"type": "gtl", "pk": self.pk})
+                }
 
 
 class Lieu(models.Model):
@@ -956,6 +968,11 @@ class Lieu(models.Model):
         Renvoie la chaîne  « nom, ville »
         """
         return f"{self.nom}, {self.adresse()}, {self.ville}"
+
+    def pour_autocomplète(self):
+        return {"label": self.str_pour_formulaire(),
+                "àCacher": json.dumps({"type": "lieu", "id": self.pk})
+                }
 
     def marqueur_leaflet(self, nomCarte):
         """

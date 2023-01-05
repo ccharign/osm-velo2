@@ -43,11 +43,11 @@ def découpe_adresse(texte, bavard=0):
     """
     # Découpage selon les virgules
     trucs = texte.split(",")
-    if len(trucs)==1:
+    if len(trucs) == 1:
         num_rue, ville_t = trucs[0], ""
-    elif len(trucs)==2:
+    elif len(trucs) == 2:
         num_rue, ville_t = trucs
-    elif len(trucs)==3:
+    elif len(trucs) == 3:
         num_rue, ville_t, pays = trucs
     else:
         raise AdresseMalFormée(f"Trop de virgules dans {texte}.")
