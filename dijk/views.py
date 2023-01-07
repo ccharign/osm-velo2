@@ -235,13 +235,6 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_sommets, ét
                         })
 
         texte_étapes_inter = énumération_texte(noms_étapes[1:-1])
-
-        # coords_départ = g.coords_of_id_osm(données["itinéraires"][-1].liste_sommets[0])  # coords du début de l’iti avec le plus grand p_détour
-        # coords_arrivée = g.coords_of_id_osm(données["itinéraires"][-1].liste_sommets[-1])
-        # marqueurs_à_rajouter = [
-        #     étapes[0].marqueur_leaflet(coords_départ),
-        #     étapes[-1].marqueur_leaflet(coords_arrivée)
-        # ]
         
         return render(requête,
                       "dijk/résultat_itinéraire_sans_carte.html",

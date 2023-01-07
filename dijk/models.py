@@ -938,7 +938,11 @@ class Lieu(models.Model):
         return set((self.arête.départ, self.arête.arrivée))
 
     def adresse(self):
-        return f"{self.arête.nom}"
+        res = self.arête.nom
+        if res:
+            return f"{res}"
+        else:
+            return ""
     
     def toutes_les_infos(self):
         """
@@ -971,7 +975,7 @@ class Lieu(models.Model):
 
     def pour_autocomplète(self):
         return {"label": self.str_pour_formulaire(),
-                "àCacher": json.dumps({"type": "lieu", "id": self.pk})
+                "àCacher": json.dumps({"type": "lieu", "pk": self.pk})
                 }
 
     def marqueur_leaflet(self, nomCarte):

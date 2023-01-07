@@ -69,13 +69,6 @@ class EnregistrerContrib(ToutCaché):
     """
     Pour enregistrer une contribution.
     """
-    # départ = forms.CharField(widget=forms.HiddenInput())
-    # coords_départ = forms.CharField(widget=forms.HiddenInput())
-    # arrivée = forms.CharField(widget=forms.HiddenInput())
-    # coords_arrivée = forms.CharField(widget=forms.HiddenInput())
-    # zone_t = forms.CharField(widget=forms.HiddenInput())
-    # étapes = forms.CharField(widget=forms.HiddenInput())
-    # rues_interdites = forms.CharField(widget=forms.HiddenInput())
     autre_p_détour = forms.IntegerField(label="Optionnel : autre profil cycliste", help_text="N’importe quel nombre strictement positif sachant que  pour « priorité confort, cette valeur est à 30 et pour « intermédiaire » elle est à 15.", required=False, min_value=1, widget=forms.HiddenInput())
     AR = forms.BooleanField(label="Valable aussi pour le retour ?", required=False)
 

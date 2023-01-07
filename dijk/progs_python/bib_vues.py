@@ -97,15 +97,16 @@ def z_é_i_d(g, données):
             é_interdites.append(ÉtapeArête.of_arête(a, coords))
     é_inter.sort()
     é_inter = [é for _, é in é_inter]
+
     
-    if not é_inter:
-        # Pas d’étape inter venant d’un clic : prendre celles présentes dans le formulaire.
-        é_inter = [Étape.of_texte(é, g, z_d) for é in données["étapes"].strip().split(";") if len(é) > 0]
+    # if not é_inter:
+    #     # Pas d’étape inter venant d’un clic : prendre celles présentes dans le formulaire.
+    #     é_inter = [Étape.of_texte(é, g, z_d) for é in données["étapes"].strip().split(";") if len(é) > 0]
         
     étapes = [départ] + é_inter + [arrivée]
 
     # Pour les étapes interdites, on peut rassembler celles des clics et celles du form car pas de pb d’ordre.
-    é_interdites += [Étape.of_texte(r, g, z_d) for r in données["rues_interdites"].strip().split(";") if len(r)>0]
+    é_interdites += [Étape.of_texte(r, g, z_d) for r in données["rues_interdites"].strip().split(";") if len(r) > 0]
 
 
     # Étapes sommet

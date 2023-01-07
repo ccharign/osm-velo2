@@ -135,7 +135,7 @@ class Étape():
             données_supp = json.loads(d["données_cachées_"+champ])
         else:
             données_supp = {}
-        pprint(données_supp)
+
 
         if données_supp and "type" in données_supp:
             if données_supp["type"] == "lieu":
@@ -529,11 +529,11 @@ class Chemin():
 
     def renversé(self):
         assert self.AR, "chemin pas réversible (AR est faux)"
-        return Chemin(self.zone, list(reversed(self.étapes)), self.p_détour, self.AR)
+        return Chemin(self.zone, list(reversed(self.étapes)), self.étapes_sommets, self.p_détour, self.couleur, self.AR, interdites=self.interdites)
 
-    def chemin_direct_sans_cycla(self, g):
-        """ Renvoie le plus court chemin du départ à l’arrivée."""
-        return dijkstra.chemin_entre_deux_ensembles(g, self.départ(), self.arrivée(), 0)
+    # def chemin_direct_sans_cycla(self, g):
+    #     """ Renvoie le plus court chemin du départ à l’arrivée."""
+    #     return dijkstra.chemin_entre_deux_ensembles(g, self.départ(), self.arrivée(), 0)
     
     def direct(self):
         """ Renvoie le chemin sans ses étapes intermédaires."""
@@ -542,22 +542,23 @@ class Chemin():
     
     def __str__(self):
         res = f"AR : {self.AR}\np_détour : {self.p_détour}\nÉtapes : " + ";".join(map(str, self.étapes))
-        if self.noms_rues_interdites: res+=f"\n Rues interdites : {self.noms_rues_interdites}"
-        return  res
+        if self.noms_rues_interdites:
+            res += f"\n Rues interdites : {self.noms_rues_interdites}"
+        return res
 
     def __hash__(self):
         return hash(str(self))
 
     def str_sans_retour_charriot(self):
-        return str(self).replace("\n","")
+        return str(self).replace("\n", "")
     
     def str_joli(self):
         res = f"Itinéraire de {self.départ()} à {self.arrivée()}"
         milieu = self.étapes[1:-1]
         if milieu:
-            res+= f" en passant par {','.join(map(str,milieu))}"
+            res += f" en passant par {','.join(map(str,milieu))}"
         if self.noms_rues_interdites:
-            res+=f" et en évitant {','.join(self.noms_rues_interdites)}"
+            res += f" et en évitant {','.join(self.noms_rues_interdites)}"
         return res+"."
         
 
@@ -568,39 +569,23 @@ class Chemin():
             à_garder = self.étapes[0:-1:len(self.étapes)//n_étapes] + [self.étapes[-1]]
             return ";".join(map(str, à_garder))
 
-   
-# def chemins_of_csv(g, adresse_csv=CHEMIN_CHEMINS, bavard=0):
-#     """
-#     Renvoie la liste des chemins contenus dans le csv.
-#     """
-#     entrée = open(adresse_csv, encoding="utf-8")
-#     #res=[g.chemin_of_string(ligne) for ligne in entrée ]
-#     res = []
-#     for ligne in entrée:
-#         try:
-#             chemin = Chemin.of_ligne(ligne, g, bavard=bavard)
-#             res.append(chemin)
-#         except Exception as e:
-#             LOG_PB( f"{e}\n Chemin abandonné : {ligne}\n" )
-#     entrée.close()
-#     return res
 
 
-def lecture_étape(c):
-    """ Entrée : chaîne de caractère représentant une étape.
-        Sortie : nom de rue, ville, pays
-    """
-    e = re.compile("([^()]*)(\(.*\))")  # Un texte puis un texte entre parenthèses
-    essai1 = re.findall(e, c)
-    if len(essai1) > 0:
-        rue, ville = essai1[0]
-        return rue.strip(), ville[1:-1].strip()  # retirer les parenthèses
-    else:
-        f = re.compile("^[^()]*$")  # Pas de parenthèse du tout
-        if re.findall(f, c):
-            return c.strip(), VILLE_DÉFAUT
-        else:
-            raise ValueError(f"chaîne pas correcte : {c}")
+# def lecture_étape(c):
+#     """ Entrée : chaîne de caractère représentant une étape.
+#         Sortie : nom de rue, ville, pays
+#     """
+#     e = re.compile("([^()]*)(\(.*\))")  # Un texte puis un texte entre parenthèses
+#     essai1 = re.findall(e, c)
+#     if len(essai1) > 0:
+#         rue, ville = essai1[0]
+#         return rue.strip(), ville[1:-1].strip()  # retirer les parenthèses
+#     else:
+#         f = re.compile("^[^()]*$")  # Pas de parenthèse du tout
+#         if re.findall(f, c):
+#             return c.strip(), VILLE_DÉFAUT
+#         else:
+#             raise ValueError(f"chaîne pas correcte : {c}")
 
 
 
