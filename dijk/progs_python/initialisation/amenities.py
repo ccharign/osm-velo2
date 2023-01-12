@@ -34,8 +34,11 @@ def initGroupesTypesLieux(chemin="dijk/progs_python/initialisation/données_à_c
             for categorie in trucs.split(";"):
                 nom_categorie, types_à_découper = categorie.split(":")
                 for tl in types_à_découper.split(","):
-                    tld = mo.TypeLieu.objects.get(catégorie=nom_categorie, nom_osm=tl)
-                    gtl.type_lieu.add(tld)
+                    try:
+                        tld = mo.TypeLieu.objects.get(catégorie=nom_categorie, nom_osm=tl)
+                        gtl.type_lieu.add(tld)
+                    except dijk.models.TypeLieu.DoesNotExists:
+                        print(f"Type de lieu non trouvé: {tl}")
             gtl.save()
 
 
