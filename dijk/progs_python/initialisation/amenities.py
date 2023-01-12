@@ -37,7 +37,7 @@ def initGroupesTypesLieux(chemin="dijk/progs_python/initialisation/données_à_c
                     try:
                         tld = mo.TypeLieu.objects.get(catégorie=nom_categorie, nom_osm=tl)
                         gtl.type_lieu.add(tld)
-                    except TypeLieu.DoesNotExists:
+                    except TypeLieu.DoesNotExist:
                         print(f"Type de lieu non trouvé: {tl}")
             gtl.save()
 
