@@ -17,7 +17,7 @@ from dijk.progs_python.params import LOG
 
 
 
-def initGroupesTypesLieux(chemin="dijk/données/données_à_charger/groupesTypesLieux.csv", réinit=True):
+def initGroupesTypesLieux(chemin="dijk/progs_python/initialisation/données_à_charger/groupesTypesLieux.csv", réinit=True):
     """
     Créer les groupe de types de lieux et les enregistrer dans la base.
     """
