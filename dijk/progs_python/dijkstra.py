@@ -25,7 +25,7 @@ class Itinéraire():
         marqueurs (list[str]), liste de marqueurs à afficher. Il s’agit du code leaflet à mettre dans la partie script de la page html.
     """
     
-    def __init__(self, g, sommets: tuple[int], longueur: float, couleur: str, p_détour: float, marqueurs=None):
+    def __init__(self, g, sommets: tuple, longueur: float, couleur: str, p_détour: float, marqueurs=None):
         self.liste_sommets = sommets
         self.liste_arêtes = g.liste_Arête_of_iti(sommets, p_détour)
         self.longueur = longueur
@@ -320,10 +320,10 @@ def iti_qui_passe_par_un_sommet(g, c, bavard=0):
 def vers_une_étape_par_un_sommet(g,
                                  p_détour: float,
                                  correction_max: float,
-                                 précs_préds: list[dict],
-                                 dist: dict[int, float],
-                                 étapes_restantes: list[set],
-                                 toutes_les_étapes: list[set],
+                                 précs_préds: list,
+                                 dist: dict,
+                                 étapes_restantes: list,
+                                 toutes_les_étapes: list,
                                  interdites: dict,
                                  bavard=0):
     """
@@ -409,7 +409,7 @@ def vers_une_étape_par_un_sommet(g,
 
 
 
-def chemin_reconstruit_par_un_sommet(g, sa: int, étapes: list, précs_préds: list[dict]):
+def chemin_reconstruit_par_un_sommet(g, sa: int, étapes: list, précs_préds: list):
     """
     Entrées:
         sa, sommet d’arrivée
