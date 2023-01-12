@@ -1,0 +1,14 @@
+boulangerie|shop:bakery|1
+pharmacie|amenity:pharmacy,healthcare|1
+lieu où manger|amenity:restaurant,fast_food,food_court|0
+lieu où boire|amenity:drinking_water,pub,cafe,internet_cafe,water_point,bar,biergarten|0
+lieu où acheter à manger|shop:supermarket,convenience,greengrocer,organic,frozen_food,grocery,mall,farm;amenity:vending_machine|0
+poste|amenity:post_office|1
+boîte aux lettres|amenity:post_box|1
+distributeur de billets|amenity:bank|0
+toilettes|amenity:toilets|1
+réparateur de vélo|amenity:bicycle_repair_station;shop:sports,bicycle|0
+kiosque à journaux|shop:newsagent|0
+camping|tourism:camp_site,alpine_hut,wilderness_hut,cabin|0
+logement|tourism:camp_site,alpine_hut,chalet,guest_house,apartment,hostel,wilderness_hut,cabin,Gîte|0
+parc|leisure:park,recreation_ground|0
