@@ -50,14 +50,23 @@ class Itinéraire():
             res.extend(a.géométrie())
         return res
 
-    def vers_leaflet(self, nom_carte="laCarte"):
+    # def vers_leaflet(self, nom_carte="laCarte"):
+    #     """
+    #     Sortie (str) : code js pour afficher l’itinéraire.
+    #     """
+    #     return f"""
+    #     L.polyline({[[lat,lon] for lon,lat in self.liste_coords()]}, {{color: '{self.couleur}'}}).addTo({nom_carte});
+    #     {" ".join(m for m in self.marqueurs)}
+    #     """
+
+    def vers_js(self):
         """
-        Sortie (str) : code js pour afficher l’itinéraire.
+        Sortie : dico sérialisable. Clefs : points, couleur, marqueurs
         """
-        return f"""
-        L.polyline({[[lat,lon] for lon,lat in self.liste_coords()]}, {{color: '{self.couleur}'}}).addTo({nom_carte});
-        {" ".join(m for m in self.marqueurs)}
-        """
+        return {"points": [[lat, lon] for lon, lat in self.liste_coords()],
+                "couleur": self.couleur,
+                "marqueurs": self.marqueurs
+                }
 
     def bbox(self, g):
         cd = g.coords_of_id_osm(self.liste_sommets[0])

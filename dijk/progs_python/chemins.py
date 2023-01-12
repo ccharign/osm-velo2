@@ -60,26 +60,27 @@ class Étape():
     def infos(self):
         """
         Renvoie un dico avec les infos connues. Sera utilisé notamment pour les marqueurs leaflet.
+        A pour vocation à être écrasée dans les sous-classes.
         """
-        res = {}
-        res["nom"] = str(self)
+        res = {"nom": str(self)}
         return res
 
         
-    def marqueur_leaflet(self, coords, nomCarte="laCarte"):
+    def marqueur_leaflet(self, coords):
         """
         Renvoie le code js pour créer un marqueur pour cette étape.
         """
         lon, lat = coords
-        return f"""marqueur_avec_popup({lon}, {lat}, {self.infos()}, {nomCarte});"""
+        return {"lon": lon, "lat": lat, "infos": self.infos()}
+    # f"""marqueur_avec_popup({lon}, {lat}, {self.infos()}, {nomCarte});"""
 
     
-    def marqueur_leaflet_of_sommet(self, s: int, nomCarte="laCarte"):
+    def marqueur_leaflet_of_sommet(self, s: int):
         """
         Renvoie le code js pour créer un marqueur pour cette étape. Marqueur situé sur le sommet s.
         """
         s_d = Sommet.objects.get(id_osm=s)
-        return self.marqueur_leaflet(s_d.coords(), nomCarte=nomCarte)
+        return self.marqueur_leaflet(s_d.coords())
     
 
     @classmethod
@@ -108,17 +109,16 @@ class Étape():
 
 
     @classmethod
-    def of_dico(cls, d, champ: str, g, z_d, bavard=0):
+    def of_dico(cls, d, g, z_d, bavard=0):
         """
         Entrée :
            d, dico contenant a priori le résultat d’un get.
            champ, nom du champ dans lequel chercher le texte de l’étape.
 
         Sortie :
-            - si d["données_cachées_"+champ] contient des infos:
-                 - si ["type"]=="lieu", renvoie l’objet ÉtapeLieu correspondant au lieu de pk dans ["pk"]
-                 - si ["type"]=="rue", renvoie l’objet ÉtapeAdresse obtenue en utilisant la rue de pk dans ["pk"]
-                 - si ["type"]=="gtl", renvoie l’objet ÉtapeEnsLieux obtenue en utilisant la rue de pk dans ["pk"]
+                 - si d["type"]=="lieu", renvoie l’objet ÉtapeLieu correspondant au lieu de pk dans ["pk"]
+                 - si d["type"]=="rue", renvoie l’objet ÉtapeAdresse obtenue en utilisant la rue de pk dans ["pk"]
+                 - si d["type"]=="gtl", renvoie l’objet ÉtapeEnsLieux obtenue en utilisant la rue de pk dans ["pk"]
 
             - S’il existe un champ nommé 'coords_'+champ et qu’il est rempli, sera utilisé pour obtenir directement les sommets via arête_la_plus_proche. L’objet renvoyé sera alors une ÉtapeArête
 
@@ -128,52 +128,50 @@ class Étape():
             dans le cas d["données_cachées_"+champ]["type"] == rue, et num présent, on complète d avec les coords de l’adresse.
         """
         
-        LOG(f"of_dico lancé. d: {d},\n champ:{champ}", bavard=1)
-        ch_coords = "coords_" + champ
+        # LOG(f"of_dico lancé. d: {d},\n champ:{champ}", bavard=1)
+        # ch_coords = "coords_" + champ
 
-        if d["données_cachées_"+champ]:
-            données_supp = json.loads(d["données_cachées_"+champ])
-        else:
-            données_supp = {}
+        # if d["données_cachées_"+champ]:
+        #     données_supp = json.loads(d["données_cachées_"+champ])
+        # else:
+        #     données_supp = {}
 
 
-        if données_supp and "type" in données_supp:
-            if données_supp["type"] == "lieu":
+        if "type" in d:
+            if d["type"] == "lieu":
                 # ÉtapeLieu
-                return ÉtapeLieu(Lieu.objects.get(pk=int(données_supp["pk"])))
+                return ÉtapeLieu(Lieu.objects.get(pk=int(d["pk"])))
 
-            elif données_supp["type"] == "rue":
+            elif d["type"] == "rue":
                 # Adresse venant d’une autocomplétion
-                ad = Adresse.of_pk_rue(données_supp)
+                ad = Adresse.of_pk_rue(d)
 
                 res = ÉtapeAdresse.of_adresse(g, ad, bavard=bavard)
                 # ad.coords a pu être rempli par la ligne ci-dessus
-                if ad.coords and not données_supp["coords"]:
-                    print(f"Coordonnées trouvées dans ad. Je les enregistre dans {'données_cachées_'+champ}")
-                    données_supp["coords"] = ad.coords
-                    d["données_cachées_"+champ] = json.dumps(données_supp)
+                if ad.coords and not d["coords"]:
+                    print("Coordonnées trouvées dans ad. Je les enregistre dans d")
+                    d["coords"] = ad.coords
+                    # d["données_cachées_"+champ] = json.dumps(données_supp)
                 return res
 
-            elif données_supp["type"] == "gtl":
-                return ÉtapeEnsLieux.of_gtl_pk(données_supp["pk"], z_d)
+            elif d["type"] == "gtl":
+                return ÉtapeEnsLieux.of_gtl_pk(d["pk"], z_d)
             
             
-        elif ch_coords in d and d[ch_coords]:
-            # ÉtapeArête
-            coords = tuple(map(float, d[ch_coords].split(",")))
-            LOG(f"Coords trouvées dans le champ {ch_coords} : {coords}, je vais renvoyer un ÉtapeArête", bavard=bavard)
-            nom, bis_ter, nom, ville = découpe_adresse(d[champ])
-            ad = Adresse()
-            ad.rue_initiale = nom
-            ad.ville = ville
-            return ÉtapeArête.of_coords(coords, g, z_d, ad=ad)
-        
-        else:
-            # ÉtapeAdresse
-            LOG("Ni lieu ni arête détecté : je renvoie une ÉtapeAdresse")
-            return ÉtapeAdresse.of_texte(d[champ], g, z_d)
+            elif d["type"] == "arête":
+                # ÉtapeArête
+                coords = d["coords"]
+                LOG(f"Coords trouvées dans le dico : {coords}, je vais renvoyer un ÉtapeArête", bavard=bavard)
+                # nom, bis_ter, nom, ville = découpe_adresse(d[champ])
+                # ad = Adresse()
+                # ad.rue_initiale = nom
+                # ad.ville = ville
+                return ÉtapeArête.of_coords(coords, g, z_d)
 
-        
+        # else:
+        #     # ÉtapeAdresse
+        #     LOG("Ni lieu ni arête détecté : je renvoie une ÉtapeAdresse")
+        #     return ÉtapeAdresse.of_texte(d[champ], g, z_d)
 
     
     
@@ -230,6 +228,9 @@ class ÉtapeAdresse(Étape):
     def infos(self):
         return {"adresse": str(self.adresse)}
 
+    def pour_js(self):
+        return self.adresse.pour_js()
+
 
 
 class ÉtapeArête(Étape):
@@ -238,7 +239,7 @@ class ÉtapeArête(Étape):
 
     Attributs:
         nœuds (int set), set d’id_osm de sommets
-        coords_ini (float×float), coords du point dont cette arête était la plus proche. Servira de str pour l’enregistrement dans la base.
+        coords_ini (float×float), coords du point dont cette arête était la plus proche. Servira de str pour l’enregistrement dans un Chemin_d dans la base.
         pk (int), clef primaire de l’arête dans la table models.Arête.
         nom (str), nom de la rue la contenant
     """
@@ -296,6 +297,16 @@ class ÉtapeArête(Étape):
         return f"{self.nom}"
 
 
+    def pour_js(self):
+        """
+        NB: pas de méthode pour_js dans la class Arête, car je veux disposer de coords_ini. Ce dernier a été créé par js lors d’u clic sur la carte.
+        """
+        return {
+            "type": "arête",
+            "pk": self.pk,
+            "nom": self.nom,
+            "coords": self.coords_ini
+        }
 
 
 class ÉtapeLieu(Étape):
@@ -318,6 +329,10 @@ class ÉtapeLieu(Étape):
 
     def __str__(self):
         return str(self.lieu)
+
+
+    def pour_js(self):
+        return self.l.pour_js()
     
 
 class ÉtapeEnsLieux(Étape):
@@ -336,11 +351,12 @@ class ÉtapeEnsLieux(Étape):
         self.dico_lieux = {l.arête.départ.id_osm: l for l in gtl.lieux(z_d)}
         self.nœuds = self.dico_lieux  # Pas un set, mais l’appartenance et l’itération fonctionneront pareil...
         self.nom = str(gtl)
+        self.gtl = gtl
         assert self.nœuds, f"Aucun lieu trouvé pour {gtl}!"
     
  
-    def marqueur_leaflet_of_sommet(self, s, nomCarte="laCarte"):
-        return self.nœuds[s].marqueur_leaflet(nomCarte)
+    def marqueur_leaflet_of_sommet(self, s):
+        return self.nœuds[s].marqueur_leaflet()
 
 
     @classmethod
@@ -351,6 +367,13 @@ class ÉtapeEnsLieux(Étape):
         return cls(GroupeTypeLieu.objects.get(pk=pk), z_d)
 
     
+    def pour_js(self):
+        return self.gtl.pour_js()
+    
+
+
+
+
 
 def dico_arête_of_nœuds(g, nœuds):
     """
@@ -378,6 +401,7 @@ def arêtes_interdites(g, z_d, étapes_interdites, bavard=0):
                                 )
         )
     return interdites
+
 
 
 class Chemin():

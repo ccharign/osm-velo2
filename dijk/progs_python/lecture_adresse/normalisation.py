@@ -349,6 +349,11 @@ class Adresse():
         """
         return f"{self.num_ou_pas()}{self.rue()}, {self.ville}"
 
+    def pour_js(self):
+        return {
+            "type": "adresse",
+            "adresse": str(self)
+        }
     
     def pour_nominatim(self):
         """

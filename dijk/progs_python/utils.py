@@ -83,7 +83,8 @@ def itinéraire_of_étapes(étapes,
      arr : idem pour l’arrivée,
      nom_étapes,
      nom_rues_interdites,
-     carte
+     bbox,
+     itinéraires
     )
     """
     np = len(ps_détour)
@@ -121,7 +122,7 @@ def itinéraire_of_étapes(étapes,
         
     d, a = étapes[0], étapes[-1]
     if rajouter_iti_direct:
-        cd = chemins.Chemin(z_d, [d, a], [], 0,  "#000000", False)
+        cd = chemins.Chemin(z_d, [d, a], [], 0, "#000000", False)
         traite_un_chemin(cd, "Trajet direct", "Le trajet le plus court, sans prendre en compte les étapes imposées.")
         tic = chrono(tic, "Calcul de l'itinéraire direct.")
         longueur_ch_direct = stats[-1]["longueur"]
@@ -143,7 +144,7 @@ def itinéraire_of_étapes(étapes,
             "chemin": c,
             "noms_étapes": [str(é) for é in étapes],
             "rues_interdites": [str(é) for é in étapes_interdites],
-            "bbox": itinéraires[0].bbox(g),
+            "bbox": list(itinéraires[0].bbox(g)),  # En list pour être envoyé à js
             "itinéraires": itinéraires
             }
 

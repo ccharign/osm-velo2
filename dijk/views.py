@@ -14,7 +14,7 @@ from django.db.models import Subquery, Q
 from dijk import forms
 
 from .progs_python.params import LOG
-from .progs_python.petites_fonctions import chrono, get_full_class_name
+from .progs_python.petites_fonctions import chrono
 
 from .progs_python.chemins import Chemin, ÉtapeArête
 
@@ -235,6 +235,12 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_sommets, ét
                         })
 
         texte_étapes_inter = énumération_texte(noms_étapes[1:-1])
+
+        # données à sérialiser pour envoyer à js
+        pour_js = {
+            "bbox": données["bbox"],
+            "itis": [iti.vers_js() for iti in données["itinéraires"]]
+        }
         
         return render(requête,
                       "dijk/résultat_itinéraire_sans_carte.html",
@@ -243,11 +249,12 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_sommets, ét
                            "texte_étapes_inter": texte_étapes_inter,
                            "rues_interdites": énumération_texte(rues_interdites),
                            "post_préc": données,
-                           "relance_rapide": forms.RelanceRapide(initial=données),
+                           "relance_rapide": forms.ToutCaché(initial=données),
                            "enregistrer_contrib": forms.EnregistrerContrib(initial=données),
                            "trajet_retour": forms.ToutCaché(initial=données),
                            "fouine": requête.session.get("fouine", None),
-                           "js_itinéraires": [iti.vers_leaflet() for iti in données["itinéraires"]] # + marqueurs_à_rajouter
+                           # "js_itinéraires": [iti.vers_leaflet() for iti in données["itinéraires"]],
+                           "données": json.dumps(pour_js)
                        }
                        }
                       )
@@ -516,7 +523,7 @@ def pour_complétion(requête, nbMax=15):
         essais = re.findall("(une?) (.*)", rue)
         if len(essais) == 1:
             déterminant, texte = essais[0]
-            gtls = GroupeTypeLieu.objects.filter(nom__istartswith=essais[0][1], féminin=déterminant=="une")
+            gtls = GroupeTypeLieu.objects.filter(nom__istartswith=texte, féminin=déterminant=="une")
             for gtl in gtls:
                 res.ajoute(gtl.pour_autocomplète())
         

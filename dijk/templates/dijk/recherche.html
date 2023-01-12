@@ -22,7 +22,8 @@
     <!-- <div class="form-group"> -->
 
       {% bootstrap_form recherche %}
-      {% buttons submit='C’est parti' %}{% endbuttons %}
+      
+      <button id="btn_soumettre" type="button" class="btn btn-primary">C’est parti!</button>
       
       <!-- <div class="help-block">  La ville par défaut est {{ville}}. Pour indiquer un emplacement dans une autre ville, préciser celle-ci après une virgule. Exemples : « 84 avenue de Buros », « rue du souvenir, Lons », « mairie, Saint Etienne de Crossey » ou « The Ritz, London ». -->
       <!-- </div> -->
@@ -76,7 +77,7 @@
 <input type="hidden" id="zone_t" name="zone_t" value="{{zone_t}}">
 
 
-      {% buttons submit='C’est parti' %}{% endbuttons %}
+      <!-- { buttons submit='C’est parti' }{endbuttons } -->
 
 
   </form>
@@ -86,16 +87,14 @@
 
 
   {% block script %}
+  {% load static %}
   <script>
-    const form = document.getElementById("recherche");
-
-    // autocomplétion
+    // variable globale pour le script d’autocomplétion
     const url_api = "{% url 'complète rue' %}";
-    autoComplète("départ", url_api, form);
-    autoComplète("arrivée", url_api, form);
 
     // géolocalisation
-    init_géoLoc(form);
+    //init_géoLoc(form);
   </script>
+  <script src="{%static 'dijk/js/recherche_ini.js'%}" type="module"></script>
 
   {% endblock script %}

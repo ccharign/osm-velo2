@@ -1,23 +1,25 @@
 {% extends "dijk/résultat_itinéraire_base.html" %}
 
-
+  {% load static %}
 {% load bootstrap5 %}
 {# Display django.contrib.messages as Bootstrap alerts #}
 {% bootstrap_messages %}
 
 
+
 <!-- La carte -->
 {% block carte %}
-  Voici l’itinéraire obtenu à l’aide de mes connaissances actuelles. Pour me corriger:
-  <ul>
-    <li> indiquez des tronçons de rue à emprunter en cliquant sur la carte;</li>
-    <li> indiquez des tronçons à éviter en controle-cliquant.
-  </ul>
+  Voici l’itinéraire obtenu à l’aide de mes connaissances actuelles. Pour me corriger indiquer des points de passage en cliquant sur la carte.
+  <!-- <ul> -->
+  <!--   <li> indiquez des tronçons de rue à emprunter en cliquant sur la carte;</li> -->
+  <!--   <li> indiquez des tronçons à éviter en controle-cliquant. -->
+  <!-- </ul> -->
   
 <div id="laCarte"></div>
 <a href="https://www.cyclosm.org/legend.html" target="blank" class="légende"> Légende </a>
 {% endblock carte %}
 <!-- fin de la carte -->
+
 
 
 <!-- Formulaire pour enregistrer la contribution -->
@@ -62,6 +64,7 @@
 </p>
 {% endblock %}
 <!-- fin enregistrer contrib -->
+
 
 
 
@@ -142,12 +145,13 @@
 
 
 
+
 <!-- Relance rapide du formulaire -->
 {% block modifs_rapides %}
-<form action = "{% url 'relance_rapide' %}" method="get" id="relance_rapide">
+<form action = "{% url 'relance_rapide' %}" method="get" id="recherche">
   {% bootstrap_form relance_rapide %}
 
-  {% buttons submit='Recalculer' %}{% endbuttons %}
+  <button type="button" class="btn btn-primary" id="btn_relance_rapide"> Recalculer l’itinéraire</button>
 </form>
 
 {% endblock %}
@@ -169,18 +173,20 @@
 
 {% block script %}
 <script>
-  // Création de la carte
-  laCarte = carte_bb{{bbox}};
+  const DONNÉES = JSON.parse("{{données|escapejs}}");
 
   // Ajout de l’itinéraire
-  {% for code_js in js_itinéraires %}
-  {{code_js | safe}}
-  {% endfor %}
+  //  for code_js in js_itinéraires
+  // code_js | safe
+  //  endfor 
 
   // Ajout des fonctionalités pour les marqueurs d’étapes
-  gèreLesClics(laCarte);
+  //gèreLesClics(laCarte);
   // Ajout des marqueurs d’étapes venant de recherches précédentes qui ont été enregistrés en hidden dans le form
-  form_recherche = document.getElementById("relance_rapide");
-  marqueurs_of_form(form_recherche, laCarte);
+  //form_recherche = document.getElementById("relance_rapide");
+  //marqueurs_of_form(form_recherche, laCarte);
 </script>
+
+<script src="{% static 'dijk/js/carte.js'%}" type="module"> </script>
+
 {% endblock script %}

@@ -33,7 +33,8 @@ class RechercheBase(forms.Form):
     étapes = forms.CharField(widget=forms.HiddenInput(), required=False)
     rues_interdites = forms.CharField(widget=forms.HiddenInput(), required=False)
     passer_par = forms.ModelChoiceField(queryset=mo.GroupeTypeLieu.objects.all(), required=False, widget=forms.HiddenInput())
-    
+    étapes_inter = forms.CharField(widget=forms.HiddenInput(), required=False)
+    toutes_les_étapes = forms.CharField(widget=forms.HiddenInput(), required=False)    
 
 
 class Recherche(RechercheBase):
@@ -41,7 +42,7 @@ class Recherche(RechercheBase):
     Recherche initiale.
     """
     passer_par = forms.ModelChoiceField(queryset=mo.GroupeTypeLieu.objects.all(), label="(facultatif) Passer par un(e) : ", required=False)
-    #partir_de_ma_position = forms.BooleanField(label="Partir de ma position", required=False, initial=False)
+    # partir_de_ma_position = forms.BooleanField(label="Partir de ma position", required=False, initial=False)
     # pourcentage_détour = forms.CharField(widget=forms.HiddenInput())
 
 

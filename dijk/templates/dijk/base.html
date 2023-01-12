@@ -97,7 +97,7 @@
 
 
   <!-- Petites fonctions diverses -->
-  <script src="{% static 'dijk/js/fonctions.js'%}" type="text/javascript"> </script>
+  <script src="{% static 'dijk/js/fonctions.js'%}" type="module"> </script>
 
   
   <!-- Chargement de leaflet 1.8 -->
@@ -113,9 +113,9 @@
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
   <!-- Mes fonctions javascript -->
-  <script src="{% static 'dijk/js/pour_leaflet.js'%}" type="text/javascript"> </script>
+  <script src="{% static 'dijk/js/pour_leaflet.js'%}" type="module"> </script>
   <!-- Les marqueurs -->
-  <script src="{% static 'dijk/js/marqueurs.js'%}" type="text/javascript"> </script>
+  <script src="{% static 'dijk/js/marqueurs.js'%}" type="module"> </script>
   <!-- bouton plein écran -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/1.4.2/Control.FullScreen.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/1.4.2/Control.FullScreen.min.css"/>
@@ -129,8 +129,9 @@
   <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.js'> </script>
   <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.0/jquery-ui.js"></script>
   <!-- Mes fonctions pour l’autocomplétion -->
-  <script src="{% static 'dijk/js/autoComplete.js'%}" type="text/javascript"> </script>
-
+  <script src="{% static 'dijk/js/autoComplete.js'%}" type="module"> </script>
+  <!-- Bib pour les form de recherche -->
+  <script src="{% static 'dijk/js/pour_recherche.js'%}" type="module"> </script>
   {% block script %} {% endblock %}
 
 </html>

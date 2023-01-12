@@ -50,35 +50,19 @@ Pour personaliser l’affichage, notamment le mettre sur deux colonnes :
 
 {% load l10n %}
 {% localize off %} <!-- Éviter que Django ne transforme les points en virgules dans le script -->
+
 <script>
-  $(document).ready(  function(){
-
-      // Localisation
-      form = document.getElementById("fouine");
-      navigator.geolocation.getCurrentPosition(
-	      pos => àLaGéoloc(pos, form),
-	      () => console.log("Échec de la géolocalisation.")
-      );
-
-      // La carte      
-      // fonction jquery pour charger un script et lancer une fonction une fois ceci terminé :
-      // $.getScript("{% static 'dijk/leaflet-providers.js'%}", function() {
-	  // leaflet-provider a besoin que leaflet ait été chargé, et est nécessaire à carteIci
-	  // leaflet-provider chargé
-
-    {% if bbox%}
-      laCarte = carte_bb({{bbox}});
-    {% else %}
-	    var laCarte = carteIci(form);
-    {% endif %}
-
-	  {% for m in marqueurs %}
-	    {{m | safe}}
-    {% endfor %}
-
-    suivi_de_la_bb(laCarte, "fouine");
-      // });  
-  })
+  // Récupérer les données de Django
+  let bbox = "{{bbox}}";
 </script>
+
+<script src="{% static 'dijk/js/autourDeMoi.js' %}" type="module"></script>
+
+<script>
+  {% for m in marqueurs %}
+      {{m | safe}}
+  {% endfor %}
+</script>
+
 {% endlocalize %}
 {% endblock %}

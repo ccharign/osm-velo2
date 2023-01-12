@@ -367,8 +367,6 @@ class Arête(models.Model):
         return formule_pour_correction_longueur(self.longueur, cy, p_détour)
 
 
-    
-
 
 class ArbreArête(models.Model, qa.Quadrarbre):
     """
@@ -897,9 +895,21 @@ class GroupeTypeLieu(models.Model):
         else:
             return "un"
 
+    def pour_js(self):
+        """
+        Sortie : dico sérialisable contenant les données nécessaires à la partie client. À savoir
+            - pour afficher un marqueur
+            - pour construire l’objet ÉtapeLieu dans Django après retour via le formulaire.
+        """
+        return {
+            "type": "gtl",
+            "pk": self.pk,
+            "nom": self.nom,
+        }
+
     def pour_autocomplète(self):
         return {"label": self.déterminant() + " " + self.nom,
-                "àCacher": json.dumps({"type": "gtl", "pk": self.pk})
+                "àCacher": json.dumps(self.pour_js())
                 }
 
 
@@ -973,16 +983,38 @@ class Lieu(models.Model):
         """
         return f"{self.nom}, {self.adresse()}, {self.ville}"
 
+
+    def pour_js(self):
+        """
+        Sortie : dico sérialisable contenant les données nécessaires à la partie client. À savoir
+            - pour afficher un marqueur
+            - pour construire l’objet ÉtapeLieu dans Django après retour via le formulaire.
+        Envoyé lors de l’autocomplétion. En particulier, envoyé pour toutes les propositions d’autocomplétion. -> Doit rester relativement léger.
+        """
+        return {
+            "type": "lieu",
+            "pk": self.pk,
+            "coords": self.coords(),
+            "nom": self.nom,
+        }
+    
     def pour_autocomplète(self):
         return {"label": self.str_pour_formulaire(),
-                "àCacher": json.dumps({"type": "lieu", "pk": self.pk})
+                "àCacher": json.dumps(self.pour_js())
                 }
 
-    def marqueur_leaflet(self, nomCarte):
+    def marqueur_leaflet(self):
         """
-        Renvoie le code js pour créer un marqueur leaflet pour ce lieu.
+        Renvoie un dico sérialisable contenant les données pour créer un marqueur leaflet. À savoir:
+            lon
+            lat
+            infos
+        Envoyé pour l’affichage du résultat. Contient plus d’infos que pour_js qui est utilisé dans l’autocomplétion.
         """
-        return f"""marqueur_avec_popup({self.lon}, {self.lat}, {self.json_nettoyé}, {nomCarte});"""
+        infos = self.toutes_les_infos()
+        infos["nom"] = self.nom
+        return {"lon": self.lon, "lat": self.lat, "infos": infos}
+    # f"""marqueur_avec_popup({self.lon}, {self.lat}, {self.json_nettoyé}, {nomCarte});"""
 
 
     def ajoute_arête_la_plus_proche(self, arbre_arêtes, dmax=30):

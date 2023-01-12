@@ -16,7 +16,7 @@ function markerHtmlStyles(coul){
 }
 
 
-function mon_icone(coul){
+export function mon_icone(coul){
     return L.divIcon({
 	className: "my-custom-pin",
 	iconAnchor: [0, 24],
@@ -36,7 +36,7 @@ function mon_icone(coul){
  * @param {dico} infos 
  * @param {L.map} carte 
  */
-function marqueur_avec_popup(lon, lat, infos, carte){
+export function marqueur_avec_popup(lon, lat, infos, carte){
 
     const marqueur = L.marker(
         [lat, lon]
@@ -48,23 +48,27 @@ function marqueur_avec_popup(lon, lat, infos, carte){
 //     marqueur.bindPopup(popup);
     //
 
-    let contenu ="";
-    for (champ of ["nom", "adresse", "horaires", "tél" ]){
-	if (infos[champ]){
-	    contenu += infos[champ]+"<br>";
-	}
-    };
+    // console.log(infos);
+    //let contenu = nom;
+    // for (let champ of ["adresse", "horaires", "tél" ]){
+    // 	if (infos[champ]){
+    // 	    contenu += infos[champ]+"<br>";
+    // 	}
+    // };
 
-    contenu= `<div class="pop">${contenu}</div>`;
+    let contenu = ["nom", "adresse", "horaires", "tél" ]
+	.filter(c=>infos[c])
+	.map(c=>infos[c])
+	.join("<br>");
     
     //D’après le tuto de leaflet:
-    marqueur.bindPopup(contenu);
+    marqueur.bindPopup(`<div class="pop">${contenu}</div>`);
     
 }
 
 
 
-function latLng_of_texte(texte){
+export function latLng_of_texte(texte){
     // Entrée : chaîne de car "lon,lat"
     // Sortie : Objet latLng correspondant
     const tab_coords = texte.split(",").map(parseFloat);
@@ -72,15 +76,14 @@ function latLng_of_texte(texte){
 }
 
 
-function texte_of_latLng(ll){
+export function texte_of_latLng(ll){
     // Entrée : objet latLng
     // Sortie : chaîne "lon,lat"
     return ll.coords.longitude + "," + ll.coords.latitude;
 }
 
 
-function carteIci(){
-    // Crée une carte à la position actuelle
+export function carteIci(){    // Crée une carte à la position actuelle
     // Tuiles de cyclosm
     // Sortie : l’objet map créé
 
@@ -101,13 +104,13 @@ function carteIci(){
     return laCarte;
 }
 
-function suivi_de_la_bb(carte, nom_form){
+export function suivi_de_la_bb(carte, nom_form){
     carte.on(
 	'moveend',
 	function (){
-	    t =  bbox_of_carte(carte);
-	    texte= `${t[0]},${t[1]},${t[2]},${t[3]}`;
-	    form = document.getElementById(nom_form);
+	    const t =  bbox_of_carte(carte);
+	    const texte = `${t[0]},${t[1]},${t[2]},${t[3]}`;
+	    const form = document.getElementById(nom_form);
 	    
         form["id_bbox"].value = texte;
 	});
@@ -116,21 +119,29 @@ function suivi_de_la_bb(carte, nom_form){
 function bbox_of_carte(carte){
     // Entrée : une carte leaflet
     // Sortie : (s, o, n, e)
-    bounds = carte.getBounds();
-    ne = bounds.getNorthEast();
-    n = ne.lat; e=ne.lng;
-    so = bounds.getSouthWest();
-    s = so.lat; o=so.lng;
+    const bounds = carte.getBounds();
+    const ne = bounds.getNorthEast();
+    const n = ne.lat;
+    const e=ne.lng;
+    const so = bounds.getSouthWest();
+    const s = so.lat;
+    const o=so.lng;
     return [s,o,n,e];
 }
 
 
-function carte_bb(s,o,n,e){
+export function carteBb(bb){
     // Crée une carte sur la bb passée en arg
     // Tuile osm normales avec une couche cyclosm_lite
     // Sortie : la carte créé
 
-    const laCarte = L.map('laCarte', {fullscreenControl: true}).fitBounds([[s,o],[n,e]]);
+    const s = bb[0],
+	  o = bb[1],
+	  n = bb[2],
+	  e = bb[3];
+
+    const laCarte = L.map('laCarte', {"fullscreenControl": true})
+	  .fitBounds([[s,o], [n,e]]);
 
     // tuiles osm de base
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -149,8 +160,7 @@ function carte_bb(s,o,n,e){
 
     ajoute_fonctionalités_à_la_carte(laCarte);
 
-    console.log("Carte créé :");
-    console.log(laCarte);
+
     return laCarte;
 }
 
@@ -167,7 +177,8 @@ function ajoute_fonctionalités_à_la_carte(carte){
     ).addTo(carte);
 
     // Échelle
-    L.control.scale(imperial=false).addTo(carte);    
+    L.control.scale({"imperial": false})
+	.addTo(carte);    
 }
 
 

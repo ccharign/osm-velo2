@@ -8,7 +8,7 @@
 
 
 
-function onSelectAutoComplète(e, ui, form, champ){
+export function onSelectAutoComplète(e, ui, form, champ){
     // Lancé lors de la sélection d’un élément dans un champ autocomplété.
     // e : l’événement, ui : l’objet sélectionné
     // form : formulaire à modifier
@@ -18,10 +18,9 @@ function onSelectAutoComplète(e, ui, form, champ){
 }
 
 // Met en place l’autocomplétion pour le champ indiqué dans le form indiqué.
-function autoComplète(nomChamp, adresseSource, form, longMin=3){
-    // longMin est facultatif. 3 par défaut.
-    // l’élément du formulaire doit s’appeler "id_"+nomChamp, l’élément à remplir doit s’appeler "données_cachées_"+nomChamp
-   
+// longMin est facultatif. 3 par défaut.
+// l’élément du formulaire doit s’appeler "id_"+nomChamp, l’élément à remplir doit s’appeler "données_cachées_"+nomChamp
+export function autoComplète(nomChamp, adresseSource, form, longMin=3){
     $(function () {
         $("#id_"+nomChamp).autocomplete({
 	    source: adresseSource,
@@ -30,37 +29,3 @@ function autoComplète(nomChamp, adresseSource, form, longMin=3){
         });
     });
 }
-
-console.log("autoComplete.js chargé");
-
-// $("#id_départ").autocomplete({
-//     source: "{% url 'complète rue' %}",
-//     minLength: 3,
-//     select: (e, ui) =>
-//     //(
-//     // ui.item : le dico renvoyé par le serveur
-//     // form = document.getElementById("recherche");
-//     // lieu = ui.item;
-//     // coords = lieu.lon+","+lieu.lat;
-//     // form.elements["coords_départ"].value=coords;
-//     //)
-//     onSelectAutoComplète(e, ui, document.getElementById("recherche"), "coords_départ")    
-// });
-
-// $("#id_arrivée").autocomplete({
-//     source: "{% url 'complète rue' %}",
-//     minLength: 3,
-//     select: (e, ui) =>
-//     onSelectAutoComplète(e, ui, document.getElementById("recherche"), "coords_arrivée")
-// });
-
-// $("#rues_interdites").autocomplete({
-//     source: "{% url 'complète rue' %}",
-//     minLength: 4,
-// });
-
-// $("#étapes").autocomplete({
-//     source: "{% url 'complète rue' %}",
-//     minLength: 4,
-// });	      
-

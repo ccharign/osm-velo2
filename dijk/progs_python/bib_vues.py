@@ -1,8 +1,8 @@
 # -*- coding:utf-8 -*-
 
-import re
+import json
 
-from dijk.progs_python.chemins import Étape, ÉtapeArête, ÉtapeEnsLieux
+from dijk.progs_python.chemins import ÉtapeEnsLieux, Étape
 
 
 
@@ -65,49 +65,58 @@ def z_é_i_d(g, données):
         données["pourcentage_détour"].split(";")
     ))
 
-    # Le départ (possiblement des coords gps)
-    if "partir_de_ma_position" in données and données["partir_de_ma_position"]:
-        coords = tuple(map(float, données["localisation"].split(",")))
-        assert len(coords) == 2, f"coords n'est pas de longueur 2 {coords}"
-        données["départ_coords"] = str(coords)[1:-1]
-        départ = ÉtapeArête.of_coords(coords, g, z_d)
-    else:
-        départ = Étape.of_dico(données, "départ", g, z_d)
+    # # Le départ (possiblement des coords gps)
+    # if "partir_de_ma_position" in données and données["partir_de_ma_position"]:
+    #     coords = tuple(map(float, données["localisation"].split(",")))
+    #     assert len(coords) == 2, f"coords n'est pas de longueur 2 {coords}"
+    #     données["départ_coords"] = str(coords)[1:-1]
+    #     départ = ÉtapeArête.of_coords(coords, g, z_d)
+    # else:
+    #     départ = Étape.of_dico(données, "départ", g, z_d)
 
         
-    # L’arrivée
-    arrivée = Étape.of_dico(données, "arrivée", g, z_d)
+    # # L’arrivée
+    # arrivée = Étape.of_dico(données, "arrivée", g, z_d)
 
     
-    # Les étapes intermédiaires et interdites:
+    # # Les étapes intermédiaires et interdites:
     
-    é_inter = []
-    é_interdites = []
-    # Voyons s’il y en a venant des clics sur la carte :
-    for c, v in données.items():
-        if "étape_coord" in c:
-            num = int(re.match("étape_coord([0-9]*)", c).groups()[0])
-            coords = tuple(map(float, v.split(",")))
-            a, _ = g.arête_la_plus_proche(coords, z_d)
-            é_inter.append((num, ÉtapeArête.of_arête(a, coords)))
+    # é_inter = []
+    # é_interdites = []
+    # # Voyons s’il y en a venant des clics sur la carte :
+    # for c, v in données.items():
+    #     if "étape_coord" in c:
+    #         num = int(re.match("étape_coord([0-9]*)", c).groups()[0])
+    #         coords = tuple(map(float, v.split(",")))
+    #         a, _ = g.arête_la_plus_proche(coords, z_d)
+    #         é_inter.append((num, ÉtapeArête.of_arête(a, coords)))
             
-        elif "interdite_coord" in c:
-            coords = tuple(map(float, v.split(",")))
-            a, _ = g.arête_la_plus_proche(coords, z_d)
-            é_interdites.append(ÉtapeArête.of_arête(a, coords))
-    é_inter.sort()
-    é_inter = [é for _, é in é_inter]
+    #     elif "interdite_coord" in c:
+    #         coords = tuple(map(float, v.split(",")))
+    #         a, _ = g.arête_la_plus_proche(coords, z_d)
+    #         é_interdites.append(ÉtapeArête.of_arête(a, coords))
+    # é_inter.sort()
+    # é_inter = [é for _, é in é_inter]
 
     
-    # if not é_inter:
-    #     # Pas d’étape inter venant d’un clic : prendre celles présentes dans le formulaire.
-    #     é_inter = [Étape.of_texte(é, g, z_d) for é in données["étapes"].strip().split(";") if len(é) > 0]
+    # # if not é_inter:
+    # #     # Pas d’étape inter venant d’un clic : prendre celles présentes dans le formulaire.
+    # #     é_inter = [Étape.of_texte(é, g, z_d) for é in données["étapes"].strip().split(";") if len(é) > 0]
         
-    étapes = [départ] + é_inter + [arrivée]
+    # étapes = [départ] + é_inter + [arrivée]
 
-    # Pour les étapes interdites, on peut rassembler celles des clics et celles du form car pas de pb d’ordre.
-    é_interdites += [Étape.of_texte(r, g, z_d) for r in données["rues_interdites"].strip().split(";") if len(r) > 0]
+    # # Pour les étapes interdites, on peut rassembler celles des clics et celles du form car pas de pb d’ordre.
+    # é_interdites += [Étape.of_texte(r, g, z_d) for r in données["rues_interdites"].strip().split(";") if len(r) > 0]
+    é_interdites = []
 
+    étapes_dicos = json.loads(
+        données["toutes_les_étapes"]
+    )
+    étapes = [Étape.of_dico(d, g, z_d) for d in étapes_dicos]
+    # Il est possible que des coords aient été rajoutées : en cas d’adresse avec numéro de rue, les coords ot été récupérées sur data.gouv.
+    # je sauvegarde ceci
+    # NB : on pourrait faire en sorte de ne le faire que si modif.
+    données["toutes_les_étapes"] = json.dumps(étapes_dicos)
 
     # Étapes sommet
     étapes_sommets = []
