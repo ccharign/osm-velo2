@@ -1037,33 +1037,6 @@ class Lieu(models.Model):
             self.ville = self.arête.villes.first()
         
 
-
-    # def ajoute_ville_et_rue(self, bavard=0):
-    #     """
-    #     Va chercher ville et rue sur data.gouv grâce aux coords et les ajoute à self.
-    #     Les erreurs sont ignorées...
-    #     La modif n’est pas sauvegardée pour permettre un bulk_update ultérieur.
-    #     """
-    #     try:
-    #         nom_rue, nom_ville, code_postal = rue_of_coords((self.lon, self.lat))
-    #         try:
-    #             res1 = Ville.objects.filter(nom_norm=partie_commune(nom_ville))
-    #             if res1.count() == 1:
-    #                 v_d = res1.first()
-    #             elif res1.count() > 1:
-    #                 v_d = Ville.objects.get(nom_norm=partie_commune(nom_ville), code=code_postal)
-    #             else:
-    #                 raise ValueError(f"Pas de ville dans la base pour le nom {nom_ville}, normalisé en {partie_commune(nom_ville)}.")
-    #             self.ville = v_d
-    #             rue = Rue.objects.get(nom_norm=prétraitement_rue(nom_rue), ville=v_d)
-    #             self.rue = rue
-            
-    #         except Rue.DoesNotExist as e:
-    #             LOG(f"Problème lors de la récupération de la rue de {self}.\n Nom de rue obtenu sur data.gouv.fr : {nom_rue}, normalisé en {prétraitement_rue(nom_rue)}\n Erreur : {e}\n", bavard=bavard)
-        
-    #     except Exception as e:
-    #         LOG(f"Problème dans ajoute_ville_et_rue pour {self}\n Erreur : {e}.", bavard=1)
-
     
     @classmethod
     def of_dico(cls, d, arbre_a, tous_les_id_osm=None, créer_type=False):
@@ -1087,23 +1060,23 @@ class Lieu(models.Model):
         """
 
         
-        nv_json_nettoyé = json.dumps(d_nettoyé)  # Sert à détecter une modif
+        nv_json_nettoyé = json.dumps(d)  # Sert à détecter une modif
 
         # Création ou récup de l’ancien lieu
-        if tous_les_id_osm and d_nettoyé["id_osm"] in tous_les_id_osm:
-            ancien = Lieu.objects.get(id_osm=d_nettoyé["id_osm"])
-            if not ancien.ville or ancien.json_nettoyé == nv_json_nettoyé:
+        if tous_les_id_osm and d["id_osm"] in tous_les_id_osm:
+            ancien = Lieu.objects.get(id_osm=d["id_osm"])
+            if ancien.json_nettoyé == nv_json_nettoyé:
                 # tout est déjà dans la base
                 return ancien, False, False
             else:
                 # lieu à mettre à jour
                 res = ancien
-                for attr, value in d_nettoyé.items():
+                for attr, value in d.items():
                     setattr(res, attr, value)
                 créé, utile = False, True
         else:
             # Nouveau lieu
-            res = cls(**d_nettoyé)
+            res = cls(**d)
             créé = True
             utile = True
 
@@ -1139,9 +1112,6 @@ class Lieu(models.Model):
         
         # Arête et ville
         res.ajoute_arête_la_plus_proche(arbre_a)
-
-
-
 
         return res, créé, utile
 

@@ -34,7 +34,7 @@ class RechercheBase(forms.Form):
     rues_interdites = forms.CharField(widget=forms.HiddenInput(), required=False)
     passer_par = forms.ModelChoiceField(queryset=mo.GroupeTypeLieu.objects.all(), required=False, widget=forms.HiddenInput())
     étapes_inter = forms.CharField(widget=forms.HiddenInput(), required=False)
-    toutes_les_étapes = forms.CharField(widget=forms.HiddenInput(), required=False)    
+    toutes_les_étapes = forms.CharField(widget=forms.HiddenInput(), required=False)
 
 
 class Recherche(RechercheBase):
@@ -91,8 +91,8 @@ class AutourDeMoi(forms.Form):
     Pour afficher la carte autour de l’utilisateur, et rechercher des amenities.
     Le champ localisation sera rempli par le javascript.
     """
-    type_lieu = forms.ModelMultipleChoiceField(
-        queryset=mo.TypeLieu.objects.filter(nom_osm__in=TYPE_AMEN_POUR_AUTOUR_DE_MOI),
+    gtls = forms.ModelMultipleChoiceField(
+        queryset=mo.GroupeTypeLieu.objects.all(),  # filter(nom_osm__in=TYPE_AMEN_POUR_AUTOUR_DE_MOI),
         label="Type de lieu",
         widget=forms.CheckboxSelectMultiple,
         required=False

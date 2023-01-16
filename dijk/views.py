@@ -612,8 +612,17 @@ def autourDeMoi(requête):
         # Traitement du formulaire
         données = récup_données(requête.GET, forms.AutourDeMoi, validation_obligatoire=False)
         bbox = tuple(map(float, données["bbox"].split(",")))
-            
-        lieux = recup_donnees.lieux_of_types_lieux(bbox, données["type_lieu"].all(), bavard=3)
+
+        gtls = données["gtls"].all()
+        tls = []
+        breakpoint()
+        for gtl in gtls:
+            tls.extend(gtl.type_lieu.all())
+        lieux = recup_donnees.lieux_of_types_lieux(
+            bbox,
+            tls,
+            bavard=3
+        )
         LOG(f"{len(lieux)} lieux trouvés", bavard=1)
         
         données["marqueurs"] = json.dumps(lieux)
