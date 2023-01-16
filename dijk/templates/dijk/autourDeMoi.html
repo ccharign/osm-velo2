@@ -53,16 +53,17 @@ Pour personaliser l’affichage, notamment le mettre sur deux colonnes :
 
 <script>
   // Récupérer les données de Django
-  let bbox = "{{bbox}}";
+  let BBOX = "{{bbox}}";
+  let TEXTE_MARQUEURS = "{{marqueurs|escapejs}}";
 </script>
 
 <script src="{% static 'dijk/js/autourDeMoi.js' %}" type="module"></script>
 
-<script>
-  {% for m in marqueurs %}
-      {{m | safe}}
-  {% endfor %}
-</script>
+<!-- <script> -->
+<!--   {% for m in marqueurs %} -->
+<!--       {{m | safe}} -->
+<!--   {% endfor %} -->
+<!-- </script> -->
 
 {% endlocalize %}
 {% endblock %}

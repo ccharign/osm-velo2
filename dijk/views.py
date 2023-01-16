@@ -609,14 +609,17 @@ def autourDeMoi(requête):
     Affiche la carte autour de l’utilisateur, ainsi qu’un formulaire pour recherche de lieux.
     """
     if requête.GET:
+        # Traitement du formulaire
         données = récup_données(requête.GET, forms.AutourDeMoi, validation_obligatoire=False)
         bbox = tuple(map(float, données["bbox"].split(",")))
             
         lieux = recup_donnees.lieux_of_types_lieux(bbox, données["type_lieu"].all(), bavard=3)
-        
         LOG(f"{len(lieux)} lieux trouvés", bavard=1)
-        données["marqueurs"] = [l.marqueur_leaflet("laCarte") for l in lieux]
+        
+        données["marqueurs"] = json.dumps(lieux)
         return render(requête, "dijk/autourDeMoi.html", données)
+    
     else:
+        # Initialisation du formulaire
         form = forms.AutourDeMoi()
         return render(requête, "dijk/autourDeMoi.html", {"form": form})

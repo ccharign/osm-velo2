@@ -36,10 +36,10 @@ export function mon_icone(coul){
  * @param {dico} infos 
  * @param {L.map} carte 
  */
-export function marqueur_avec_popup(lon, lat, infos, carte){
+export function marqueur_avec_popup(infos, carte){
 
     const marqueur = L.marker(
-        [lat, lon]
+        [infos.lat, infos.lon]
     ).addTo(carte);
         
 //     var popup = L.popup({"maxWidth": "100%"});
@@ -104,6 +104,8 @@ export function carteIci(){    // Crée une carte à la position actuelle
     return laCarte;
 }
 
+
+// Ajoute un listener à la carte qui met à jour le champ id_bbox du form
 export function suivi_de_la_bb(carte, nom_form){
     carte.on(
 	'moveend',
@@ -116,9 +118,10 @@ export function suivi_de_la_bb(carte, nom_form){
 	});
 }
 
+
+// Entrée : une carte leaflet
+// Sortie : (s, o, n, e)
 function bbox_of_carte(carte){
-    // Entrée : une carte leaflet
-    // Sortie : (s, o, n, e)
     const bounds = carte.getBounds();
     const ne = bounds.getNorthEast();
     const n = ne.lat;

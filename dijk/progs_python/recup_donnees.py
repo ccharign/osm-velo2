@@ -292,47 +292,6 @@ def nœuds_of_idsrue(ids_rue, bavard=0):
 
 
 
-## Déprécié
-#
-# @réessaie(10)
-# def récup_amenities(ville, bavard=0):
-#     """
-#     Entrée : ville (objet avec un attribut nom_complet)
-#     Sortie : liste de dico des lieux (amenity, shop, tourism) obtenus en cherchant la ville dans overpass.
-#     Les clefs de chaque dico sont :
-#         - id_osm
-#         - lon
-#         - lat
-#         - catégorie (qui vaut amenity, shop ou tourism)
-#         - type qui est la clef associée au tag amenity, shop ou tourism
-#         et tous les tags présents dans osm.
-#     """
-#     api = overpy.Overpass()
-#     requête = f"""
-#     area[name="{ville.nom_complet}"]->.searchArea;
-#     (
-#     node["amenity"]["name"](area.searchArea);
-#     node["shop"]["name"](area.searchArea);
-#     node["tourism"]["name"](area.searchArea);
-#     );
-#     out;"""
-#     res_req = api.query(requête)
-#     res = []
-#     for n in res_req.nodes:
-#         d = {"id_osm": n.id, "lon": float(n.lon), "lat": float(n.lat)}
-#         if "amenity" in n.tags:
-#             d["type"] = n.tags.pop("amenity")
-#             d["catégorie"] = "amenity"
-#         elif "tourism" in n.tags:
-#             d["type"] = n.tags.pop("tourism")
-#             d["catégorie"] = "tourism"
-#         else:
-#             d["type"] = n.tags.pop("shop")
-#             d["catégorie"] = "shop"
-#         d.update(n.tags)
-#         res.append(d)
-#     return res
-
 
 @réessaie(10)
 def récup_catégorie_lieu(catégorie_lieu: str, zone_overpass="area.searchArea", préfixe_requête="", bavard=0):
@@ -372,16 +331,20 @@ def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, arbre_a, to
         req : une requête overpass
         catégorie_lieu : la catégorie de lieux concernés (shop, amenity, tourism...)
         arbre_a : R-arbre d’arête dans lequel chercher l’arête la plus proche de chaque lieu.
+
     Sortie (Lieu list × Lieu list) : (nouveaux lieu (à bulk_creater), lieux à màj)
+
     Paramètres:
         force, si True on mets à jour même les lieux déjà présents dans la base et avec le même json_nettoyé
         tous_les_id_osm, si True les lieux dont l’id y figurent seront mis dans à_màj si des différences avec celui de la base sont détectér, et ignorés sinon. Si tous_les_id_osm est faux, tous les lieux seront mis dans les nouveaux lieux.
     """
-    
+
+    # Exécuter la requête
     api = overpy.Overpass(url="https://lz4.overpass-api.de/api/interpreter", max_retry_count=3)
     LOG(f"requête overpass : \n{requête}", bavard=bavard)
     rés_req = api.query(requête)
-    print(f"\nTraitement des {len(rés_req.nodes)} nœud, {len(rés_req.ways)} ways , et {len(rés_req.relations)} relations obtenues.\n")
+    print(f"\nTraitement des {len(rés_req.nodes)} nœud, {len(rés_req.ways)} ways, et {len(rés_req.relations)} relations obtenues.\n")
+
     
     à_créer, à_màj = [], []
     for x, type_objet_osm in [(n, "nœud") for n in rés_req.nodes] + [(w, "way") for w in rés_req.ways] + [(r, "rel") for r in rés_req.relations]:
@@ -398,6 +361,35 @@ def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, arbre_a, to
         elif utile or force:
             à_màj.append(l)
     return à_créer, à_màj
+
+
+
+def dicos_of_requête(requête: str, catégorie_lieu: str, bavard=0) -> list:
+    """
+    Entrée : requête overpass
+    Sortie (liste de dicos sérialisables) : résultat d’icelle.
+    Les dicos ont pour clefs lon, lat, type, catégorie, id_osm, ainsi que tous les tags présents sur osm.
+    """
+    
+    # Exécuter la requête
+    api = overpy.Overpass(url="https://lz4.overpass-api.de/api/interpreter", max_retry_count=3)
+    LOG(f"requête overpass : \n{requête}", bavard=bavard)
+    rés_req = api.query(requête)
+    print(f"\nTraitement des {len(rés_req.nodes)} nœud, {len(rés_req.ways)} ways , et {len(rés_req.relations)} relations obtenues.\n")
+
+    # Créer les dicos
+    res = []
+    for x, type_objet_osm in [(n, "nœud") for n in rés_req.nodes] + [(w, "way") for w in rés_req.ways] + [(r, "rel") for r in rés_req.relations]:
+        lon, lat = coords_of_objet_overpy(x, type_objet_osm)
+        d = {"id_osm": x.id,
+             "lon": lon, "lat": lat,
+             "type": x.tags.pop(catégorie_lieu),
+             "catégorie": catégorie_lieu,
+             }
+        d.update(x.tags)
+        res.append(d)
+        
+    return res
 
 
 def lieux_of_ville(ville, arbre_a, bavard=0, force=False):
@@ -466,7 +458,7 @@ def lieux_of_types_lieux(bb, types, bavard=0):
         if tl.catégorie not in dico_type:
             dico_type[tl.catégorie] = []
         dico_type[tl.catégorie].append(tl)
-    pprint(dico_type)
+
     res = []
     for cat, tl_cat in dico_type.items():
         milieu_requête = ""
@@ -477,7 +469,8 @@ def lieux_of_types_lieux(bb, types, bavard=0):
         out center;
         """
         LOG(f"Requête overpass:\n {requête}", bavard=1)
-        res.extend(traitement_req_récup_lieux(requête, cat)[0])
+        res.extend(dicos_of_requête(requête, cat, bavard=bavard))
+        
     LOG(f"Résultat :\n {res}", bavard=1)
     return res
 

@@ -2,6 +2,16 @@ import * as Pll from "./pour_leaflet.js";
 
 // Fonctions diverses, qui ne requièrent pas de bib externe.
 
+// Lecture d’un json représantant un array avec gestion du cas ""
+export function tab_of_json(texte){
+    if (texte){
+	return JSON.parse(texte);
+    }else{
+	return [];
+    }
+}
+
+
 
 // Rajoute un champ caché avec la géoloc
 export function init_géoLoc(form){
