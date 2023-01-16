@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 
-# Ce module regroupe les petiter fonctions de recherche de données géographiques qui utilisent Nominatim, overpass, ou data.gouv.
+# Ce module regroupe les fonctions de recherche de données géographiques qui utilisent Nominatim, overpass, ou data.gouv.
 
 import time
 import requests
@@ -23,15 +23,15 @@ localisateur = geopy.geocoders.Nominatim(user_agent="pau à vélo")
 
 
     
-
-
-
 class LieuPasTrouvé(Exception):
     pass
 
 
+######################
 ### Avec data.gouv ###
-#https://adresse.data.gouv.fr/api-doc/adresse
+######################
+
+# https://adresse.data.gouv.fr/api-doc/adresse
 
 
 def cherche_adresse_complète(adresse, bavard=0):
@@ -102,12 +102,14 @@ def adresses_of_liste_lieux(ll, bavard=0, affiche=False):
     res = []
     for ligne in réponse[1:]:
         res.append({c: v for (c, v) in zip(champs, ligne.strip().split(","))})
-    #os.remove("tmp.csv")
 
     return res
-        
 
+
+
+######################
 ### Avec Nominatim ###
+######################
 
 
 def cherche_lieu(adresse, seulement_structurée=False, seulement_non_structurée=False, bavard=0):
@@ -127,7 +129,7 @@ def cherche_lieu(adresse, seulement_structurée=False, seulement_non_structurée
         #  Essai 1 : recherche structurée. Ne marche que si l'objet à chercher est effectivement une rue
         LOG(f'Essai 1: "street":{nom_rue}, "city":{ville.avec_code()}, "country":{pays}', bavard=bavard)
         lieu = localisateur.geocode(
-            {"street":nom_rue, "city":ville.avec_code(), "country":pays, "dedup":0},
+            {"street": nom_rue, "city": ville.avec_code(), "country": pays, "dedup": 0},
             exactly_one=False, limit=None
         )  # Autoriser plusieurs résultats car souvent une rue est découpée en plusieurs tronçons
         if lieu is not None:
@@ -145,7 +147,10 @@ def cherche_lieu(adresse, seulement_structurée=False, seulement_non_structurée
             raise LieuPasTrouvé(f"{adresse}")
 
 
+        
+#####################
 ### Avec overpass ###
+#####################
 
 
 def réessaie(n_max):
@@ -293,7 +298,7 @@ def nœuds_of_idsrue(ids_rue, bavard=0):
 
 
 
-@réessaie(10)
+# @réessaie(10)
 def récup_catégorie_lieu(catégorie_lieu: str, zone_overpass="area.searchArea", préfixe_requête="", bavard=0):
     """
     Renvoie la requête overpass pour obtenir les objets (Node, Way, Relation) ayant un tag de la catégorie indiquée, ainsi qu’un tag 'name'.
@@ -316,6 +321,13 @@ def récup_catégorie_lieu(catégorie_lieu: str, zone_overpass="area.searchArea"
 
 def coords_of_objet_overpy(o, type_objet_osm: str):
     """
+    Entrée:
+       o, un objet overpy (Node, Way, ou Rel)
+       type_objet_osm: "nœud" dans le cas d’un Node, n’importe quoi d’autre sinon.
+
+    Sortie ((float, float)):
+       coordonnées de celui-ci. (lon, lat)
+
     Pour un nœud, les coords sont enregistrées dans l’objet dans des attributs lon et lat.
     Pour un way ou une rel, elles sont dans des attributs center_lon et center_lat, à condition d’avoir mis un « out center » à la fin de la requête overpass.
     """
@@ -339,22 +351,8 @@ def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, arbre_a, to
         tous_les_id_osm, si True les lieux dont l’id y figurent seront mis dans à_màj si des différences avec celui de la base sont détectér, et ignorés sinon. Si tous_les_id_osm est faux, tous les lieux seront mis dans les nouveaux lieux.
     """
 
-    # Exécuter la requête
-    api = overpy.Overpass(url="https://lz4.overpass-api.de/api/interpreter", max_retry_count=3)
-    LOG(f"requête overpass : \n{requête}", bavard=bavard)
-    rés_req = api.query(requête)
-    print(f"\nTraitement des {len(rés_req.nodes)} nœud, {len(rés_req.ways)} ways, et {len(rés_req.relations)} relations obtenues.\n")
-
-    
     à_créer, à_màj = [], []
-    for x, type_objet_osm in [(n, "nœud") for n in rés_req.nodes] + [(w, "way") for w in rés_req.ways] + [(r, "rel") for r in rés_req.relations]:
-        lon, lat = coords_of_objet_overpy(x, type_objet_osm)
-        d = {"id_osm": x.id,
-             "lon": lon, "lat": lat,
-             "type": x.tags.pop(catégorie_lieu),
-             "catégorie": catégorie_lieu,
-             }
-        d.update(x.tags)
+    for d in dicos_of_requête(requête, catégorie_lieu, bavard=bavard):
         l, créé, utile = mo.Lieu.of_dico(d, arbre_a, tous_les_id_osm=tous_les_id_osm, créer_type=True)
         if créé:
             à_créer.append(l)
@@ -377,7 +375,12 @@ def dicos_of_requête(requête: str, catégorie_lieu: str, bavard=0) -> list:
     rés_req = api.query(requête)
     print(f"\nTraitement des {len(rés_req.nodes)} nœud, {len(rés_req.ways)} ways , et {len(rés_req.relations)} relations obtenues.\n")
 
+    
     # Créer les dicos
+
+    # Champs à traduire
+    champs_à_traduire = {"name": "nom", "lon": "lon", "lat": "lat", "opening_hours": "horaires", "phone": "tél", "id_osm": "id_osm"}
+    
     res = []
     for x, type_objet_osm in [(n, "nœud") for n in rés_req.nodes] + [(w, "way") for w in rés_req.ways] + [(r, "rel") for r in rés_req.relations]:
         lon, lat = coords_of_objet_overpy(x, type_objet_osm)
@@ -387,6 +390,12 @@ def dicos_of_requête(requête: str, catégorie_lieu: str, bavard=0) -> list:
              "catégorie": catégorie_lieu,
              }
         d.update(x.tags)
+        
+        for c in champs_à_traduire:
+            if c in d:
+                val = d.pop(c)
+                d[champs_à_traduire[c]] = val
+    
         res.append(d)
         
     return res

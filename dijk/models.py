@@ -1086,17 +1086,7 @@ class Lieu(models.Model):
         La création ou la modif n’est pas sauvegardée pour permettre un bulk_create ou bulk_update ultérieur.
         """
 
-        champs_obligatoires = ["type", "catégorie", "lon", "lat", "id_osm"]
-        if not all(x in d for x in champs_obligatoires):
-            raise RuntimeError("Il manquait des champs pour {d} : {(c for c in champs_obligatoires if c not in d)}")
         
-        # Champs « normaux ». Inclus les obligatoires sans opération de traitement à effectuer.
-        champs = {"name": "nom", "lon": "lon", "lat": "lat", "opening_hours": "horaires", "phone": "tél", "id_osm": "id_osm"}
-        d_nettoyé = {
-            cf: d.get(ce, None)
-            for ce, cf in champs.items()
-        }
-        d_nettoyé["id_osm"] = int(d_nettoyé["id_osm"])
         nv_json_nettoyé = json.dumps(d_nettoyé)  # Sert à détecter une modif
 
         # Création ou récup de l’ancien lieu
