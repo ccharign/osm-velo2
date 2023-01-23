@@ -65,7 +65,7 @@ function afficheIti(iti, carte){
 	.addTo(laCarte);
 
     for (let m of iti.marqueurs){
-	Pll.marqueur_avec_popup(m.lon, m.lat, m.infos, carte);
+	Pll.marqueur_avec_popup(m, carte);
     }
 }
 

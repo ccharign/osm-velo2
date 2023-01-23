@@ -24,12 +24,13 @@ class RechercheBase(forms.Form):
     """
     départ = forms.CharField(label="Départ", required=False)
     données_cachées_départ = forms.CharField(widget=forms.HiddenInput(), required=False)  # Sera rempli par l’autocomplétion
-    partir_de_ma_position = forms.BooleanField(label="Partir de ma position", required=False, initial=False, widget=forms.HiddenInput())
+    partir_de_ma_position = forms.BooleanField(label="Partir de ma position", required=False, initial=False)
+    localisation = forms.CharField(widget=forms.HiddenInput(), required=False)
     arrivée = forms.CharField(label="Arrivée")
     données_cachées_arrivée = forms.CharField(widget=forms.HiddenInput(), required=False)
     zone = forms.ModelChoiceField(queryset=mo.Zone.objects.all(), widget=forms.HiddenInput())
-    marqueurs_é = forms.CharField(widget=forms.HiddenInput(), required=False)  # Pour les marqueurs d’étapes précédents.
-    marqueurs_i = forms.CharField(widget=forms.HiddenInput(), required=False)  # Pour les marqueurs d’étape interdite précédents.
+    # marqueurs_é = forms.CharField(widget=forms.HiddenInput(), required=False)  # Pour les marqueurs d’étapes précédents.
+    # marqueurs_i = forms.CharField(widget=forms.HiddenInput(), required=False)  # Pour les marqueurs d’étape interdite précédents.
     étapes = forms.CharField(widget=forms.HiddenInput(), required=False)
     rues_interdites = forms.CharField(widget=forms.HiddenInput(), required=False)
     passer_par = forms.ModelChoiceField(queryset=mo.GroupeTypeLieu.objects.all(), required=False, widget=forms.HiddenInput())

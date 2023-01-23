@@ -128,7 +128,7 @@ def itinéraire_of_étapes(étapes,
         longueur_ch_direct = stats[-1]["longueur"]
 
     # Calculer les pourcentages de détour effectifs
-    if rajouter_iti_direct or ps_détour[0] == 0.:
+    if (rajouter_iti_direct or ps_détour[0] == 0.) and longueur_ch_direct > 0:
         for s in stats:
             s["p_détour_effectif"] = int((s["longueur"]/longueur_ch_direct - 1.) * 100.)
 

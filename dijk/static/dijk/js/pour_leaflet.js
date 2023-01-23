@@ -42,20 +42,6 @@ export function marqueur_avec_popup(infos, carte){
         [infos.lat, infos.lon]
     ).addTo(carte);
         
-//     var popup = L.popup({"maxWidth": "100%"});
-//     var html_à_mettre = $(`<div style="width: 100.0%; height: 100.0%;">{contenu}</div>`)[0];
-//     popup.setContent(html_à_mettre);
-//     marqueur.bindPopup(popup);
-    //
-
-    // console.log(infos);
-    //let contenu = nom;
-    // for (let champ of ["adresse", "horaires", "tél" ]){
-    // 	if (infos[champ]){
-    // 	    contenu += infos[champ]+"<br>";
-    // 	}
-    // };
-
     let contenu = ["nom", "adresse", "horaires", "tél" ]
 	.filter(c=>infos[c])
 	.map(c=>infos[c])
@@ -67,18 +53,16 @@ export function marqueur_avec_popup(infos, carte){
 }
 
 
-
+// Entrée : chaîne de car "lon,lat"
+// Sortie : Objet latLng correspondant
 export function latLng_of_texte(texte){
-    // Entrée : chaîne de car "lon,lat"
-    // Sortie : Objet latLng correspondant
     const tab_coords = texte.split(",").map(parseFloat);
     return L.latLng(tab_coords[1], tab_coords[0]);    
 }
 
-
+// Entrée : objet latLng
+// Sortie : chaîne "lon,lat"
 export function texte_of_latLng(ll){
-    // Entrée : objet latLng
-    // Sortie : chaîne "lon,lat"
     return ll.coords.longitude + "," + ll.coords.latitude;
 }
 
@@ -89,13 +73,7 @@ export function carteIci(){    // Crée une carte à la position actuelle
 
     const laCarte = L.map('laCarte', {fullscreenControl: true}).fitWorld();
 
-    L.tileLayer(
-	'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
-	{
-	    "maxZoom": 20,
-	    "attribution": '<a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases" title="CyclOSM - Open Bicycle render">CyclOSM</a> | Map data: {attribution.OpenStreetMap}'
-	}
-    ).addTo(laCarte);
+    coucheCyclosm(laCarte);
 
     ajoute_fonctionalités_à_la_carte(laCarte);
 
@@ -103,6 +81,8 @@ export function carteIci(){    // Crée une carte à la position actuelle
 
     return laCarte;
 }
+
+
 
 
 // Ajoute un listener à la carte qui met à jour le champ id_bbox du form
@@ -133,10 +113,44 @@ function bbox_of_carte(carte){
 }
 
 
-export function carteBb(bb){
-    // Crée une carte sur la bb passée en arg
-    // Tuile osm normales avec une couche cyclosm_lite
-    // Sortie : la carte créé
+// Ajoute la couche de tuiles cyclosm à la carte
+function coucheCyclosm(carte){
+    L.tileLayer(
+	'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
+	{
+	    maxZoom: 20,
+	    attribution: '<a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases" title="CyclOSM - Open Bicycle render">CyclOSM</a> | Map data: {attribution.OpenStreetMap}'
+	}
+    ).addTo(carte);
+}
+
+
+
+// Ajoute la couche osm classique puis la surcouche cyclosmlite
+function coucheSimple(carte){
+    
+     // tuiles osm de base
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+	maxZoom: 19,
+	attribution: '© OpenStreetMap'
+    }).addTo(carte);
+
+    // couche cyclosm-lite
+    L.tileLayer(
+	'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm-lite/{z}/{x}/{y}.png',
+	{
+	    maxZoom: 19,
+	    attribution: '<a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases" title="CyclOSM - Open Bicycle render">CyclOSM</a> | Map data: {attribution.OpenStreetMap}'
+	}
+    ).addTo(carte);   
+}
+
+
+
+// Crée une carte sur la bb passée en arg
+// Si cyclosm, tuiles cyclosm, sinon tuile osm normales avec une couche cyclosm_lite
+// Sortie : la carte créé
+export function carteBb(bb, cyclosm=false){
 
     const s = bb[0],
 	  o = bb[1],
@@ -146,23 +160,13 @@ export function carteBb(bb){
     const laCarte = L.map('laCarte', {"fullscreenControl": true})
 	  .fitBounds([[s,o], [n,e]]);
 
-    // tuiles osm de base
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-	maxZoom: 19,
-	attribution: '© OpenStreetMap'
-    }).addTo(laCarte);
-
-    // couche cyclosm-lite
-    L.tileLayer(
-	'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm-lite/{z}/{x}/{y}.png',
-	{
-	    "maxZoom": 19,
-	    "attribution": '<a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases" title="CyclOSM - Open Bicycle render">CyclOSM</a> | Map data: {attribution.OpenStreetMap}'
-	}
-    ).addTo(laCarte);
+    if (cyclosm){
+	coucheCyclosm(laCarte);
+    }else{
+	coucheSimple(laCarte);
+    }
 
     ajoute_fonctionalités_à_la_carte(laCarte);
-
 
     return laCarte;
 }

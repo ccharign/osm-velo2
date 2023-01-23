@@ -19,7 +19,7 @@ from .progs_python.petites_fonctions import chrono
 from .progs_python.chemins import Chemin, ÉtapeArête
 
 from .progs_python.lecture_adresse.recup_noeuds import PasTrouvé
-from .progs_python.lecture_adresse.normalisation0 import prétraitement_rue
+
 from .progs_python import recup_donnees
 from .progs_python.apprentissage import n_lectures
 from .progs_python.bib_vues import bool_of_checkbox, énumération_texte, récup_données, z_é_i_d, chaîne_avec_points_virgule_renversée
@@ -27,11 +27,11 @@ from .progs_python.bib_vues import bool_of_checkbox, énumération_texte, récup
 from .progs_python.utils import dessine_cycla, itinéraire_of_étapes
 
 from .progs_python.graphe_par_django import Graphe_django
-from .progs_python.lecture_adresse.normalisation0 import découpe_adresse
+
 
 from .models import Chemin_d, Zone, Rue, Ville_Zone, Cache_Adresse, CacheNomRue, Lieu, Ville, GroupeTypeLieu
 
-
+import progs_python.autoComplétion as ac
 
 
 
@@ -427,9 +427,7 @@ def autreErreur(requête, e):
 
 
 
-
-### Auto complétion ###
-
+### Autocomplétion ###
 
 def pour_complétion(requête, nbMax=15):
     
@@ -439,45 +437,8 @@ def pour_complétion(requête, nbMax=15):
     Découpe l’adresse en (num? bis_ter? rue(, ville)?), et cherche des complétions pour rue et ville.
     nbMax : nb max de résultat. S’il y en a plus, aucun n’est renvoyé.
     """
-
-    class Résultat():
-        """
-        Pour enregistrer le résultat à renvoyer.
-        Un nouvel élément d n’est ajouté que si son label n’est pas déjà présent et si le nb de résultats est < self.n_max
-        """
-        def __init__(self, n_max):
-            self.res = []
-            self.n_max = n_max
-            self.déjà_présent = set()
-            self.nb = 0
-            self.trop_de_rés = False
-
-        def __len__(self):
-            return self.nb
-
-        def ajoute(self, réponse: dict):
-            """
-            Entrées:
-            réponse doit avoir au moins une clef « label » et optionnellement une clef « àCacher » à laquelle est associé un json.
-            """
-            if self.nb < self.n_max:
-                àAfficher = réponse["label"]
-                if àAfficher not in self.déjà_présent:
-                    self.déjà_présent.add(àAfficher)
-                    self.res.append(réponse)
-                    self.nb += 1
-            else:
-                self.trop_de_rés = True
-
-        def vers_json(self):
-            if self.trop_de_rés:
-                return "fail"
-            else:
-                return json.dumps(self.res)
-            
-
-
     mimeType = "application/json"
+    # Une requête d’autocomplétion à une clef « term »
     if "term" in requête.GET:
 
         # id de la zone
@@ -488,82 +449,14 @@ def pour_complétion(requête, nbMax=15):
         else:
             z_id = requête.session["zone_id"]
             z_d = Zone.objects.get(pk=z_id)
-        
 
-        # Découpage de la chaîne à chercher
-        tout = requête.GET["term"].split(";")
-        à_chercher = prétraitement_rue(tout[-1])
-        num, bis_ter, rue, déb_ville = découpe_adresse(à_chercher)
+        res = ac.complétion(requête.GET["term"], nbMax, z_d)
         
-        début = " ".join(x for x in [num, bis_ter] if x)
-        if début: début += " "
-
-        print(f"Recherche de {rue}")
-        
-        def chaîne_à_renvoyer(adresse, ville=None, parenthèse=None):
-            res = ";".join(tout[:-1] + [début+adresse])
-            if parenthèse:
-                res += f" ({parenthèse})"
-            if ville: res += ", " + ville
-            return res
-
-        # Villes de la zone z_id
-        villes = Ville_Zone.objects.filter(zone=z_id, ville__nom_norm__icontains=déb_ville)
-        req_villes = Subquery(villes.values("ville"))
-
-        
-        res = Résultat(nbMax)
-
-        # Complétion dans l’arbre lexicographique (pour les fautes de frappe...)
-        # Fonctionne sauf qu’on ne récupère pas la ville pour l’instant
-        # dans_l_arbre = g.arbre_lex_zone[z_d].complétion(à_chercher, tol=2, n_max_rés=nbMax)
-        # print(dans_l_arbre)
-
-        # Recherche dans les gtls:
-        essais = re.findall("(une?) (.*)", rue)
-        if len(essais) == 1:
-            déterminant, texte = essais[0]
-            gtls = GroupeTypeLieu.objects.filter(nom__istartswith=texte, féminin=déterminant=="une")
-            for gtl in gtls:
-                res.ajoute(gtl.pour_autocomplète())
-        
-        # Recherche dans les lieux
-        lieux = Lieu.objects.filter(nom__icontains=rue, ville__in=req_villes).prefetch_related("ville", "type_lieu")
-        print(f"{len(lieux)} lieux trouvées")
-        for l in lieux:
-            res.ajoute(l.pour_autocomplète())
-        
-        
-        # Recherche dans les rues de la base
-        dans_la_base = Rue.objects.filter(nom_norm__icontains=rue, ville__in=req_villes).prefetch_related("ville")
-        for rue_trouvée in dans_la_base:
-            res.ajoute({"label": chaîne_à_renvoyer(rue_trouvée.nom_complet, rue_trouvée.ville.nom_complet),
-                        "àCacher": json.dumps({"type": "rue", "pk": rue_trouvée.pk, "num": num, "bis_ter": bis_ter, "coords": ""})}
-                       )
-
-        
-        
-        # Recherche dans les caches
-        # for truc in Cache_Adresse.objects.filter(adresse__icontains=rue, ville__in=req_villes).prefetch_related("ville"):
-        #     print(f"Trouvé dans Cache_Adresse : {truc}")
-        #     chaîne = chaîne_à_renvoyer(truc.adresse, truc.ville.nom_complet)
-        #     res.ajoute(chaîne)
-            
-        # for chose in CacheNomRue.objects.filter(
-        #         Q(nom__icontains=rue) | Q(nom_osm__icontains=rue), ville__in=req_villes
-        # ).prefetch_related("ville"):
-        #     print(f"Trouvé dans CacheNomRue : {chose}")
-        #     chaîne = chaîne_à_renvoyer(chose.nom_osm, chose.ville.nom_complet)
-        #     res.ajoute(chaîne_à_renvoyer(chose.nom_osm, chose.ville.nom_complet))
-
         return HttpResponse(res.vers_json(), mimeType)
         
     else:
         return HttpResponse("fail", mimeType)
-
-
-    
-
+        
 
 ### Stats ###
 
@@ -615,7 +508,6 @@ def autourDeMoi(requête):
 
         gtls = données["gtls"].all()
         tls = []
-        breakpoint()
         for gtl in gtls:
             tls.extend(gtl.type_lieu.all())
         lieux = recup_donnees.lieux_of_types_lieux(

@@ -369,14 +369,14 @@ def dicos_of_requête(requête: str, catégorie_lieu: str, bavard=0) -> list:
     Les dicos ont pour clefs lon, lat, type, catégorie, id_osm, ainsi que tous les tags présents sur osm.
     """
     
-    # Exécuter la requête
-    api = overpy.Overpass(url="https://lz4.overpass-api.de/api/interpreter", max_retry_count=3)
+    ## Exécuter la requête
+    api = overpy.Overpass(url="https://lz4.overpass-api.de/api/interpreter", max_retry_count=3, retry_timeout=5)
     LOG(f"requête overpass : \n{requête}", bavard=bavard)
     rés_req = api.query(requête)
     print(f"\nTraitement des {len(rés_req.nodes)} nœud, {len(rés_req.ways)} ways , et {len(rés_req.relations)} relations obtenues.\n")
 
     
-    # Créer les dicos
+    ## Créer les dicos
 
     # Champs à traduire
     champs_à_traduire = {"name": "nom", "lon": "lon", "lat": "lat", "opening_hours": "horaires", "phone": "tél", "id_osm": "id_osm"}

@@ -448,7 +448,7 @@ class Graphe_django():
 
     def arête_la_plus_proche(self, coords, z_d):
         """
-        Renvoie l’arête de l’arbre des arêtes de z_d la plus proche de coords.
+        Sortie : (a, d), (arête de l’arbre des arêtes de z_d la plus proche de coords, distance entre celle-ci et coords).
         """
         return self.arbre_arêtes[z_d.nom].arête_la_plus_proche(coords)
 

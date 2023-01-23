@@ -12,7 +12,6 @@ NB: ce sont les chemins qui sont enregistrés dans la base.
 
 
 import re
-import json
 from pprint import pprint
 
 from dijk.models import Chemin_d, Arête, Lieu, Sommet, GroupeTypeLieu
@@ -20,7 +19,7 @@ from dijk.models import Chemin_d, Arête, Lieu, Sommet, GroupeTypeLieu
 from dijk.progs_python.petites_fonctions import milieu
 from params import LOG
 
-from lecture_adresse.normalisation0 import découpe_adresse
+# from lecture_adresse.normalisation0 import découpe_adresse
 from lecture_adresse.normalisation import Adresse
 from lecture_adresse.recup_noeuds import nœuds_of_étape, un_seul_nœud
 
@@ -71,8 +70,10 @@ class Étape():
         Renvoie le code js pour créer un marqueur pour cette étape.
         """
         lon, lat = coords
-        return {"lon": lon, "lat": lat, "infos": self.infos()}
-    # f"""marqueur_avec_popup({lon}, {lat}, {self.infos()}, {nomCarte});"""
+        res = self.infos()
+        res["lon"] = lon
+        res["lat"] = lat
+        return res
 
     
     def marqueur_leaflet_of_sommet(self, s: int):
@@ -119,6 +120,7 @@ class Étape():
                  - si d["type"]=="lieu", renvoie l’objet ÉtapeLieu correspondant au lieu de pk dans ["pk"]
                  - si d["type"]=="rue", renvoie l’objet ÉtapeAdresse obtenue en utilisant la rue de pk dans ["pk"]
                  - si d["type"]=="gtl", renvoie l’objet ÉtapeEnsLieux obtenue en utilisant la rue de pk dans ["pk"]
+                 - si d["arête"]=="arête", renvoie l’objet ÉtapeArête obtenu en utilisant les coords (lon, lat) trouvées dans d["coords"].
 
             - S’il existe un champ nommé 'coords_'+champ et qu’il est rempli, sera utilisé pour obtenir directement les sommets via arête_la_plus_proche. L’objet renvoyé sera alors une ÉtapeArête
 
@@ -168,10 +170,10 @@ class Étape():
                 # ad.ville = ville
                 return ÉtapeArête.of_coords(coords, g, z_d)
 
-        # else:
-        #     # ÉtapeAdresse
-        #     LOG("Ni lieu ni arête détecté : je renvoie une ÉtapeAdresse")
-        #     return ÉtapeAdresse.of_texte(d[champ], g, z_d)
+            else:
+                # ÉtapeAdresse
+                LOG("Ni lieu ni arête détecté : je renvoie une ÉtapeAdresse")
+                return ÉtapeAdresse.of_texte(d["adresse"], g, z_d)
 
     
     
@@ -278,8 +280,10 @@ class ÉtapeArête(Étape):
         
     
     @classmethod
-    def of_coords(cls, coords, g, z_d, ad=None):
-        a, _ = g.arête_la_plus_proche(coords, z_d)
+    def of_coords(cls, coords, g, z_d, d_max=50, ad=None):
+        a, d = g.arête_la_plus_proche(coords, z_d)
+        if d > d_max:
+            raise RuntimeError(f"Trop loin de la zone {z_d}.")
         return cls.of_arête(a, coords, ad=ad)
     
     
@@ -356,7 +360,7 @@ class ÉtapeEnsLieux(Étape):
     
  
     def marqueur_leaflet_of_sommet(self, s):
-        return self.nœuds[s].marqueur_leaflet()
+        return self.nœuds[s].pour_js()
 
 
     @classmethod
@@ -368,6 +372,7 @@ class ÉtapeEnsLieux(Étape):
 
     
     def pour_js(self):
+        assert False, "Pas supposé être utilisé actuellement"
         return self.gtl.pour_js()
     
 

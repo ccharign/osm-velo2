@@ -26,12 +26,6 @@ export function init_géoLoc(form){
 }
 
 
-// Met à jour le champ "localisation" du form
-export function àLaGéoloc(pos, form){
-    const texte = Pll.texte_of_latLng(pos);
-    console.log("Position obtenue : " + texte );
-    form.elements["localisation"].value = texte;
-}
 
 
     // Supprime la chekbox « partir de ma position »

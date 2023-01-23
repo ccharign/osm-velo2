@@ -16,7 +16,7 @@ let laCarte;
 
 if (BBOX){
     const bbox = BBOX.split(",").map(parseFloat);
-    laCarte = Pll.carteBb(bbox);
+    laCarte = Pll.carteBb(bbox, true);
 }else{
     // navigator.geolocation.getCurrentPosition(
     // 	pos => Pf.àLaGéoloc(pos, form),

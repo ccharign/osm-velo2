@@ -245,6 +245,7 @@ def iti_étapes_ensembles(g, c, bavard=0):
     Entrées : - départ et arrivée, deux sommets
               - c, instance de Chemin (c.étapes est une liste d’Étapes. Pour toute étape é, é.nœuds est une liste de nœuds. Un nœud est un int (id_osm))
               - interdites : arêtes interdites. dico s->sommets interdits depuis s.
+
     Sortie (int list × float): plus court chemin d’un sommet de étapes[0] vers un sommet de étapes[-1] qui passe par au moins une arête de chaque étape intérmédiaire, longueur de l’itinéraire.
     """
     LOG(f"Recherche d’un itinéraire pour le chemin {c}", bavard=bavard)

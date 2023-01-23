@@ -187,6 +187,25 @@ class Rue(models.Model):
     def nœuds(self):
         return découpe_chaîne_de_nœuds(self.nœuds_à_découper)
 
+    def pour_autocomplète(self, num, bis_ter):
+        #     def chaîne_à_renvoyer(adresse, ville=None, parenthèse=None):
+        # res = ";".join(tout[:-1] + [début+adresse])
+        # if parenthèse:
+        #     res += f" ({parenthèse})"
+        # if ville:
+        #     res += ", " + ville
+        # return res
+        à_afficher = ""
+        if num:
+            à_afficher = f"{num} "
+        if bis_ter:
+            à_afficher += f"{bis_ter} "
+        à_afficher += f"{self}, {self.ville}"
+        return {
+            "label": à_afficher,
+            "àCacher": json.dumps({"type": "rue", "pk": self.pk, "num": num, "bis_ter": bis_ter, "coords": ""})
+        }
+
 
 
 def formule_pour_correction_longueur(l, cy, p_détour):
@@ -991,10 +1010,12 @@ class Lieu(models.Model):
             - pour construire l’objet ÉtapeLieu dans Django après retour via le formulaire.
         Envoyé lors de l’autocomplétion. En particulier, envoyé pour toutes les propositions d’autocomplétion. -> Doit rester relativement léger.
         """
+        lon, lat = self.coords()
         return {
             "type": "lieu",
             "pk": self.pk,
-            "coords": self.coords(),
+            "lon": lon,
+            "lat": lat,
             "nom": self.nom,
         }
     
