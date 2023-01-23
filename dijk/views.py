@@ -156,15 +156,17 @@ def trajet_retour(requête):
     """
 
     données = récup_données(requête.GET, forms.ToutCaché)
+    étapes_dicos = json.loads(données["toutes_les_étapes"])
     z_d, étapes, étapes_interdites, étapes_sommets, ps_détour = z_é_i_d(g, données)
     
     #  Échange départ-arrivée dans le dico de données
-    données["départ"], données["arrivée"] = données["arrivée"], données["départ"]
-    données["données_cachées_départ"], données["données_cachées_arrivée"] = données["données_cachées_arrivée"], données["données_cachées_départ"]
+    # données["départ"], données["arrivée"] = données["arrivée"], données["départ"]
+    # données["données_cachées_départ"], données["données_cachées_arrivée"] = données["données_cachées_arrivée"], données["données_cachées_départ"]
 
     #  Étapes à l’envers
     étapes.reverse()
-    données["marqueurs_é"] = chaîne_avec_points_virgule_renversée(données["marqueurs_é"])
+    données["toutes_les_étapes"] = json.dumps(étapes_dicos)
+    #  données["marqueurs_é"] = chaîne_avec_points_virgule_renversée(données["marqueurs_é"])
 
     return calcul_itinéraires(requête, ps_détour, z_d,
                               étapes,

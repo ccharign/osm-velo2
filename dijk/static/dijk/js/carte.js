@@ -61,7 +61,7 @@ let étapes_interdites = [];
 Affiche l’itinéraire sur la carte indiqué.
 */
 function afficheIti(iti, carte){
-    L.polyline(iti.points, {color: iti.couleur})
+    L.polyline(iti.points, {color: iti.couleur, weight: 6, opacity: .6})
 	.addTo(laCarte);
 
     for (let m of iti.marqueurs){
