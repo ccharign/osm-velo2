@@ -50,13 +50,15 @@ def récup_données(dico, cls_form, validation_obligatoire=True):
 def z_é_i_d(g, données):
     """
     Entrée (dico) : résultat d’un GET ou d’un POST d’un formulaire de recherche d’itinéraire.
+
     Sortie (Zone, Étapes list, Étapes list, Étapes list, float list) : (zone, étapes, étapes_interdites, étapes_sommets, ps_détours)
        - étapes est la liste ordonnée des étapes desquelles emprunter au moins une arête
        - étapes_interdites est la liste non ordonnée des étapes desquelles n’emprunter aucune arête
        - étapes_sommets est la liste non ordonnée des étapes desquelles emprunter au moins un sommet.
+
     Effet :
        la zone est chargée si pas déjà le cas.
-       données est éventuellement complété dans le cas d’une adresse venant d’une autocomplétion par les coords de l’adresse.
+       données est éventuellement complété dans le cas d’une adresse venant d’une autocomplétion par les coords de l’adresse obtenues sur data.gouv
     """
     
     z_d = g.charge_zone(données["zone"])
@@ -114,7 +116,7 @@ def z_é_i_d(g, données):
     )
     étapes = [Étape.of_dico(d, g, z_d) for d in étapes_dicos]
     # Il est possible que des coords aient été rajoutées : en cas d’adresse avec numéro de rue, les coords ot été récupérées sur data.gouv.
-    # je sauvegarde ceci
+    # Je sauvegarde ceci.
     # NB : on pourrait faire en sorte de ne le faire que si modif.
     données["toutes_les_étapes"] = json.dumps(étapes_dicos)
 
