@@ -865,29 +865,38 @@ Trois modèles : Lieu, TypeLieu et GroupeTypeLieu
 
 
 class TypeLieu(models.Model):
+    
     """
     Enregistre un type de lieu osm.
     catégorie est le nom du tag osm (amenity, shop, tourism...)
     nom_osm est la valeur de ce tag.
     """
+    
     catégorie = models.CharField(max_length=200)
     nom_osm = models.CharField(max_length=200)
     nom_français = models.TextField(blank=True, default=None, null=True)
+
+    cat_à_afficher = {"tourism": "(tourisme)", "shop": "(commerce)", "leisure": "(loisirs)"}
 
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["catégorie", "nom_osm"], name="Une seule entrée pour chaque (catégorie, nom_osm).")
         ]
 
+    
+
     def __str__(self):
-        return f"{self.nom_français} ({self.catégorie})"
+        """
+        Renvoie le nom français suivi de la catégorie si celle-ci est présente dans la variable statique cat_à_afficher
+        """
+        return f"{self.nom_français} {self.cat_à_afficher.get(self.catégorie, '')}"
 
     def __hash__(self):
         return self.nom_osm.__hash__()
 
     def pour_overpass(self):
         """
-        Renvoie la chaîne de caractère [catégorie=nom_osm]
+        Renvoie la chaîne de caractère [catégorie~nom_osm]
         """
         return f"[{self.catégorie}~{self.nom_osm}]"
 
