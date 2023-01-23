@@ -73,11 +73,13 @@ def prétraitement_rue(rue):
     """
     Après l’étape "partie_commune", supprime les «de », «du », «de la ».
     Si deux espaces consécutives, supprime la deuxième.
+    Remplace les mots « avenue », « rue », etc par une lettre grecque. (Pour que la confusion rue/avenue compte pour une seule fautede frappe.)
+    Remplace enfin tous les caractères non alphanumériques par une espace.
     """
     
     étape1 = partie_commune(rue)
     # les chaînes suivantes seront remplacées par une espace.
-    à_supprimer = [" du ", " de la ", " de l'", " de ", "des ", " d'", "  "]  # Mettre "de la " avant "de ". Ne pas oublier les espaces.
+    à_supprimer = [" du ", " de la ", " de l'", " de ", " des ", " d'", "  "]  # Mettre "de la " avant "de ". Ne pas oublier les espaces.
     regexp = "|".join(à_supprimer)
     fini = False
     res = étape1
@@ -89,5 +91,6 @@ def prétraitement_rue(rue):
         else:
             res = suivant
             
-    return multi_remplace(DICO_REMP, res)
+    étape3 = multi_remplace(DICO_REMP, res)
+    return re.sub("[^a-z0-9]", " ", étape3)
 

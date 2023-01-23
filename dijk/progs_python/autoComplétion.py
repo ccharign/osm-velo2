@@ -74,26 +74,24 @@ class Résultat():
 
 
 def complétion(à_compléter: str, nbMax: int, z_d):
+    
     """
     Entrée : à_compléter, chaîne de car à compléter.
     Sortie:  l’objet de la classe Résultat contenant les complétions possibles.
     """
     
     # Découpage de la chaîne à chercher
-    tout = à_compléter.split(";")
-    à_chercher_non_normalisé = tout[-1]
-    à_chercher = prétraitement_rue(tout[-1])
+    # tout = à_compléter.split(";")
+    à_chercher_non_normalisé = à_compléter
+    à_chercher = prétraitement_rue(à_compléter)
+
+
     num, bis_ter, rue, déb_ville = découpe_adresse(à_chercher)
-
-    début = " ".join(x for x in [num, bis_ter] if x)
-    if début:
-        début += " "
-
-    print(f"Recherche de {rue}")
+    print(f"Recherche de {à_chercher}")
 
 
 
-    # Villes de la zone z_id
+    # Villes : dans la zone et contient la partie après la virgule de à_compléter
     villes = mo.Ville_Zone.objects.filter(zone=z_d, ville__nom_norm__icontains=déb_ville)
     req_villes = Subquery(villes.values("ville"))
 
@@ -115,15 +113,27 @@ def complétion(à_compléter: str, nbMax: int, z_d):
 
 
     # Recherche dans les lieux
-    lieux = mo.Lieu.objects.filter(
-        nom__icontains=à_chercher_non_normalisé,
-        ville__in=req_villes
-    ).prefetch_related("ville", "type_lieu")
+    mots = à_chercher.split(" ")
+    # lieux = mo.Lieu.objects.filter(
+    #     nom_norm__icontains=à_chercher_non_normalisé,
+    #     ville__in=req_villes
+    # ).prefetch_related("ville", "type_lieu")
+    lieux = mo.Lieu.objects.filter(ville__in=req_villes).prefetch_related("ville", "type_lieu")
+    for mot in mots:
+        lieux = lieux.filter(nom_norm__contains=mot)
+    
     print(f"{len(lieux)} lieux trouvées")
     res.ajoute_un_paquet([l.pour_autocomplète() for l in lieux])
 
 
-    # Recherche dans les rues de la base
+    # Recherche dans les rues
+
+
+
+    début = " ".join(x for x in [num, bis_ter] if x)
+    if début:
+        début += " "
+        
     rues = mo.Rue.objects.filter(nom_norm__icontains=rue, ville__in=req_villes).prefetch_related("ville")
     res.ajoute_un_paquet([r.pour_autocomplète(num, bis_ter) for r in rues])
 

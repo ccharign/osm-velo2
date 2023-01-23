@@ -883,8 +883,6 @@ class TypeLieu(models.Model):
             models.UniqueConstraint(fields=["catégorie", "nom_osm"], name="Une seule entrée pour chaque (catégorie, nom_osm).")
         ]
 
-    
-
     def __str__(self):
         """
         Renvoie le nom français suivi de la catégorie si celle-ci est présente dans la variable statique cat_à_afficher
@@ -948,6 +946,7 @@ class Lieu(models.Model):
     """
     
     nom = models.TextField(blank=True, default=None, null=True)
+    nom_norm = models.TextField(blank=True, default=None, null=True)
     type_lieu = models.ForeignKey(TypeLieu, on_delete=models.CASCADE)
     ville = models.ForeignKey(Ville, on_delete=models.CASCADE, blank=True, default=None, null=True)
     lon = models.FloatField()
@@ -1044,7 +1043,6 @@ class Lieu(models.Model):
         infos = self.toutes_les_infos()
         infos["nom"] = self.nom
         return {"lon": self.lon, "lat": self.lat, "infos": infos}
-    # f"""marqueur_avec_popup({self.lon}, {self.lat}, {self.json_nettoyé}, {nomCarte});"""
 
 
     def ajoute_arête_la_plus_proche(self, arbre_arêtes, dmax=30):
@@ -1133,7 +1131,7 @@ class Lieu(models.Model):
         res.type_lieu = tl
 
         # Adresse
-        # Géré via l’arête maintenant... Éventuellemen mettre le numéro ?
+        # Géré via l’arête maintenant... Éventuellement mettre le numéro ?
         # if "addr:street" in d:
         #     res.adresse = d["addr:street"]
         #     if "addr:housenumber" in d:
@@ -1144,6 +1142,8 @@ class Lieu(models.Model):
         res.ajoute_arête_la_plus_proche(arbre_a)
 
         return res, créé, utile
+
+    
 
 
 class Bug(models.Model):

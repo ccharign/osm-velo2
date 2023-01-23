@@ -1,5 +1,6 @@
 
 # -*- coding:utf-8 -*-
+
 """
 Pour remplir la base de données.
 Ces fonctions seront cachées dans la console.
@@ -12,7 +13,7 @@ from pprint import pformat, pprint
 from django.db import transaction, close_old_connections
 from django.db.models import Q
 
-from dijk.models import Ville, Rue, Sommet, Arête, Chemin_d, Ville_Zone, Zone
+from dijk.models import Ville, Rue, Sommet, Arête, Chemin_d, Ville_Zone, Zone, Lieu
 from dijk.progs_python.lecture_adresse.normalisation import prétraitement_rue, partie_commune
 from params import LOG
 from petites_fonctions import intersection, sauv_objets_par_lots
@@ -21,8 +22,18 @@ from lecture_adresse.arbresLex import ArbreLex
 
 
 
+def normalise_noms_lieux():
+    """
+    Remplit le champ norm_norm des éléments de la table des lieux.
+    """
 
-
+    à_màj = []
+    for lieu in Lieu.objects.all():
+        nom_norm = prétraitement_rue(lieu.nom)
+        if lieu.nom_norm != nom_norm:
+            lieu.nom_norm = nom_norm
+            à_màj.append(lieu)
+    Lieu.objects.bulk_update(à_màj, ["nom_norm"], batch_size=2000)
 
 
 
@@ -50,43 +61,31 @@ def arbre_des_villes(zone_d=None):
     return res
 
 
-# def ajoute_code_postal(nom, code):
-#     """
-#     Ajoute ou corrige le code postal de la ville.
-#     Sortie (models.Ville)
-#     """
-#     essai = Ville.objects.filter(nom_norm=partie_commune(nom)).first()
-#     if essai:
-#         essai.code=code
-#         essai.save()
-#         return essai
-#     else:
-#         raise RuntimeError(f"Ville pas trouvée dans la base INSEE : {nom}, {(code)}")
 
         
-def nv_ville(nom, code, zone_d, tol=3):
-    """
-    Effet : si pas déjà présente, rajoute la ville dans la base django et dans l'arbre lex ARBRE_VILLES.
-    Sortie : l'objet Ville créé ou récupéré dans la base.
-    """
-    nom_norm = partie_commune(nom)
-    arbre = arbre_des_villes(zone_d=zone_d)
-    dans_arbre, d = arbre.mots_les_plus_proches(à_mettre_dans_arbre(nom_norm, code), d_max=tol)
+# def nv_ville(nom, code, zone_d, tol=3):
+#     """
+#     Effet : si pas déjà présente, rajoute la ville dans la base django et dans l'arbre lex ARBRE_VILLES.
+#     Sortie : l'objet Ville créé ou récupéré dans la base.
+#     """
+#     nom_norm = partie_commune(nom)
+#     arbre = arbre_des_villes(zone_d=zone_d)
+#     dans_arbre, d = arbre.mots_les_plus_proches(à_mettre_dans_arbre(nom_norm, code), d_max=tol)
     
-    if len(dans_arbre) > 0:
-        print(f"Ville(s) trouvée(s) dans l'arbre : {tuple(dans_arbre)}")
-        nom_n_corrigé, code_corrigé = tuple(dans_arbre)[0].split("|")
-        if d>0:
-            LOG(f"Avertissement : la ville {nom_norm, code} a été corrigée en {nom_n_corrigé, code_corrigé}")
-        v_d = Ville.objects.get(nom_norm=nom_n_corrigé, code=code_corrigé)
-        return v_d
+#     if len(dans_arbre) > 0:
+#         print(f"Ville(s) trouvée(s) dans l'arbre : {tuple(dans_arbre)}")
+#         nom_n_corrigé, code_corrigé = tuple(dans_arbre)[0].split("|")
+#         if d>0:
+#             LOG(f"Avertissement : la ville {nom_norm, code} a été corrigée en {nom_n_corrigé, code_corrigé}")
+#         v_d = Ville.objects.get(nom_norm=nom_n_corrigé, code=code_corrigé)
+#         return v_d
     
-    else:
-        v_d = Ville(nom_complet=nom, code=code, nom_norm=nom_norm)
-        v_d.save()
-        rel = Ville_Zone(ville=v_d, zone=zone_d)
-        rel.save()
-        return v_d
+#     else:
+#         v_d = Ville(nom_complet=nom, code=code, nom_norm=nom_norm)
+#         v_d.save()
+#         rel = Ville_Zone(ville=v_d, zone=zone_d)
+#         rel.save()
+#         return v_d
 
     
 def liste_attributs(g):
