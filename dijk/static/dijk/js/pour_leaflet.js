@@ -186,7 +186,10 @@ function ajoute_fonctionalités_à_la_carte(carte){
 
     // Échelle
     L.control.scale({"imperial": false})
-	.addTo(carte);    
+	.addTo(carte);
+
+    // Boussole
+    carte.addControl( new L.Control.Compass() );
 }
 
 

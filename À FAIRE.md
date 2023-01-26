@@ -1,7 +1,6 @@
 
 À FAIRE :
 
-Désorienter les arêtes dans l’arbre
 
 Supprimer folium de carte_cycla pour pouvoir le supprimer définitivement.
 
@@ -14,15 +13,6 @@ nom des arêtes
 	- pour affichage dans «enregistrer contrib »
 	
 	
-Amenities :
-	
-    Faire un passer par un(e) ...
-
-	Faire des regroupements, comme « logement », « restauration »
-		- Table GroupeDeTypes
-		- init : charger les groupes dans le fichier de config, créer des singletons pour ce qui reste.
-		- changer le formulaire de recherche.
-
 
 Type polyline de Django pour le champ nœuds des rues
 
@@ -39,12 +29,6 @@ Recherche dans l’arbre lex dans la complétion automatique, avec tolérance à
 Rechargement et entraînement pratique...
    - apprentissage auto. Tous les chemin qui ont un score de dernière modif>0
    - réinit base ?
-
-
-Mettre une case à cocher pour enregistrer dans le cache ?
-   -> utils.itinéraire renvoie les corrections qui ont été faites
-   -> voir le template rés_itinéraire_base
-Voire récup dans osm tous les noms de lieux ?
 
 
 

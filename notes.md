@@ -6,8 +6,6 @@ Simplicité
 
 Couches osm plus neutre.
 
-Lieux. ex : gare, hotel. Pq pas récupérées ? Gestion des accents.
-
 Déclarer accident vélo.
 
 Guidage.

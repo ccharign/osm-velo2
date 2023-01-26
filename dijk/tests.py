@@ -1,7 +1,12 @@
-from django.test import TestCase
+
 from importlib import reload
 from functools import reduce
 from pprint import pprint
+
+
+from django.test import TestCase
+from django.test import Client
+from django.db import close_old_connections
 
 import dijk.pour_shell as sh
 
@@ -12,20 +17,17 @@ from dijk.progs_python.initialisation.initialisation import À_RAJOUTER_PAU, cr�
 
 import dijk.progs_python.utils as utils
 
-from django.db import close_old_connections
-
 import dijk.models as mo
 import dijk.views as v
 import dijk.progs_python.initialisation.communes as communes
 
 import dijk.progs_python.recup_donnees as rd
 
+
 gre = sh.mo.Ville.objects.get(nom_complet="Grenoble")
 pau = sh.mo.Ville.objects.get(nom_complet="Pau")
 pag = sh.mo.Zone.objects.get(nom="Pau_agglo")
 ousse = sh.mo.Ville.objects.get(nom_complet="Ousse")
-
-arbre_ousse = ini.QuadrArbreArête.of_list_darêtes_d(list(ousse.arêtes()))
 
 
 # Create your tests here.
@@ -87,3 +89,23 @@ def nomsDesDéconnectés(g):
 def lieuxSansArête():
     return mo.Lieu.objects.filter(arête=None)
 
+
+
+class TestVues(TestCase):
+    def test_statut_réponses(self):
+        c = Client()
+        
+        ## page d’index
+        réponse = c.get('/')
+        self.assertEqual(réponse.status_code, 200)
+        pprint(réponse.status_code)
+
+
+        ## page cartes cycla
+        réponse = c.get('/cycla/')
+        self.assertEqual(réponse.status_code, 200)
+
+        ## carte cycla de Pau
+        réponse = c.get('/cycla/', {"zone": 72, "force_calcul": "on"})
+        #pprint(réponse.context)
+        self.assertEqual(réponse.status_code, 200)

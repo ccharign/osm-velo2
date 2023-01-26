@@ -11,6 +11,9 @@ import * as Pll from "./pour_leaflet.js";
 //  - $ a été chargé
 
 
+// Les étapes sont des objets avec un champ « type » et d’autres champs spécifique au type.
+//     Un json de la liste des étapes est mis dans le champ caché « toutes_les_étapes » du form : c’est ce champ qui sera lu par le serveur.
+
 
 const leForm = document.getElementById("recherche");
 let case_géol = document.getElementById("id_partir_de_ma_position");
@@ -64,6 +67,11 @@ function soumettre(){
 document.getElementById("btn_soumettre").addEventListener(
     "click",
     soumettre
+);
+
+document.getElementById("id_arrivée").addEventListener(
+    "keypress",
+    e => {if (e.code==="Enter"){soumettre();};}
 );
 
 
