@@ -189,7 +189,7 @@ function ajoute_fonctionalités_à_la_carte(carte){
 	.addTo(carte);
 
     // Boussole
-    carte.addControl( new L.Control.Compass() );
+    // carte.addControl( new L.Control.Compass() );
 }
 
 
