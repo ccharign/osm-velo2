@@ -38,7 +38,7 @@ function extrait_json(texte){
 function récup_départ(){
     if (case_géol.checked){
 	let latlon = leForm.localisation.value.split(",").map(parseFloat);
-	return {type: "arête", coords: [latlon[1], latlon[0]]};
+	return {type: "arête", coords: [latlon[1], latlon[0]]}; // On enregistre [lon, lat]
     }else if (leForm.données_cachées_départ.value){
 	return JSON.parse(leForm.données_cachées_départ.value);
     }else{

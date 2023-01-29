@@ -4,17 +4,7 @@ import json
 
 from dijk.progs_python.chemins import ÉtapeEnsLieux, Étape
 
-def renvoieSurPageDErreur(vue):
-    """
-    Décorateur sur une vue pour renvoyer sur la page d’erreur en cas d’erreur non rattrapée avant.
-    """
-    def nv_vue(requête, *args, **kwargs):
-        try:
-            return vue(requête, *args, **kwargs)
-        except Exception as e:
-            traceback.print_exc()
-            return autreErreur(requête, e)
-    return nv_vue
+
 
 
 

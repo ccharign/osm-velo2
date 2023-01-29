@@ -1,7 +1,6 @@
 # -*- coding:utf-8 -*-
 
 import time
-import re
 import os
 import traceback
 import json
@@ -22,22 +21,37 @@ from .progs_python.lecture_adresse.recup_noeuds import PasTrouvé
 
 from .progs_python import recup_donnees
 from .progs_python.apprentissage import n_lectures
-from .progs_python.bib_vues import bool_of_checkbox, énumération_texte, récup_données, z_é_i_d, chaîne_avec_points_virgule_renversée, renvoieSurPageDErreur
+from .progs_python.bib_vues import bool_of_checkbox, énumération_texte, récup_données, z_é_i_d
 
 from .progs_python.utils import dessine_cycla, itinéraire_of_étapes
 
 from .progs_python.graphe_par_django import Graphe_django
 
 
-from .models import Chemin_d, Zone, Rue, Ville_Zone, Cache_Adresse, CacheNomRue, Lieu, Ville, GroupeTypeLieu
+from .models import Chemin_d, Zone
 
-import progs_python.autoComplétion as ac
+import dijk.progs_python.autoComplétion as ac
 
 
 
 
 
 g = Graphe_django()
+
+
+def renvoieSurPageDErreur(vue):
+    """
+    Décorateur sur une vue pour renvoyer sur la page d’erreur en cas d’erreur non rattrapée avant.
+    """
+    def nv_vue(requête, *args, **kwargs):
+        try:
+            return vue(requête, *args, **kwargs)
+        except (PasTrouvé, recup_donnees.LieuPasTrouvé) as e:
+            return vueLieuPasTrouvé(requête, e)
+        except Exception as e:
+            traceback.print_exc()
+            return autreErreur(requête, e)
+    return nv_vue
 
 
 
@@ -181,6 +195,7 @@ def trajet_retour(requête):
 ### Fonction principale
 
 
+@renvoieSurPageDErreur
 def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_sommets, étapes_interdites=[], données={}, bavard=0):
     """
     Entrées : ps_détour (float list ou str)
@@ -198,80 +213,72 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_sommets, ét
             requête.GET["pourcentage_détour"].split(";")
         ))
         
-    try:
 
-        données.update(itinéraire_of_étapes(
-            étapes, étapes_sommets, ps_détour, g, z_d,
-            rajouter_iti_direct=len(étapes) > 2,
-            étapes_interdites=étapes_interdites,
-            bavard=bavard
+    données.update(itinéraire_of_étapes(
+        étapes, étapes_sommets, ps_détour, g, z_d,
+        rajouter_iti_direct=len(étapes) > 2,
+        étapes_interdites=étapes_interdites,
+        bavard=bavard
+    ))
+    noms_étapes = données["noms_étapes"]
+    rues_interdites = données["rues_interdites"]
+    # Mettre les traces gpx dans le dico de session, et les sortir de données
+    for stat in données["stats"]:
+        if "gpx" not in requête.session:
+            requête.session["gpx"] = {}
+        requête.session["gpx"][stat["p_détour"]] = stat.pop("gpx")
+
+
+    def texte_marqueurs(l_é, supprime_début_et_fin=False):
+        """
+        Entrée : liste d’étapes
+        Sortie (str) : coords des étapes de type ÉtapeArête séparées par des ;. La première et la dernière étape sont supprimées (départ et arrivée).
+        """
+        if supprime_début_et_fin:
+            à_voir = l_é[1:-1]
+        else:
+            à_voir = l_é
+        return ";".join(map(
+            lambda c: f"{c[0]},{c[1]}",
+            [é.coords_ini for é in à_voir if isinstance(é, ÉtapeArête)]
         ))
-        noms_étapes = données["noms_étapes"]
-        rues_interdites = données["rues_interdites"]
-        # Mettre les traces gpx dans le dico de session, et les sortir de données
-        for stat in données["stats"]:
-            if "gpx" not in requête.session:
-                requête.session["gpx"] = {}
-            requête.session["gpx"][stat["p_détour"]] = stat.pop("gpx")
+
+    # Ce dico sera envoyé au gabarit sous le nom de 'post_préc'
+    données.update({"étapes": ";".join(noms_étapes[1:-1]),
+                    "rues_interdites": ";".join(rues_interdites),
+                    "pourcentage_détour": ";".join(map(lambda p: str(int(p*100)), ps_détour)),
+                    "départ": str(étapes[0]),
+                    "arrivée": str(étapes[-1]),
+                    "zone_t": z_d.nom,
+                    "marqueurs_i": texte_marqueurs(étapes_interdites),  # Sera mis en hidden dans le formulaire relance_rapide
+                    "marqueurs_é": texte_marqueurs(étapes, supprime_début_et_fin=True),  # idem
+                    })
 
 
-        def texte_marqueurs(l_é, supprime_début_et_fin=False):
-            """
-            Entrée : liste d’étapes
-            Sortie (str) : coords des étapes de type ÉtapeArête séparées par des ;. La première et la dernière étape sont supprimées (départ et arrivée).
-            """
-            if supprime_début_et_fin:
-                à_voir = l_é[1:-1]
-            else:
-                à_voir = l_é
-            return ";".join(map(
-                lambda c: f"{c[0]},{c[1]}",
-                [é.coords_ini for é in à_voir if isinstance(é, ÉtapeArête)]
-            ))
+    texte_étapes_inter = énumération_texte(noms_étapes[1:-1])
 
-        # Ce dico sera envoyé au gabarit sous le nom de 'post_préc'
-        données.update({"étapes": ";".join(noms_étapes[1:-1]),
-                        "rues_interdites": ";".join(rues_interdites),
-                        "pourcentage_détour": ";".join(map(lambda p: str(int(p*100)), ps_détour)),
-                        "départ": str(étapes[0]),
-                        "arrivée": str(étapes[-1]),
-                        "zone_t": z_d.nom,
-                        "marqueurs_i": texte_marqueurs(étapes_interdites),  # Sera mis en hidden dans le formulaire relance_rapide
-                        "marqueurs_é": texte_marqueurs(étapes, supprime_début_et_fin=True),  # idem
-                        })
+    # données à sérialiser pour envoyer à js
+    pour_js = {
+        "bbox": données["bbox"],
+        "itis": [iti.vers_js() for iti in données["itinéraires"]]
+    }
 
+    return render(requête,
+                  "dijk/résultat_itinéraire_sans_carte.html",
+                  {**données,
+                   **{
+                       "texte_étapes_inter": texte_étapes_inter,
+                       "rues_interdites": énumération_texte(rues_interdites),
+                       "post_préc": données,
+                       "relance_rapide": forms.ToutCaché(initial=données),
+                       "enregistrer_contrib": forms.EnregistrerContrib(initial=données),
+                       "trajet_retour": forms.ToutCaché(initial=données),
+                       "fouine": requête.session.get("fouine", None),
+                       "données": json.dumps(pour_js)
+                   }
+                   }
+                  )
 
-        texte_étapes_inter = énumération_texte(noms_étapes[1:-1])
-
-        # données à sérialiser pour envoyer à js
-        pour_js = {
-            "bbox": données["bbox"],
-            "itis": [iti.vers_js() for iti in données["itinéraires"]]
-        }
-        
-        return render(requête,
-                      "dijk/résultat_itinéraire_sans_carte.html",
-                      {**données,
-                       **{
-                           "texte_étapes_inter": texte_étapes_inter,
-                           "rues_interdites": énumération_texte(rues_interdites),
-                           "post_préc": données,
-                           "relance_rapide": forms.ToutCaché(initial=données),
-                           "enregistrer_contrib": forms.EnregistrerContrib(initial=données),
-                           "trajet_retour": forms.ToutCaché(initial=données),
-                           "fouine": requête.session.get("fouine", None),
-                           "données": json.dumps(pour_js)
-                       }
-                       }
-                      )
-
-    # Renvoi sur la page d’erreur
-    except (PasTrouvé, recup_donnees.LieuPasTrouvé) as e:
-        return vueLieuPasTrouvé(requête, e)
-    except Exception as e:
-
-        traceback.print_exc()
-        return autreErreur(requête, e)
 
 
 
