@@ -285,7 +285,7 @@ class ÉtapeArête(Étape):
         assert coords[0] < coords[1], f"J’ai reçu lon,lat={coords}. Êtes-vous sûr de ne pas avoir échangé lon et lat ?"
         a, d = g.arête_la_plus_proche(coords, z_d)
         if d > d_max:
-            raise RuntimeError(f"Les coords {coords} sont trop loin de la zone {z_d} : {d}m.")
+            raise RuntimeError(f"Les coords {coords} sont trop loin de la zone {z_d} : {int(d)}m.")
         return cls.of_arête(a, coords, ad=ad)
     
     

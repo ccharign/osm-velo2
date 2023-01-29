@@ -4,7 +4,7 @@
 
 {% block contenu %}
 
-<h1>Mode d’emploi du site</h1>
+<h1>Mode d’emploi</h1>
 
 <h2>Qu’est-ce que c’est ?</h2>
 
@@ -13,15 +13,11 @@ Ce site permet de calculer des itinéraires à vélo. Sa spécificité est d’�
 </p>
 
 <p>
-  Ainsi les trajets sont-ils calculés en tenant compte de l’expérience des autres utilisateurs, donc de vrais cyclistes. Une rue sera décrétée adaptée aux vélos si et seulement si elle a été choisie par d’autres cyclistes, et non selon des critères plus facile à obtenir mais moins fiables tels que la présence « officielle » d’une bande cyclable, une limite de vitesse « théoriquement » respectée par les automobilistes, etc.
+  Ainsi une rue sera décrétée adaptée aux vélos si et seulement si elle a été choisie par d’autres cyclistes, et non selon des critères plus facile à obtenir mais moins fiables tels que la présence « officielle » d’une bande cyclable, une limite de vitesse « théoriquement » respectée par les automobilistes, etc. (Dans une zone où elle ne dispose pas de données, elle se rabat toutefois sur ces derniers critères.)
 </p>
 
 <p>
-  Cependant dans les zones où l’IA n’a pas encore été suffisamment entraînée, elle se rabat sur les critères simples tels que la présence d’une piste cyclable ou d’une zone 30 ou piétonne.
-  </p>
-
-<p>
-Concernant les sens interdits : l’itinéraire renvoyé pourra en contenir un s’il permet de gagner beaucoup de temps ou si la plupart des utilisateurs le prennent...
+Concernant les sens interdits : l’itinéraire renvoyé pourra en contenir un s’il permet de gagner beaucoup de temps ou si la plupart des utilisateurs le prennent. Pour respecter le code de la route, il faut alors mettre pied à terre et sur le trottoir...
 </p>
 
 <p>La carte de la cyclabilité permet de se rendre compte de l’état de L’IA. Les rues à favoriser apparaissent en vert, et celles à éviter en rouge.</p>
@@ -29,12 +25,16 @@ Concernant les sens interdits : l’itinéraire renvoyé pourra en contenir un s
 
 <h2>Recherche simple d’itinéraire</h2>
 
+Quelques détails:
+<ul>
+  <li>Si vous indiquez une rue sans préciser de numéro, l’algo ira au point le plus proche de cette rue.</li>
 
-<p>Si vous indiquez une rue sans préciser de numéro, l’algo ira au point le plus proche de cette rue.</p>
+  <li> Si votre lieu ou adresse de départ ou arrivée n’est pas proposé à l’autocomplétion, ce n’est pas pour autant que la recherche ne fonctionnera pas. Notamment l’appli tolère quelques fautes de frappe, mais pas l’autocomplétion... </li>
 
-<p>
-  Un bouton à gauche de la carte active la géolocalisation. Vous pouvez également télécharger la trace gps de l’itinéraire calculé en cliquant sur le lien « gpx ».
-</p>
+<li>
+  Un bouton à gauche de la carte active la géolocalisation. Vous pouvez également télécharger la trace gps d’un itinéraire pour l’ouvrir dans votre appli de navigation favorite en cliquant dessus.
+</li>
+</ul>
 
 <h2>Je trouve l’itinéraire proposé peu adapté</h2>
 
@@ -42,9 +42,7 @@ Concernant les sens interdits : l’itinéraire renvoyé pourra en contenir un s
 <p>
   C’est que l’IA est peu ou mal entrainée dans ce quartier !<br>
 
-  Cliquez sur la carte pour imposer des points de passage. Controle-cliquez pour interdire des portions de rue.<br>
-  
-  Vous pouvez également remplir les champs « étapes » ou « rues interdites » par une ou plusieurs rues, séparées par des point-virgules. Après une première recherche, ces champs sont disponibles en dessous de la carte.
+  Cliquez sur la carte pour imposer des points de passage. 
 </p>
 
 
@@ -72,7 +70,7 @@ Concernant les sens interdits : l’itinéraire renvoyé pourra en contenir un s
   </p>
 
 
-<h2>Qu’est-ce que la carte de la cyclabilité ?</h2>
+<h2>Carte de la cyclabilité ?</h2>
 
 <p>Cette carte permet de visualiser l’état de l’IA. Les tronçons de rues à utiliser en priorité sont verts, et ceux à éviter sont rouges. Les zones sans couleur sont celles où elle ne dispose d’aucune donnée.<br>
 
@@ -81,5 +79,9 @@ Concernant les sens interdits : l’itinéraire renvoyé pourra en contenir un s
   De part la conception même de l’algo il y a toujours à peu près autant de rouge que de vert : ces cartes ne peuvent servir à comparer différentes villes.
   </p>
 
+
+<h2>Autour de moi </h2>
+
+Cet onglet affiche la carte cyclosm (avec pistes cyclables, courbes de niveau, points d’eau ...) centrée autour de l’utilisateur et propose de chercher différemts types de lieux utiles aux cyclotouristes. Contrainement au reste de l’appli, il fonctionne partout dans le monde!
 
 {% endblock %}
