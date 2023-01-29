@@ -73,12 +73,12 @@
 <ul>
   {% for x in stats %}
   <li> 
-    <form action="{% url 'téléchargement' %}" method="post">
+    <form action="{% url 'téléchargement' %}" method="post" id="gpx_{{x.p_détour_effectif}}">
       {% csrf_token %}
       <span class="btn-xs btn-default" data-toggle="popover" title="{{x.légende}}" data-trigger="hover" data-content="{{x.aide}}">?</span>
       <span style="color: {{x.couleur}};"> {{x.légende}} :  {{x.longueur}} m, {{x.temps}} mn (détour de {{x.p_détour_effectif}} %)</span>
-      <input type="hidden" id="gpx" name="gpx" value={{x.gpx}}>
-      <input type="submit" class="btn btn-link" value="gpx">
+      <!-- <input type="hidden" id="gpx" name="gpx" value={{x.gpx}}> -->
+      <!-- <input type="submit" class="btn btn-link" value="gpx"> -->
     </form>
   </li>
   {% endfor %}
@@ -173,18 +173,9 @@
 
 {% block script %}
 <script>
+  // Valeurs venant de Django à envoyer à js
   const DONNÉES = JSON.parse("{{données|escapejs}}");
-
-  // Ajout de l’itinéraire
-  //  for code_js in js_itinéraires
-  // code_js | safe
-  //  endfor 
-
-  // Ajout des fonctionalités pour les marqueurs d’étapes
-  //gèreLesClics(laCarte);
-  // Ajout des marqueurs d’étapes venant de recherches précédentes qui ont été enregistrés en hidden dans le form
-  //form_recherche = document.getElementById("relance_rapide");
-  //marqueurs_of_form(form_recherche, laCarte);
+  const URL_GPX = "{% url 'gpx'%}";
 </script>
 
 <script src="{% static 'dijk/js/carte.js'%}" type="module"> </script>

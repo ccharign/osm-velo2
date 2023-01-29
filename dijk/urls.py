@@ -25,6 +25,8 @@ urlpatterns = [
     path("cycla/<str:zone_t>", views.carte_cycla, name="carte cycla"),
     path("cycla/", views.choix_cycla, name="cycla"),
 
+    path("gpx/", views.téléchargement, name="gpx"),
+    path("gpx/<int:p_détour>", views.envoieGpx, name="gpx"),
     path("telechargement/", views.téléchargement, name="téléchargement"),
 
     path("chemins/", views.affiche_chemins, name="affiche chemins"),
@@ -36,8 +38,6 @@ urlpatterns = [
     path('ajax/recherche_rue/', views.pour_complétion, name="complète rue"),
     path('', views.choix_zone, name='index'),
     path('recherche/<str:zone_t>/', views.recherche, name='recherche'),
-
-
 
 
 ] + staticfiles_urlpatterns()

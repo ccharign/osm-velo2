@@ -30,6 +30,7 @@ class Itinéraire():
         self.liste_arêtes = g.liste_Arête_of_iti(sommets, p_détour)
         self.longueur = longueur
         self.couleur = couleur
+        self.pourcentage_détour = int(p_détour*100)
         if marqueurs:
             self.marqueurs = marqueurs
         else:
@@ -65,7 +66,8 @@ class Itinéraire():
         """
         return {"points": [[lat, lon] for lon, lat in self.liste_coords()],
                 "couleur": self.couleur,
-                "marqueurs": self.marqueurs
+                "marqueurs": self.marqueurs,
+                "pourcentage_détour": self.pourcentage_détour
                 }
 
     def bbox(self, g):

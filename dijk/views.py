@@ -22,7 +22,7 @@ from .progs_python.lecture_adresse.recup_noeuds import PasTrouvé
 
 from .progs_python import recup_donnees
 from .progs_python.apprentissage import n_lectures
-from .progs_python.bib_vues import bool_of_checkbox, énumération_texte, récup_données, z_é_i_d, chaîne_avec_points_virgule_renversée
+from .progs_python.bib_vues import bool_of_checkbox, énumération_texte, récup_données, z_é_i_d, chaîne_avec_points_virgule_renversée, renvoieSurPageDErreur
 
 from .progs_python.utils import dessine_cycla, itinéraire_of_étapes
 
@@ -208,7 +208,11 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_sommets, ét
         ))
         noms_étapes = données["noms_étapes"]
         rues_interdites = données["rues_interdites"]
-        
+        # Mettre les traces gpx dans le dico de session, et les sortir de données
+        for stat in données["stats"]:
+            if "gpx" not in requête.session:
+                requête.session["gpx"] = {}
+            requête.session["gpx"][stat["p_détour"]] = stat.pop("gpx")
 
 
         def texte_marqueurs(l_é, supprime_début_et_fin=False):
@@ -236,6 +240,7 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_sommets, ét
                         "marqueurs_é": texte_marqueurs(étapes, supprime_début_et_fin=True),  # idem
                         })
 
+
         texte_étapes_inter = énumération_texte(noms_étapes[1:-1])
 
         # données à sérialiser pour envoyer à js
@@ -255,7 +260,6 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_sommets, ét
                            "enregistrer_contrib": forms.EnregistrerContrib(initial=données),
                            "trajet_retour": forms.ToutCaché(initial=données),
                            "fouine": requête.session.get("fouine", None),
-                           # "js_itinéraires": [iti.vers_leaflet() for iti in données["itinéraires"]],
                            "données": json.dumps(pour_js)
                        }
                        }
@@ -320,20 +324,33 @@ def confirme_nv_chemin(requête):
 
 ### traces gpx ###
 
+@renvoieSurPageDErreur
 def téléchargement(requête):
     """
     Fournit le .gpx, contenu dans requête.POST["gpx"]
     """
-    try:
-        return HttpResponse(
-            requête.POST["gpx"].replace("%20", " ").replace("ν", "\n"),
-            headers={
-                'Content-Type': "application/gpx+xml",
-                'Content-Disposition': 'attachment; filename="trajet.gpx"'
-            }
-        )
-    except Exception as e:
-        return autreErreur(requête, e)
+
+    return HttpResponse(
+        requête.POST["gpx"].replace("%20", " ").replace("ν", "\n"),
+        headers={
+            'Content-Type': "application/gpx+xml",
+            'Content-Disposition': 'attachment; filename="trajet.gpx"'
+        }
+    )
+
+@renvoieSurPageDErreur
+def envoieGpx(requête, p_détour):
+    """
+    Fournit le .gpx contenu dans requête.session["gpx"][p_détour]
+    """
+    return HttpResponse(
+        # Il semble que les clefs soient transformées en str dans requête.session
+        requête.session["gpx"][str(p_détour)].replace("%20", " ").replace("ν", "\n"),
+        headers={
+            'Content-Type': "application/gpx+xml",
+            'Content-Disposition': 'attachment; filename="trajet.gpx"'
+        }
+    )
 
 
 ### Carte cycla ###
@@ -413,6 +430,8 @@ def action_chemin(requête):
 
 
 ### Erreurs ###
+
+
 
 def vueLieuPasTrouvé(requête, e):
     """

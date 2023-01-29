@@ -5,7 +5,8 @@ import * as Pr from "./pour_recherche.js";
 
 // variables globales venant du gabarit :
 // - DONNÉES est un dico contenant les données envoyées par Django
-// - L es la classe de base leaflet
+// - L est la classe de base leaflet
+// URL_GPX l’adresse pour récupérer les gpx
 
 
 // Les variables globales à ce module :
@@ -20,6 +21,8 @@ let nbÉtapes;		// nb d’étapes créées. Attention, peut être > au nb d’é
 
 let nbArêtesInterdites = 0;
 let étapes_interdites = [];
+
+let clic_sur_iti = false;
 
 
 
@@ -54,6 +57,14 @@ let étapes_interdites = [];
 // La carte //
 //////////////
 
+function onClicSurIti(e, pourcentage_détour){
+    	    console.log("Clic sur l’iti!");
+	    // e.originalEvent.stopPropagation(); // Ceci ne fonctionne pas dans leaflet...
+	    // je le fait à la main
+    clic_sur_iti=true;
+    window.open(URL_GPX + pourcentage_détour, '_self');
+}
+
 
 // Dans les itis, on a les marqueurs de début et fin (à enlever!) ainsi que les étapes « passer par »
 /**
@@ -61,9 +72,14 @@ let étapes_interdites = [];
 Affiche l’itinéraire sur la carte indiqué.
 */
 function afficheIti(iti, carte){
-    L.polyline(iti.points, {color: iti.couleur, weight: 6, opacity: .6})
-	.addTo(laCarte);
-
+    
+    // L’itinéraire
+    let ligne = L.polyline(iti.points, {color: iti.couleur, weight: 6, opacity: .6})
+	.addTo(laCarte)
+        .on("click", e => onClicSurIti(e, iti.pourcentage_détour));
+	   
+    
+    // Ses marqueurs
     for (let m of iti.marqueurs){
 	Pll.marqueur_avec_popup(m, carte);
     }
@@ -109,7 +125,13 @@ arrivée = toutes_les_étapes.pop();
 ////////////////////////////////////////
 
 laCarte.on("click",
-	   e => ajouteMarqueur(e, laCarte)
+	   e => {
+	       if (clic_sur_iti) {
+		   clic_sur_iti=false;
+	       }else{
+		   ajouteMarqueur(e, laCarte);
+	       }
+	   }
 	  );
 
 
@@ -122,10 +144,10 @@ function ajouteMarqueur(e, carte) {
 	);
     }
     else{
-	nbÉtapes++;
 	toutes_les_étapes.push(
-	    Marq.nvÉtape(e.latlng, carte, nbÉtapes, toutes_les_étapes)
+	    Marq.nvÉtape(e.latlng, carte, nbÉtapes-1, toutes_les_étapes)
 	);
+	nbÉtapes++;
     }
 }
 

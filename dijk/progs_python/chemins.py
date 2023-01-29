@@ -283,7 +283,7 @@ class ÉtapeArête(Étape):
     def of_coords(cls, coords, g, z_d, d_max=50, ad=None):
         a, d = g.arête_la_plus_proche(coords, z_d)
         if d > d_max:
-            raise RuntimeError(f"Trop loin de la zone {z_d}.")
+            raise RuntimeError(f"Les coords {coords} sont trop loin de la zone {z_d} : {d}m.")
         return cls.of_arête(a, coords, ad=ad)
     
     
@@ -327,16 +327,20 @@ class ÉtapeLieu(Étape):
     def str_pour_chemin(self):
         """
         Sera utilisé pour enregistrement dans la base.
-        NB : au chargement du chemin, deviendra une ÉtapeAdresse.
+        NB : au chargement du chemin, deviendra une ÉtapeArête.
         """
         return f"Arête{self.lieu.lon},{self.lieu.lat}"
 
     def __str__(self):
         return str(self.lieu)
 
+    def marqueur_leaflet_of_sommet(self, s):
+        """
+        Rema : comme ce type d’étape n’a qu’un seul lieu, le paramètre s est  ici inutile.
+        Il est là pour compatibilité avec la méthode éponyme des autres sous-classes d’Étape.
+        """
+        return self.lieu.pour_marqueur_leaflet()
 
-    def pour_js(self):
-        return self.l.pour_js()
     
 
 class ÉtapeEnsLieux(Étape):
@@ -360,7 +364,7 @@ class ÉtapeEnsLieux(Étape):
     
  
     def marqueur_leaflet_of_sommet(self, s):
-        return self.nœuds[s].pour_js()
+        return self.nœuds[s].pour_marqueur_leaflet()
 
 
     @classmethod

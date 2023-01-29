@@ -353,10 +353,10 @@ def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, arbre_a, to
 
     à_créer, à_màj = [], []
     for d in dicos_of_requête(requête, catégorie_lieu, bavard=bavard):
-        l, créé, utile = mo.Lieu.of_dico(d, arbre_a, tous_les_id_osm=tous_les_id_osm, créer_type=True)
+        l, créé, utile = mo.Lieu.of_dico(d, arbre_a, tous_les_id_osm=tous_les_id_osm, créer_type=True, force=force)
         if créé:
             à_créer.append(l)
-        elif utile or force:
+        elif utile:
             à_màj.append(l)
     return à_créer, à_màj
 
@@ -407,7 +407,7 @@ def lieux_of_ville(ville, arbre_a, bavard=0, force=False):
     Sortie (Lieu list) : liste de Lieux (amenity, shop, tourism) obtenus en cherchant la ville dans overpass.
     Les nouveaux lieux ont été créés, les anciens ont été mis à jour si une différence a été détectée par traitement_req_récup_lieux.
     Paramètres:
-        force, si True on màj tous les lieux déjà présents, même si même json_nettoyé
+        force, si True on màj tous les lieux déjà présents, même si même dico obtenu par traitement_req_récup_lieux
     """
     res = []
     tous_les_id_osm = set([i for i, in mo.Lieu.objects.all().values_list("id_osm")])
@@ -422,7 +422,7 @@ def lieux_of_ville(ville, arbre_a, bavard=0, force=False):
         print(f"(lieux_of_ville) Création de {len(à_c)} nouveaux lieux")
         mo.Lieu.objects.bulk_create(à_c)
         print(f"(lieux_of_ville) Màj des {len(à_m)} lieux modifiés")
-        mo.Lieu.objects.bulk_update(à_m, ["nom", "horaires", "tél", "type_lieu", "json_initial", "json_nettoyé", "ville", "arête"])
+        mo.Lieu.objects.bulk_update(à_m, ["nom", "horaires", "tél", "type_lieu", "json_tout", "ville", "arête"])
         res.extend(à_c+à_m)
         tous_les_id_osm.update((l.id_osm for l in à_c))
     return res

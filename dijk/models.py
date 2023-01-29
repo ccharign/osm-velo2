@@ -10,6 +10,7 @@ from dijk.progs_python.lecture_adresse.normalisation0 import partie_commune
 from dijk.progs_python.petites_fonctions import distance_euc
 import dijk.progs_python.quadrarbres as qa
 
+from dijk.progs_python.lecture_adresse.normalisation0 import prétraitement_rue
 
 def objet_of_dico(
         cls, d,
@@ -943,6 +944,7 @@ class Lieu(models.Model):
     """
     Pour enregistrer un lieu public, bar, magasin, etc
     nb : __eq__ consiste à comparer les id_osm. Sachant que l’attribut id_osm a la contrainte « unique ».
+    json_tout (str) : contient toutes les données connues du lieu, en json.
     """
     
     nom = models.TextField(blank=True, default=None, null=True)
@@ -954,11 +956,14 @@ class Lieu(models.Model):
     horaires = models.TextField(blank=True, default=None, null=True)
     tél = models.TextField(blank=True, default=None, null=True)
     id_osm = models.BigIntegerField(unique=True)
-    json_initial = models.TextField(blank=True, default=None, null=True)
-    json_nettoyé = models.TextField(blank=True, default=None, null=True)
+    json_tout = models.TextField(blank=True, default=None, null=True)
+    #json_nettoyé = models.TextField(blank=True, default=None, null=True)
     arête = models.ForeignKey(Arête, on_delete=models.CASCADE, blank=True, default=None, null=True)  # Arête la plus proche
     
 
+    # Liste des champs à envoyer au constructeur
+    _champs = ["nom", "nom_norm", "lon", "lat", "horaires", "tél", "id_osm", "json_tout"]
+    
     def __hash__(self):
         return self.id_osm
 
@@ -974,21 +979,29 @@ class Lieu(models.Model):
         """
         return set((self.arête.départ, self.arête.arrivée))
 
+    
     def adresse(self):
+        """
+        C’est juste le nom associé à l’arête associée à self suivi du nom de la ville actuellement...
+        """
         res = self.arête.nom
         if res:
-            return f"{res}"
+            return f"{res}{self.ville_ou_pas()}"
         else:
             return ""
-    
+
+        
     def toutes_les_infos(self):
         """
         Renvoie le dico des données présentes sur osm.
         """
-        return json.loads(self.json_initial)
+        res = json.loads(self.json_autres_données)
+        res["nom"] = str(self)
+        res["adresse"] = self.adresse()
+        return res
 
     def infos(self):
-        return json.loads(self.json_nettoyé)
+        return json.loads(self.json_autres_données)
 
         
     def ville_ou_pas(self):
@@ -1002,21 +1015,20 @@ class Lieu(models.Model):
     
         
     def __str__(self):
-        return f"{self.nom} ({self.type_lieu}){self.adresse()}, {self.ville_ou_pas()}"
+        return f"{self.nom} ({self.type_lieu})"
 
     def str_pour_formulaire(self):
         """
-        Renvoie la chaîne  « nom, ville »
+        Renvoie la chaîne  « nom, adresse »
+        Pour afficher dans les propositions d’autocomplétion.
         """
-        return f"{self.nom}, {self.adresse()}, {self.ville}"
+        return f"{self.nom}, {self.adresse()}"
 
 
     def pour_js(self):
         """
-        Sortie : dico sérialisable contenant les données nécessaires à la partie client. À savoir
-            - pour afficher un marqueur
-            - pour construire l’objet ÉtapeLieu dans Django après retour via le formulaire.
-        Envoyé lors de l’autocomplétion. En particulier, envoyé pour toutes les propositions d’autocomplétion. -> Doit rester relativement léger.
+        Sortie : dico sérialisable contenant les données nécessaires pour construire l’objet ÉtapeLieu dans Django après retour via le formulaire.
+        En particulier, envoyé pour toutes les propositions d’autocomplétion. -> Doit rester relativement léger.
         """
         lon, lat = self.coords()
         return {
@@ -1024,25 +1036,24 @@ class Lieu(models.Model):
             "pk": self.pk,
             "lon": lon,
             "lat": lat,
-            "nom": self.nom,
+            #"nom": self.nom,
         }
     
     def pour_autocomplète(self):
+        """
+        Renvoie le dico avec les champs « label » et « àCacher » attendu par la fonction d’autocomplétion.
+        """
         return {"label": self.str_pour_formulaire(),
                 "àCacher": json.dumps(self.pour_js())
                 }
 
-    def marqueur_leaflet(self):
+    def pour_marqueur_leaflet(self):
         """
-        Renvoie un dico sérialisable contenant les données pour créer un marqueur leaflet. À savoir:
-            lon
-            lat
-            infos
+        Renvoie un dico sérialisable contenant les données pour créer un marqueur leaflet. C’est actuellement la même chose que self.toutes_les_infos().
         Envoyé pour l’affichage du résultat. Contient plus d’infos que pour_js qui est utilisé dans l’autocomplétion.
         """
-        infos = self.toutes_les_infos()
-        infos["nom"] = self.nom
-        return {"lon": self.lon, "lat": self.lat, "infos": infos}
+        return self.toutes_les_infos()
+
 
 
     def ajoute_arête_la_plus_proche(self, arbre_arêtes, dmax=30):
@@ -1067,10 +1078,10 @@ class Lieu(models.Model):
 
     
     @classmethod
-    def of_dico(cls, d, arbre_a, tous_les_id_osm=None, créer_type=False):
+    def of_dico(cls, d, arbre_a, tous_les_id_osm=None, créer_type=False, force=False):
         """
         Entrée:
-            d (str-> T dico)
+            d (str-> T dico), dico contenant les données à utiliser. Au minimu lon et lat. Tous les champs qui ne servent pas à remplir un attribut de l’objet seront jsonisés dans json_autres_données.
             arbre_a, R-arbre d’arêtes dans lequel chercher l’arête la plus proche.
 
         Sortie (Lieu×bool×bool) :
@@ -1082,35 +1093,38 @@ class Lieu(models.Model):
 
             tous_les_id_osm : si présent créé sera Faux si l’id_osm du lieu y figure, et utile vrai ssi des différences avec celui de la base sont détectées.
                               Si tous_les_id_osm est None, créé sera vrai.
+            force : si Vrai, met à jour le lieu même si aucun changement détecté dans le dico passé en arg par rapport à celui passé la dernière fois.
 
 
         La création ou la modif n’est pas sauvegardée pour permettre un bulk_create ou bulk_update ultérieur.
         """
 
         
-        nv_json_nettoyé = json.dumps(d)  # Sert à détecter une modif
+        nv_json_tout = json.dumps(d)  # le dico d’origine figurera dans l’attribut json_tout
+        d_final = {c: d[c] for c in cls._champs if c in d}  # Le dico à envoyer au constructeur
+        d_final["nom_norm"] = prétraitement_rue(d["nom"])
+        d_final["json_tout"] = nv_json_tout
 
         # Création ou récup de l’ancien lieu
         if tous_les_id_osm and d["id_osm"] in tous_les_id_osm:
             ancien = Lieu.objects.get(id_osm=d["id_osm"])
-            if ancien.json_nettoyé == nv_json_nettoyé:
+            if not force and ancien.json_tout == nv_json_tout:
                 # tout est déjà dans la base
                 return ancien, False, False
             else:
                 # lieu à mettre à jour
                 res = ancien
-                for attr, value in d.items():
+                for attr, value in d_final.items():
                     setattr(res, attr, value)
                 créé, utile = False, True
         else:
             # Nouveau lieu
-            res = cls(**d)
+            res = cls(**d_final)
             créé = True
             utile = True
 
         # texte_tout
-        res.json_initial = json.dumps(d)
-        res.json_nettoyé = nv_json_nettoyé
+        res.json_tout = nv_json_tout
 
         # Type osm du lieu
         # À optimiser : passer le type le lieu en arg
@@ -1119,7 +1133,7 @@ class Lieu(models.Model):
             if tls:
                 tl = tls.first()
             else:
-                nom_français = input(f"Traduction de {d['type']} ({d['catégorie']}) ? C’est pour {d['name']}. ")
+                nom_français = input(f"Traduction de {d['type']} ({d['catégorie']}) ? C’est pour {d['nom']}. ")
                 close_old_connections()
                 tl = TypeLieu(nom_français=nom_français, nom_osm=d["type"], catégorie=d["catégorie"])
                 tl.save()

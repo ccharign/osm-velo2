@@ -101,6 +101,7 @@ def itinéraire_of_étapes(étapes,
         
         stats.append({"légende": légende,
                       "aide": aide,
+                      "p_détour": int(100*c.p_détour),
                       "id": f"ps{int(100*c.p_détour)}",
                       "longueur": longueur,
                       "temps": int(longueur/15000*60),  # Moyenne de 15km/h disons
@@ -172,7 +173,7 @@ def gpx_of_iti(iti_d, bavard=0):
         for lon, lat in a.géométrie():
             segment.points.append( gpxpy.gpx.GPXTrackPoint(lat, lon) )
 
-    res_str = res.to_xml().replace(" ", "%20").replace("\n","ν")
+    res_str = res.to_xml()#.replace(" ", "%20").replace("\n", "ν")
     return res_str
 
 
