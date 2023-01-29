@@ -83,8 +83,8 @@ document.getElementById("id_arrivée").addEventListener(
 
 // Met à jour le champ "localisation" du form
 function àLaGéoloc(pos){
-    const texte = Pll.texte_of_latLng(pos);
-    console.log(`Position obtenue :  ${texte}. Je réaffiche la case « Partir de ma position ».` );
+    const texte = `${pos.coords.longitude},${pos.coords.latitude}`;
+    console.log(`Position obtenue : lon,lat =  ${texte}. Je réaffiche la case « Partir de ma position ».` );
     leForm.elements["localisation"].value = texte;
     case_géol.hidden=false;
     étiquette_géol.show();
