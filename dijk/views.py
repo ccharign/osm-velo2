@@ -83,7 +83,7 @@ def sous_le_capot(requête):
 
 ### Formulaires de recherche d’itinéraire
 
-
+@renvoieSurPageDErreur
 def recherche(requête, zone_t, bavard=1):
     """
     Vue pour une recherche de base.
