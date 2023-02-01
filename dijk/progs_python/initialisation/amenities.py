@@ -6,11 +6,11 @@ from pprint import pformat
 from django.db import close_old_connections
 
 from dijk.progs_python.params import DONNÉES
-from dijk.progs_python.recup_donnees import lieux_of_ville
+#from dijk.progs_python.recup_donnees import lieux_of_ville
+import dijk.progs_python.recup_donnees as rd
 from dijk.progs_python.quadrarbres import QuadrArbreArête
-from dijk.models import TypeLieu, Lieu, Zone
+from dijk.models import TypeLieu, Zone
 import dijk.models as mo
-from dijk.progs_python.petites_fonctions import morceaux_tableaux
 
 
 from dijk.progs_python.params import LOG
@@ -42,27 +42,27 @@ def initGroupesTypesLieux(chemin="dijk/progs_python/initialisation/données_à_c
             gtl.save()
 
 
-def charge_type_lieux(ld):
-    """
-    ld (liste de dico), contient le résultat d’un récup_amenities
-    Effet : remplit la table TypeAmenity avec les nouveaux. Demande interactivement la traduction en français.
-    """
+# def charge_type_lieux(ld):
+#     """
+#     ld (liste de dico), contient le résultat d’un récup_amenities
+#     Effet : remplit la table TypeAmenity avec les nouveaux. Demande interactivement la traduction en français.
+#     """
 
-    déjà_présente = set(TypeLieu.objects.values_list("nom_osm", "catégorie"))
+#     déjà_présente = set(TypeLieu.objects.values_list("nom_osm", "catégorie"))
 
-    for r in ld:
-        if (r["type"], r["catégorie"]) in déjà_présente:
-            # mise à jour ?
-            None
-        else:
-            tl = TypeLieu(nom_osm=r["type"], catégorie=r["catégorie"])
-            nom_traduit = input(f"Traduction de {r['type']} ? C’est pour {r['name']} ({r['catégorie']}). ")
-            close_old_connections()
-            tl.nom_français = nom_traduit
-            déjà_présente.add((r["type"], r["catégorie"]))
-            tl.save()
-            if not nom_traduit:
-                print(f"J’ignorerai à l’avenir le type {r['type']}")
+#     for r in ld:
+#         if (r["type"], r["catégorie"]) in déjà_présente:
+#             # mise à jour ?
+#             None
+#         else:
+#             tl = TypeLieu(nom_osm=r["type"], catégorie=r["catégorie"])
+#             nom_traduit = input(f"Traduction de {r['type']} ? C’est pour {r['name']} ({r['catégorie']}). ")
+#             close_old_connections()
+#             tl.nom_français = nom_traduit
+#             déjà_présente.add((r["type"], r["catégorie"]))
+#             tl.save()
+#             if not nom_traduit:
+#                 print(f"J’ignorerai à l’avenir le type {r['type']}")
 
 
                 
@@ -98,7 +98,7 @@ def charge_lieux_of_ville(v_d, arbre_a=None, bavard=0, force=False):
         arbre_a = mo.ArbreArête.racine()
         
     LOG("Récupération des lieux via overpass", bavard=1)
-    ll = lieux_of_ville(v_d, arbre_a, bavard=bavard, force=force)
+    ll = rd.lieux_of_ville(v_d, arbre_a, bavard=bavard, force=force)
 
     v_d.lieux_calculés = datetime.date.today()
     v_d.save()

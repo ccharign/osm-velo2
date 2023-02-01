@@ -92,5 +92,5 @@ def prétraitement_rue(rue):
             res = suivant
             
     étape3 = multi_remplace(DICO_REMP, res)
-    return re.sub("[^a-z0-9]", " ", étape3)
+    return re.sub("[^a-z0-9αρβλ∘]", " ", étape3)
 

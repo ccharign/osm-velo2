@@ -466,7 +466,8 @@ class Graphe_django():
                 tol=tol,
                 n_max_rés=nb_rés_restant
             )
-            if len(res_dans_v_d)==0: return []
+            if len(res_dans_v_d) == 0:
+                return []
             for r in res_dans_v_d:
                 res.extend(r)
                 nb_rés_restant -= len(r)

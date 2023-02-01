@@ -2,6 +2,10 @@
 ;; To create a file, visit it with C-x C-f and enter text in its buffer.
 
 
+arrêts de bus
+	"public_transport" dansla clef ou dans la valeur!
+	
+
 
 Couches osm plus neutre.
 

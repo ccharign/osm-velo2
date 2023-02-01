@@ -296,9 +296,32 @@ def nœuds_of_idsrue(ids_rue, bavard=0):
     return res
 
 
+def tousLesLieuxNommés(bbox, bavard=0):
+    """
+    Renvoie la requête overpass pour récupérer tous les lieux nommés dans la bbox indiquée.
+    """
+    
+    return f"""
+    [out:json];
+    (
+    nwr[name][!highway]{bbox};
+    );
+    out center;
+    """
+    # return f"""
+    # [out:json];
+    # {{{{geocodeArea: {area_overpass}}}}}->.searchArea;
+    # (
+    # nwr[name][!highway](area.searchArea);
+    # );
+    # out center;
+    # """
 
 
-# @réessaie(10)
+
+    
+
+
 def récup_catégorie_lieu(catégorie_lieu: str, zone_overpass="area.searchArea", préfixe_requête="", bavard=0):
     """
     Renvoie la requête overpass pour obtenir les objets (Node, Way, Relation) ayant un tag de la catégorie indiquée, ainsi qu’un tag 'name'.
@@ -337,11 +360,10 @@ def coords_of_objet_overpy(o, type_objet_osm: str):
         return float(o.center_lon), float(o.center_lat)
 
 
-def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, arbre_a, tous_les_id_osm=None, force=False, bavard=0):
+def traitement_req_récup_lieux(requête: str, arbre_a, tous_les_id_osm=None, force=False, bavard=0):
     """
     Entrées:
         req : une requête overpass
-        catégorie_lieu : la catégorie de lieux concernés (shop, amenity, tourism...)
         arbre_a : R-arbre d’arête dans lequel chercher l’arête la plus proche de chaque lieu.
 
     Sortie (Lieu list × Lieu list) : (nouveaux lieu (à bulk_creater), lieux à màj)
@@ -352,7 +374,9 @@ def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, arbre_a, to
     """
 
     à_créer, à_màj = [], []
-    for d in dicos_of_requête(requête, catégorie_lieu, bavard=bavard):
+    dicos = dicos_of_requête(requête, bavard=bavard)
+    breakpoint()
+    for d in dicos:
         l, créé, utile = mo.Lieu.of_dico(d, arbre_a, tous_les_id_osm=tous_les_id_osm, créer_type=True, force=force)
         if créé:
             à_créer.append(l)
@@ -362,7 +386,7 @@ def traitement_req_récup_lieux(requête: str, catégorie_lieu: str, arbre_a, to
 
 
 
-def dicos_of_requête(requête: str, catégorie_lieu: str, bavard=0) -> list:
+def dicos_of_requête(requête: str, bavard=0) -> list:
     """
     Entrée : requête overpass
     Sortie (liste de dicos sérialisables) : résultat d’icelle.
@@ -377,17 +401,16 @@ def dicos_of_requête(requête: str, catégorie_lieu: str, bavard=0) -> list:
 
     
     ## Créer les dicos
-
-    # Champs à traduire
-    champs_à_traduire = {"name": "nom", "lon": "lon", "lat": "lat", "opening_hours": "horaires", "phone": "tél", "id_osm": "id_osm"}
-    
+    champs_à_traduire = {"name": "nom",
+                         "alt_name": "autre_nom",
+                         "opening_hours": "horaires",
+                         "phone": "tél",
+                         }
     res = []
     for x, type_objet_osm in [(n, "nœud") for n in rés_req.nodes] + [(w, "way") for w in rés_req.ways] + [(r, "rel") for r in rés_req.relations]:
         lon, lat = coords_of_objet_overpy(x, type_objet_osm)
         d = {"id_osm": x.id,
              "lon": lon, "lat": lat,
-             "type": x.tags.pop(catégorie_lieu),
-             "catégorie": catégorie_lieu,
              }
         d.update(x.tags)
         
@@ -403,28 +426,38 @@ def dicos_of_requête(requête: str, catégorie_lieu: str, bavard=0) -> list:
 
 def lieux_of_ville(ville, arbre_a, bavard=0, force=False):
     """
-    Entrée : ville (objet avec un attribut nom_complet)
-    Sortie (Lieu list) : liste de Lieux (amenity, shop, tourism) obtenus en cherchant la ville dans overpass.
-    Les nouveaux lieux ont été créés, les anciens ont été mis à jour si une différence a été détectée par traitement_req_récup_lieux.
+    Entrée :
+        ville (objet avec un attribut nom_complet)
+        arbre_a, arbre d’arête utilisé pour associer l’arête la plus proche à chaque lieu.
+
+    Sortie (Lieu list) : liste de Lieux (objets osm avec un tag «name») obtenus en cherchant la ville dans overpass.
+
+    Effet : Les nouveaux lieux ont été créés, les anciens ont été mis à jour si une différence a été détectée par traitement_req_récup_lieux.
+
     Paramètres:
         force, si True on màj tous les lieux déjà présents, même si même dico obtenu par traitement_req_récup_lieux
     """
     res = []
     tous_les_id_osm = set([i for i, in mo.Lieu.objects.all().values_list("id_osm")])
-    for catégorie_lieu in ["amenity", "shop", "tourism", "leisure"]:
-        print(f"\nRecherche des lieux pour la catégorie {catégorie_lieu}")
-        requête = récup_catégorie_lieu(
-            catégorie_lieu,
-            préfixe_requête=f'area[name="{ville.nom_complet}"]->.searchArea;',
-            bavard=bavard
-        )
-        à_c, à_m = traitement_req_récup_lieux(requête, catégorie_lieu, arbre_a, tous_les_id_osm, force=force)
-        print(f"(lieux_of_ville) Création de {len(à_c)} nouveaux lieux")
-        mo.Lieu.objects.bulk_create(à_c)
-        print(f"(lieux_of_ville) Màj des {len(à_m)} lieux modifiés")
-        mo.Lieu.objects.bulk_update(à_m, ["nom", "horaires", "tél", "type_lieu", "json_tout", "ville", "arête"])
-        res.extend(à_c+à_m)
-        tous_les_id_osm.update((l.id_osm for l in à_c))
+    # for catégorie_lieu in ["amenity", "shop", "tourism", "leisure"]:
+    #     print(f"\nRecherche des lieux pour la catégorie {catégorie_lieu}")
+    #     requête = récup_catégorie_lieu(
+    #         catégorie_lieu,
+    #         préfixe_requête=f'area[name="{ville.nom_complet}"]->.searchArea;',
+    #         bavard=bavard
+    #     )
+    requête = tousLesLieuxNommés(ville.bbox())
+    LOG(requête, bavard=bavard)
+    à_c, à_m = traitement_req_récup_lieux(requête, arbre_a, tous_les_id_osm, force=force, bavard=bavard)
+    
+    print(f"(lieux_of_ville) Création de {len(à_c)} nouveaux lieux")
+    mo.Lieu.objects.bulk_create(à_c, batch_size=2000)
+    tous_les_id_osm.update((l.id_osm for l in à_c))
+    
+    print(f"(lieux_of_ville) Màj des {len(à_m)} lieux modifiés")
+    mo.Lieu.objects.bulk_update(à_m, ["nom", "horaires", "tél", "type_lieu", "json_tout", "ville", "arête"], batch_size=2000)
+
+    res.extend(à_c+à_m)
     return res
 
 
@@ -478,7 +511,7 @@ def lieux_of_types_lieux(bb, types, bavard=0):
         out center;
         """
         LOG(f"Requête overpass:\n {requête}", bavard=1)
-        res.extend(dicos_of_requête(requête, cat, bavard=bavard))
+        res.extend(dicos_of_requête(requête, bavard=bavard))
         
     LOG(f"Résultat :\n {res}", bavard=1)
     return res

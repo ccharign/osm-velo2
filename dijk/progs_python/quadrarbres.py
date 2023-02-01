@@ -1,13 +1,13 @@
 # -*- coding:utf-8 -*-
 
 """
-Arbres quaternaires. Le type correspond plutôt aux R-arbres, mais la fonction of_list crée a priori quatre fils par nœud.
+Arbres quaternaires. Le type correspond plutôt aux R-arbres, mais la fonction of_list crée dans le cas général quatre fils par nœud.
 """
 
 
 from time import perf_counter
 from math import cos, pi
-from petites_fonctions import distance_euc, R_TERRE, chrono, deuxConséc, fusionne_tab_de_tab, zip_dico, sauv_objets_par_lots
+from dijk.progs_python.petites_fonctions import distance_euc, R_TERRE, chrono, deuxConséc, fusionne_tab_de_tab, zip_dico, sauv_objets_par_lots
 
 
 def produit_scalaire(u, v):
@@ -55,10 +55,12 @@ def fonction_distance_pour_feuille(départ: (float, float), arrivée: (float, fl
     else:
         # Le point le plus proche est dans le segment a.
         # La distance au carré est AC**2 - <AB|AC>/AD**2
-        return (
-            produit_scalaire(vec_ac, vec_ac)
-            - produit_scalaire(vec_ad, vec_ac)**2 / produit_scalaire(vec_ad, vec_ad)
-        ) ** .5 * pi/180 * R_TERRE
+        d_carré = produit_scalaire(vec_ac, vec_ac) - produit_scalaire(vec_ad, vec_ac)**2 / produit_scalaire(vec_ad, vec_ad)
+        # Si la distance est trop petite, on va se retrouver avec un d_carré<0 à cause des erreurs des flottants
+        if abs(d_carré) < 10**-18:  # Cela fera de l’ordre de 1cm sur le résultat final.
+            return 0.
+        else:
+            return d_carré ** .5 * pi/180 * R_TERRE
 
 
 
@@ -234,7 +236,7 @@ class Quadrarbre():
             def aux(a):
                 if a.fils:
                     # Nœud interne
-                    sortie.write( f"N{','.join(map(str, a.bb))},{len(a.fils)}\n" )
+                    sortie.write(f"N{','.join(map(str, a.bb))},{len(a.fils)}\n")
                     for f in a.fils:
                         aux(f)
                 else:
