@@ -534,7 +534,7 @@ def charge_rue_num_coords():
         ville = normalise_ville(ville)
         rue = normalise_rue(rue, ville)
         données = tmp.split(";")
-        ville_n=ville.nom_norm
+        ville_n = ville.nom_norm
         if ville_n not in res: res[ville_n] = {}
         res[ville_n][rue] = ([], [])  # numéros pairs, numéros impairs
 

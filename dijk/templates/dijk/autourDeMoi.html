@@ -1,49 +1,49 @@
 {% extends "dijk/base.html" %}
 
 
-
-
+{% load static %}
+{% load bootstrap5 %}
 
 {% block contenu %}
 
-<!-- La carte -->
+
 
 <div class="row">
-  <div id="laCarte"></div>
-</div>
-{% load static %}
+  
+  <!-- La carte -->
+  <div class="col-md-9">
+    <div id="laCarte"></div>
+  </div>
 
-<style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
-<style>
-  #laCarte {
-      width: 90vw;
-      height: 80vh;
-      left: 0.0%;
-      top: 0.0%;
-      position:relative
-  }
-</style>
-
-
-
-
-<!-- Le formulaire -->
-
-<!--
-Pour personaliser l’affichage, notamment le mettre sur deux colonnes : 
- https://medium.com/@alfarhanzahedi/customizing-modelmultiplechoicefield-in-a-django-form-96e3ae7e1a07
-  -->
-<div class="row">
-{% load bootstrap5 %}
-<form action="{% url 'autour de moi'%}" method="get" id="fouine">
-  {% bootstrap_form form %}
-  {% buttons submit='C’est parti' %}{% endbuttons %}
-</form>
+  <div class="col-md-3">
+    <!-- Le formulaire -->
+    <form action="{% url 'autour de moi'%}" method="get" id="fouine">
+      {% bootstrap_form form %}
+      {% buttons submit='C’est parti' %}{% endbuttons %}
+    </form>
+  </div>
+  <!--
+      Pour personaliser l’affichage, notamment le mettre sur deux colonnes : 
+      https://medium.com/@alfarhanzahedi/customizing-modelmultiplechoicefield-in-a-django-form-96e3ae7e1a07
+    -->
+  
 </div>
 
-
+<!-- <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style> -->
+<!-- <style> -->
+<!--   #laCarte { -->
+<!--       width: 90vw; -->
+<!--       height: 80vh; -->
+<!--       left: 0.0%; -->
+<!--       top: 0.0%; -->
+<!--       position:relative -->
+<!--   } -->
+<!-- </style> -->
 
 {% endblock contenu %}
+
+
+
 
 
 {% block script %}
@@ -58,12 +58,6 @@ Pour personaliser l’affichage, notamment le mettre sur deux colonnes :
 </script>
 
 <script src="{% static 'dijk/js/autourDeMoi.js' %}" type="module"></script>
-
-<!-- <script> -->
-<!--   {% for m in marqueurs %} -->
-<!--       {{m | safe}} -->
-<!--   {% endfor %} -->
-<!-- </script> -->
 
 {% endlocalize %}
 {% endblock %}
