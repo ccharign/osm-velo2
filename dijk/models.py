@@ -113,6 +113,20 @@ class Ville(models.Model):
     def arêtes(self):
         return self.arête_set.all()
 
+    def géom(self):
+        return json.loads(self.géom_texte)
+
+    def bbox(self):
+        """
+        Renvoie le plus petit rectangle contenant self au format (s,o,n,e).
+        """
+        géom = self.géom()
+        o = min(lon for (lon, lat) in géom)
+        e = max(lon for (lon, lat) in géom)
+        s = min(lat for (lon, lat) in géom)
+        n = max(lat for (lon, lat) in géom)
+        return s, o, n, e
+    
     @classmethod
     def of_nom(cls, nom):
         """ Renvoie la ville telle que partie_commune(nom) = ville.nom_norm"""
@@ -432,7 +446,11 @@ class ArbreArête(models.Model, qa.Quadrarbre):
         """
         if not self.fils:
             seg = self.segment()
-            return qa.fonction_distance_pour_feuille(seg.départ, seg.arrivée, coords)
+            res = qa.fonction_distance_pour_feuille(seg.départ, seg.arrivée, coords)
+            if not isinstance(res, float):
+                breakpoint()
+                raise RuntimeError("distance pas réelle")
+            return res
         else:
             raise ValueError(f"{self} n’est pas une feuille.")
 
@@ -512,7 +530,7 @@ class ArbreArête(models.Model, qa.Quadrarbre):
         if len(segments) == 1:
             return segments[0]
         else:
-            raise ValueError("{self} ne semble pas être une feuille. J’ai obtenu {len(segments)} segments associés. Ce sont {segments}.")
+            raise ValueError(f"{self} ne semble pas être une feuille. J’ai obtenu {len(segments)} segments associés. Ce sont {segments}.")
     
     
     def arête_la_plus_proche(self, coords: (float, float)):
@@ -877,7 +895,7 @@ class TypeLieu(models.Model):
     nom_osm = models.CharField(max_length=200)
     nom_français = models.TextField(blank=True, default=None, null=True)
 
-    cat_à_afficher = {"tourism": "(tourisme)", "shop": "(commerce)", "leisure": "(loisirs)"}
+    _cat_à_afficher = {"tourism": "(tourisme)", "shop": "(commerce)", "leisure": "(loisirs)", "amenity": ""}
 
     class Meta:
         constraints = [
@@ -888,7 +906,7 @@ class TypeLieu(models.Model):
         """
         Renvoie le nom français suivi de la catégorie si celle-ci est présente dans la variable statique cat_à_afficher
         """
-        return f"{self.nom_français} {self.cat_à_afficher.get(self.catégorie, '')}"
+        return f"{self.nom_français} {self._cat_à_afficher.get(self.catégorie, '')}"
 
     def __hash__(self):
         return self.nom_osm.__hash__()
@@ -898,6 +916,44 @@ class TypeLieu(models.Model):
         Renvoie la chaîne de caractère [catégorie~nom_osm]
         """
         return f"[{self.catégorie}~{self.nom_osm}]"
+
+    @classmethod
+    def of_dico(cls, d: dict, créer_type: bool):
+        """
+        Entrées:
+           d, dico issu d’une recherche overpass
+           créer_type : Pour un lieu pas présent dans la base, il sera rajouté si créer_type est vrai, et la fonction renverra None dans le cas contraire.
+        Sortie:
+           le TypeLieu correspondant à d
+        """
+
+        # Recherche d’une éventuelle catégorie connue
+        catégorie, nom_osm = "autre", "autre"
+        for cat in cls._cat_à_afficher:
+            if cat in d:
+                nom_osm = d[cat]
+                catégorie = cat
+
+        # Beaucoup de lieux sans catégorie sont des arrêts de bus. Je fais un cas particulier:
+        if catégorie == "autre" and "public_transport" in d["json_tout"]:
+            catégorie = "amenity"
+            nom_osm = "public_transport"
+
+        # Voyons si déjà présent dans la base
+        tls = cls.objects.filter(nom_osm=nom_osm, catégorie=catégorie)
+        if tls:
+            return tls.first()
+        else:
+            if créer_type:
+                nom_français = input(f"Traduction de {nom_osm} ({catégorie}) ? C’est pour {d['nom']}. ")
+                close_old_connections()
+                tl = cls(nom_français=nom_français, nom_osm=nom_osm, catégorie=catégorie)
+                tl.save()
+                if not nom_français:
+                    print(f"J’ignorerai à l’avenir le type {nom_osm}")
+                return tl
+            else:
+                return None
 
 
 
@@ -948,6 +1004,7 @@ class Lieu(models.Model):
     """
     
     nom = models.TextField(blank=True, default=None, null=True)
+    autre_nom = models.TextField(blank=True, default=None, null=True)
     nom_norm = models.TextField(blank=True, default=None, null=True)
     type_lieu = models.ForeignKey(TypeLieu, on_delete=models.CASCADE)
     ville = models.ForeignKey(Ville, on_delete=models.CASCADE, blank=True, default=None, null=True)
@@ -957,12 +1014,14 @@ class Lieu(models.Model):
     tél = models.TextField(blank=True, default=None, null=True)
     id_osm = models.BigIntegerField(unique=True)
     json_tout = models.TextField(blank=True, default=None, null=True)
-    #json_nettoyé = models.TextField(blank=True, default=None, null=True)
     arête = models.ForeignKey(Arête, on_delete=models.CASCADE, blank=True, default=None, null=True)  # Arête la plus proche
     
 
     # Liste des champs à envoyer au constructeur
-    _champs = ["nom", "nom_norm", "lon", "lat", "horaires", "tél", "id_osm", "json_tout"]
+    _champs = ["nom", "nom_norm", "lon", "lat", "horaires", "tél", "id_osm", "json_tout", "autre_nom"]
+
+
+    
     
     def __hash__(self):
         return self.id_osm
@@ -971,6 +1030,9 @@ class Lieu(models.Model):
         return self.id_osm == autre.id_osm
     
     def coords(self):
+        """
+        Renvoie le couple (lon, lat)
+        """
         return self.lon, self.lat
 
     def nœuds(self):
@@ -995,7 +1057,7 @@ class Lieu(models.Model):
         """
         Renvoie le dico des données présentes sur osm.
         """
-        res = json.loads(self.json_autres_données)
+        res = json.loads(self.json_tout)
         res["nom"] = str(self)
         res["adresse"] = self.adresse()
         return res
@@ -1074,14 +1136,22 @@ class Lieu(models.Model):
             a_d = Arête.objects.get(pk=a.pk)
             self.arête = a_d
             self.ville = self.arête.villes.first()
-        
+
+            
+    def rassemble(self, autre):
+        """
+        Précondition : self et autre ont même arête.
+        Effet: autre est supprimé de la base, et ses infos sont fusionnées avec celles de self.
+        """
+        # TODO
+        pass
 
     
     @classmethod
     def of_dico(cls, d, arbre_a, tous_les_id_osm=None, créer_type=False, force=False):
         """
         Entrée:
-            d (str-> T dico), dico contenant les données à utiliser. Au minimu lon et lat. Tous les champs qui ne servent pas à remplir un attribut de l’objet seront jsonisés dans json_autres_données.
+            d (str-> T dico), dico contenant les données à utiliser. Au minimum lon et lat. Tous les champs qui ne servent pas à remplir un attribut de l’objet seront jsonisés dans json_autres_données.
             arbre_a, R-arbre d’arêtes dans lequel chercher l’arête la plus proche.
 
         Sortie (Lieu×bool×bool) :
@@ -1098,7 +1168,6 @@ class Lieu(models.Model):
 
         La création ou la modif n’est pas sauvegardée pour permettre un bulk_create ou bulk_update ultérieur.
         """
-
         
         nv_json_tout = json.dumps(d)  # le dico d’origine figurera dans l’attribut json_tout
         d_final = {c: d[c] for c in cls._champs if c in d}  # Le dico à envoyer au constructeur
@@ -1125,24 +1194,9 @@ class Lieu(models.Model):
 
         # texte_tout
         res.json_tout = nv_json_tout
-
+        
         # Type osm du lieu
-        # À optimiser : passer le type le lieu en arg
-        if créer_type:
-            tls = TypeLieu.objects.filter(nom_osm=d["type"], catégorie=d["catégorie"])
-            if tls:
-                tl = tls.first()
-            else:
-                nom_français = input(f"Traduction de {d['type']} ({d['catégorie']}) ? C’est pour {d['nom']}. ")
-                close_old_connections()
-                tl = TypeLieu(nom_français=nom_français, nom_osm=d["type"], catégorie=d["catégorie"])
-                tl.save()
-                if not nom_français:
-                    print(f"J’ignorerai à l’avenir le type {d['type']}")
-
-        else:
-            tl = TypeLieu.objects.get(nom_osm=d["type"], catégorie=d["catégorie"])
-        res.type_lieu = tl
+        res.type_lieu = TypeLieu.of_dico(d, créer_type)
 
         # Adresse
         # Géré via l’arête maintenant... Éventuellement mettre le numéro ?
