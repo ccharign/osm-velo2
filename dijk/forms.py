@@ -94,7 +94,7 @@ class AutourDeMoi(forms.Form):
     """
     gtls = forms.ModelMultipleChoiceField(
         queryset=mo.GroupeTypeLieu.objects.all(),  # filter(nom_osm__in=TYPE_AMEN_POUR_AUTOUR_DE_MOI),
-        label="Type de lieu",
+        label="Chercher un type de lieu :",
         widget=forms.CheckboxSelectMultiple,
         required=False
     )
