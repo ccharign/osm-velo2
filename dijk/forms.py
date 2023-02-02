@@ -76,15 +76,15 @@ class EnregistrerContrib(ToutCaché):
 
     
 # Nom osm des lieux proposés dans le formulaire.
-TYPE_AMEN_POUR_AUTOUR_DE_MOI = [
-    "pharmacy", "post_office", "doctors", "bank", "fast_food",
-    "restaurant", "cafe", "marketplace", "police", "bar", "pub",
-    "drinking_water", "atm", "water_point", "convenience",
-    "bakery", "greengrocer", "supermarket", "toilets", "hospital",
-    "bicycle_rental", "fountain", "hardware", "clothes", "sports",
-    "laundry", "variety_store", "chemist", "pastry", "outdoor",
-    "mall", "bureau_de_change",
-]
+# TYPE_AMEN_POUR_AUTOUR_DE_MOI = [
+#     "pharmacy", "post_office", "doctors", "bank", "fast_food",
+#     "restaurant", "cafe", "marketplace", "police", "bar", "pub",
+#     "drinking_water", "atm", "water_point", "convenience",
+#     "bakery", "greengrocer", "supermarket", "toilets", "hospital",
+#     "bicycle_rental", "fountain", "hardware", "clothes", "sports",
+#     "laundry", "variety_store", "chemist", "pastry", "outdoor",
+#     "mall", "bureau_de_change",
+# ]
 
 
 class AutourDeMoi(forms.Form):
@@ -93,12 +93,11 @@ class AutourDeMoi(forms.Form):
     Le champ localisation sera rempli par le javascript.
     """
     gtls = forms.ModelMultipleChoiceField(
-        queryset=mo.GroupeTypeLieu.objects.all(),  # filter(nom_osm__in=TYPE_AMEN_POUR_AUTOUR_DE_MOI),
+        queryset=mo.GroupeTypeLieu.objects.all(),
         label="Chercher un type de lieu :",
         widget=forms.CheckboxSelectMultiple,
         required=False
     )
-    #rayon = forms.FloatField(label="Chercher dans un rayon de (en km) :", initial=.4)
     localisation = forms.CharField(widget=forms.HiddenInput, initial="-0.36667,43.299999")
     bbox = forms.CharField(widget=forms.HiddenInput())
 
