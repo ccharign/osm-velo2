@@ -114,21 +114,16 @@ def complétion(à_compléter: str, nbMax: int, z_d):
 
     # Recherche dans les lieux
     mots = à_chercher.split(" ")
-    # lieux = mo.Lieu.objects.filter(
-    #     nom_norm__icontains=à_chercher_non_normalisé,
-    #     ville__in=req_villes
-    # ).prefetch_related("ville", "type_lieu")
     lieux = mo.Lieu.objects.filter(ville__in=req_villes).prefetch_related("ville", "type_lieu")
     for mot in mots:
         lieux = lieux.filter(nom_norm__contains=mot)
     
     print(f"{len(lieux)} lieux trouvées")
+    
     res.ajoute_un_paquet([l.pour_autocomplète() for l in lieux])
 
 
     # Recherche dans les rues
-
-
 
     début = " ".join(x for x in [num, bis_ter] if x)
     if début:

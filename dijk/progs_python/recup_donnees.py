@@ -296,9 +296,28 @@ def nœuds_of_idsrue(ids_rue, bavard=0):
     return res
 
 
+
+def zones_piétonnes(bbox, bavard=0):
+    """
+    Renvoie les zones piétonnes (area=yes, highway=pedestrian ou footway) de la zone indiquée.
+    """
+    requête = f"""
+    [out:json];
+    (
+    nwr[area='yes'][highway='pedestrian']{bbox};
+    );
+    out center;
+    """
+
+    api = overpy.Overpass(url="https://lz4.overpass-api.de/api/interpreter", max_retry_count=3, retry_timeout=5)
+    LOG(f"requête overpass : \n{requête}", bavard=bavard)
+    return api.query(requête)
+    
+
+
 def tousLesLieuxNommés(bbox, bavard=0):
     """
-    Renvoie la requête overpass pour récupérer tous les lieux nommés dans la bbox indiquée.
+    Renvoie la requête overpass pour récupérer tous les lieux nommés dans la bbox indiquée. Les rues (highway) sont exclues.
     """
     
     return f"""
@@ -375,7 +394,6 @@ def traitement_req_récup_lieux(requête: str, arbre_a, tous_les_id_osm=None, fo
 
     à_créer, à_màj = [], []
     dicos = dicos_of_requête(requête, bavard=bavard)
-    breakpoint()
     for d in dicos:
         l, créé, utile = mo.Lieu.of_dico(d, arbre_a, tous_les_id_osm=tous_les_id_osm, créer_type=True, force=force)
         if créé:
@@ -408,18 +426,19 @@ def dicos_of_requête(requête: str, bavard=0) -> list:
                          }
     res = []
     for x, type_objet_osm in [(n, "nœud") for n in rés_req.nodes] + [(w, "way") for w in rés_req.ways] + [(r, "rel") for r in rés_req.relations]:
-        lon, lat = coords_of_objet_overpy(x, type_objet_osm)
-        d = {"id_osm": x.id,
-             "lon": lon, "lat": lat,
-             }
-        d.update(x.tags)
+        if type_objet_osm != "rel" or "network" not in x.tags:  # J’élimine les lignes de bus
+            lon, lat = coords_of_objet_overpy(x, type_objet_osm)
+            d = {"id_osm": x.id,
+                 "lon": lon, "lat": lat,
+                 }
+            d.update(x.tags)
         
-        for c in champs_à_traduire:
-            if c in d:
-                val = d.pop(c)
-                d[champs_à_traduire[c]] = val
-    
-        res.append(d)
+            for c in champs_à_traduire:
+                if c in d:
+                    val = d.pop(c)
+                    d[champs_à_traduire[c]] = val
+                    
+            res.append(d)
         
     return res
 

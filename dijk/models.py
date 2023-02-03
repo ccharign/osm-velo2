@@ -1046,11 +1046,13 @@ class Lieu(models.Model):
         """
         C’est juste le nom associé à l’arête associée à self suivi du nom de la ville actuellement...
         """
-        res = self.arête.nom
-        if res:
-            return f"{res}{self.ville_ou_pas()}"
-        else:
-            return ""
+        # res = self.arête.nom
+        # if res:
+        #     return f"{res}{self.ville_ou_pas()}"
+        # else:
+        #     return ""
+
+        return ", ".join(str(x) for x in (self.arête.nom, self.ville) if x)
 
         
     def toutes_les_infos(self):
@@ -1068,10 +1070,10 @@ class Lieu(models.Model):
         
     def ville_ou_pas(self):
         """
-        Renvoie ', nom_de_la_ville' si connue, et '' sinon
+        Renvoie 'nom_de_la_ville' si connue, et '' sinon
         """
         if self.ville:
-            return f", {self.ville}"
+            return f"{self.ville}"
         else:
             return ""
     

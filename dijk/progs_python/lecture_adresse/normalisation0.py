@@ -3,7 +3,7 @@
 ### Programmes de normalisation qui n’utilisent pas les modèles (pour éviter les dépendances circulaires) ###
 
 import re
-from petites_fonctions import multi_remplace, LOG
+from dijk.progs_python.petites_fonctions import multi_remplace, LOG
 
 
 class AdresseMalFormée(Exception):
@@ -35,6 +35,7 @@ def normalise_adresse(c):
     """ Utilisé pour normaliser les adresses complètes, pour améliorer le cache.
     Actuellement c’est partie_commune(c)"""
     return partie_commune(c)
+
 
 def découpe_adresse(texte, bavard=0):
     """
@@ -68,6 +69,12 @@ DICO_REMP = {
     "lotissement": "∘"
 }
 
+def sansDoublesEspaces(c: str):
+    """
+    Renvoie la chaîne c où tous les facteurs de plusieurs espaces ont été remplacé par une seul espace.
+    """
+    return re.sub("  +", " ", c)
+
 
 def prétraitement_rue(rue):
     """
@@ -78,6 +85,7 @@ def prétraitement_rue(rue):
     """
     
     étape1 = partie_commune(rue)
+    
     # les chaînes suivantes seront remplacées par une espace.
     à_supprimer = [" du ", " de la ", " de l'", " de ", " des ", " d'", "  "]  # Mettre "de la " avant "de ". Ne pas oublier les espaces.
     regexp = "|".join(à_supprimer)
@@ -90,7 +98,12 @@ def prétraitement_rue(rue):
             fini = True
         else:
             res = suivant
-            
-    étape3 = multi_remplace(DICO_REMP, res)
-    return re.sub("[^a-z0-9αρβλ∘]", " ", étape3)
 
+    # Remplacer « rue », « avenue », etc par un symbole utf-8 pour qu’ils ne comptent que comme une faute de frappe.
+    étape3 = multi_remplace(DICO_REMP, res)
+
+    # Éliminer tous les caractères spéciaux
+    étape4 = re.sub("[^a-z0-9αρβλ∘]", " ", étape3)
+
+    # Et les espaces multiples ayant pu apparaître
+    return re.sub("  +", " ", étape4.strip())

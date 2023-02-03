@@ -347,7 +347,7 @@ def ville_of_nom_et_code_postal(nom: str, code: int):
     if len(essai1) == 1:
         return essai1.first()
     elif len(essai1) == 0:
-        raise RuntimeError("Ville pas trouvée. Avez-vous chargé la liste des villes avec communes.charge_villes() ?")
+        raise RuntimeError("Ville pas trouvée : {nom}. Avez-vous chargé la liste des villes avec communes.charge_villes() ?")
     else:
         return Ville.objects.get(nom_norm=partie_commune(nom), code=code)
 
