@@ -1,6 +1,6 @@
 {% extends "dijk/résultat_itinéraire_base.html" %}
 
-  {% load static %}
+{% load static %}
 {% load bootstrap5 %}
 {# Display django.contrib.messages as Bootstrap alerts #}
 {% bootstrap_messages %}
@@ -9,7 +9,9 @@
 
 <!-- La carte -->
 {% block carte %}
-  Voici l’itinéraire obtenu à l’aide de mes connaissances actuelles. Pour me corriger indiquer des points de passage en cliquant sur la carte.
+Voici l’itinéraire obtenu à l’aide de mes connaissances actuelles. Pour me corriger, indiquer des points de passage en cliquant sur la carte.</br>
+
+Cliquez sur un itinéraire pour sa trace gpx.</br>
   <!-- <ul> -->
   <!--   <li> indiquez des tronçons de rue à emprunter en cliquant sur la carte;</li> -->
   <!--   <li> indiquez des tronçons à éviter en controle-cliquant. -->
@@ -159,14 +161,16 @@
 
     
 
-<!-- Trajet retour -->
+Trajet retour
 {% block retour %}
-<form action = "{% url 'retour' %}" method="get">
-  {% bootstrap_form trajet_retour %}
-  {% buttons submit='Trajet retour' %}{% endbuttons %}
-</form>
+<!-- <form action = "{ % url 'retour' % }" method="get"> -->
+<!--   { % bootstrap_form trajet_retour % } -->
+<!--   { % buttons submit='Trajet retour' % }{ % endbuttons % } -->
+<!-- </form> -->
+
+<button type="button" class="btn btn-primary" id="btn_retour">Trajet retour</button>
 {% endblock %}
-<!-- fin trajet retour -->
+fin trajet retour
 
 
 
@@ -174,7 +178,7 @@
 {% block script %}
 <script>
   // Valeurs venant de Django à envoyer à js
-  const DONNÉES = JSON.parse("{{données|escapejs}}");
+  const DONNÉES = JSON.parse("{{données | escapejs}}");
   const URL_GPX = "{% url 'gpx'%}";
 </script>
 

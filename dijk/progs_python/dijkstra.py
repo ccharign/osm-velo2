@@ -1,6 +1,5 @@
 # -*- coding:utf-8 -*-
 
-
 from heapq import heappush, heappop  # pour faire du type List une structure de tas-min
 import copy
 from dijk.progs_python.params import LOG_PB, LOG
@@ -51,15 +50,6 @@ class Itinéraire():
             res.extend(a.géométrie())
         return res
 
-    # def vers_leaflet(self, nom_carte="laCarte"):
-    #     """
-    #     Sortie (str) : code js pour afficher l’itinéraire.
-    #     """
-    #     return f"""
-    #     L.polyline({[[lat,lon] for lon,lat in self.liste_coords()]}, {{color: '{self.couleur}'}}).addTo({nom_carte});
-    #     {" ".join(m for m in self.marqueurs)}
-    #     """
-
     def vers_js(self):
         """
         Sortie : dico sérialisable. Clefs : points, couleur, marqueurs
@@ -90,6 +80,7 @@ def heuristique(g, s, arrivée, correction_max):
     return min(g.d_euc(s, a) for a in arrivée)/correction_max
 
 
+
 ##############################################################################
 ############################## Dijkstra de base ##############################
 ##############################################################################
@@ -112,7 +103,8 @@ def itinéraire(g, départ: int, arrivée: int, p_détour: float, bavard=0):
     fini = False
     while len(àVisiter) > 0 and not fini:
         _, s = heappop(àVisiter)  # dist[s] == d(départ,s) d'après le lemme de Dijkstra
-        if s == arrivée: fini = True
+        if s == arrivée:
+            fini = True
         else:
             for t, l in g.voisins(s, p_détour):
                 if t not in dist or dist[s]+l < dist[t]:  # passer par s vaut le coup

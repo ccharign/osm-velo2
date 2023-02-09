@@ -45,11 +45,11 @@ def distance_euc(c1, c2):
     lon2, lat2 = c2
 
     # Conversion en radian
-    k=pi/180
-    lat1*=k
-    lat2*=k
-    lon1*=k
-    lon2*=k
+    k = pi/180
+    lat1 *= k
+    lat2 *= k
+    lon1 *= k
+    lon2 *= k
     #assert lat1>40 and lat2>40, f"Je voulais des coordonnées au format (lon, lat) et j’ai reçu {c1} et {c2}"
     dx = R_TERRE * cos(lat1) * (lon2-lon1)
     dy = R_TERRE * (lat2-lat1)

@@ -15,7 +15,12 @@ export function récupJson(texte){
 */
 export function envoieLeForm(form, étapes){
     form.toutes_les_étapes.value = JSON.stringify(
-	étapes.filter(é=>é)	// éliminer les null (étapes supprimées)
+	étapes.map(
+	    o =>{
+		if ("objet_initial" in o){return o.objet_initial;}
+		else {return o;}
+	    }
+	)
     );
     form.submit();
 }

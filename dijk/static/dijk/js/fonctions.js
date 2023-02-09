@@ -2,6 +2,11 @@ import * as Pll from "./pour_leaflet.js";
 
 // Fonctions diverses, qui ne requièrent pas de bib externe.
 
+export function dernierÉLém(tab){
+    return tab[tab.length-1];
+}
+
+
 // Lecture d’un json représantant un array avec gestion du cas ""
 export function tab_of_json(texte){
     if (texte){

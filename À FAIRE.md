@@ -1,6 +1,9 @@
 
 À FAIRE :
 
+js a besoin des coords de début et fin.
+Dans les objets de `toutes_les_étapes`, rajouter les coords. Qui sont dans itis
+
 
 Supprimer folium de carte_cycla pour pouvoir le supprimer définitivement.
 

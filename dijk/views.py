@@ -190,8 +190,9 @@ def trajet_retour(requête):
 
 
 
-
-### Fonction principale
+###########################
+### Fonction principale ###
+###########################
 
 
 @renvoieSurPageDErreur
@@ -221,6 +222,7 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_sommets, ét
     ))
     noms_étapes = données["noms_étapes"]
     rues_interdites = données["rues_interdites"]
+    
     # Mettre les traces gpx dans le dico de session, et les sortir de données
     for stat in données["stats"]:
         if "gpx" not in requête.session:
@@ -254,9 +256,9 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_sommets, ét
                     })
 
 
-    texte_étapes_inter = énumération_texte(noms_étapes[1:-1])
+    #texte_étapes_inter = énumération_texte(noms_étapes[1:-1])
 
-    # données à sérialiser pour envoyer à js
+    # données sérialisées pour envoyer à js
     pour_js = {
         "bbox": données["bbox"],
         "itis": [iti.vers_js() for iti in données["itinéraires"]]
@@ -266,12 +268,12 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_sommets, ét
                   "dijk/résultat_itinéraire_sans_carte.html",
                   {**données,
                    **{
-                       "texte_étapes_inter": texte_étapes_inter,
+                       #  "texte_étapes_inter": texte_étapes_inter,
                        "rues_interdites": énumération_texte(rues_interdites),
                        "post_préc": données,
                        "relance_rapide": forms.ToutCaché(initial=données),
                        "enregistrer_contrib": forms.EnregistrerContrib(initial=données),
-                       "trajet_retour": forms.ToutCaché(initial=données),
+                       # "trajet_retour": forms.ToutCaché(initial=données),
                        "fouine": requête.session.get("fouine", None),
                        "données": json.dumps(pour_js)
                    }

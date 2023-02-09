@@ -76,17 +76,16 @@ def itinéraire_of_étapes(étapes,
         étapes (listes d’étapes), départ et arrivée inclus.
         étapes_interdites (Étape list)
 
-    Sortie :
-    (stats : liste de dicos (légende, aide, id, p_détour, longueur, longueur ressentie, couleur, gpx) pour les itinéraires obtenus,
-     c : chemin avec le plus grand p_détour,
-     dép : nom du départ après éventuelle correction,
-     arr : idem pour l’arrivée,
-     nom_étapes,
-     nom_rues_interdites,
-     bbox,
-     itinéraires
-    )
+    Sortie : dico avec les clefs suivantes :
+       (stats : liste de dicos (légende, aide, id, p_détour, longueur, longueur ressentie, couleur, gpx) pour les itinéraires obtenus,
+        c : chemin avec le plus grand p_détour,
+        nom_étapes,
+        nom_rues_interdites,
+        bbox,
+        itinéraires: liste d’Itinéraire
+       )
     """
+    
     np = len(ps_détour)
     ps_détour.sort()  # Pour être sûr que l’éventuel 0 est en premier.
     stats = []

@@ -19,14 +19,23 @@
     
   <div class="col-md-9">
     <!-- La carte -->
-      {% block carte %}
-      {% endblock %}
+    {% block carte %}
+    {% endblock %}
+
+    <!-- Bouton relancer le calcul -->
+    {% block modifs_rapides %}
+    {% endblock %}
+
+    <!-- Trajet retour -->
+    {% block retour %}
+    {% endblock %}
+
   </div>
 
 
   <div class="col-sm-3">
       <!-- Statistiques -->
-      <h4> Longueurs et traces gps </h4>
+      <!-- <h4> Longueurs et traces gps </h4> -->
       {% block stats %}
       {% endblock %}
       
@@ -36,17 +45,13 @@
   </div>
 </div>
 
-<!-- Formulaire de relance simplifié -->
+
 <div class="row">
-  {% block modifs_rapides %}
-  {% endblock %}
+
 </div>
 <br><br>
 
 
-<!-- Trajet retour -->
-{% block retour %}
-{% endblock %}
 
 
 <!-- Formulaire complet pour relancer le calcul -->
