@@ -1,4 +1,5 @@
 import * as fonctions from "./fonctions.js";
+import * as É from "./étapes.js";
 import {latLng_of_texte, mon_icone} from "./pour_leaflet.js";
 
 // Pour la gestion des marqueurs sur la carte:
@@ -12,17 +13,14 @@ const bouton_suppr = '<button type="button" class="supprimeÉtape">Supprimer</bu
 
 
 
-export class Étape{
-
-    static R_terre = 6360000; // en mètres
-    static coeff_rad = Math.PI/180; // Multiplier par ceci pour passer en radians
+export class ÉtapeMarquée extends É.ÉtapeAvecCoords{
 
     // Le constructeur de base
     // toute_les_étapes est le tableau duquel supprimer l’objet créé le cas échéant.
     // numéro : l’indice de l’étape dans toutes_les_étapes.
-    // Les coords sont dans this.objet_initial.coords au format [lon, lat]
     constructor(o, numéro, carte, toutes_les_étapes){
-	this.objet_initial = o;
+	//this.objet_initial = o;
+	super(o, o.coords);
 	this.numéro = numéro;
 	this.carte = carte;
 	this.toutes_les_étapes = toutes_les_étapes;
@@ -31,40 +29,20 @@ export class Étape{
 
     // Constructeur prenant un objet LatLng
     static ofLatlng(ll, numéro, carte, toutes_les_étapes){
-	return new Étape(
-	    {coords: [ll.lng, ll.lat], type: "arête"},
+	return new ÉtapeMarquée(
+	    {coords: ll, type: "arête"},
 	    numéro,
 	    carte,
 	    toutes_les_étapes
 	);
     }
 
-    // Constructeur prenant un objet quelconque. Un objet Étape est renvoyé si présence d’un attribut « coords ».
-    // Sinon l’objet passé en arg est renvoyé tel quel.
-    // static ofObjet(o, numéro, carte, toutes_les_étapes){
-    // 	if ("coords" in o){
-    // 	    return new Étape(o);
-    // 	}else{
-    // 	    return o;
-    // 	}
-    // }
-
-
     // Change le numéro et màj l’étiquette
     setNuméro(i){
 	this.numéro=i;
 	this.marqueur.getTooltip().setContent(`${i}`);
-	// this.marqueur.closeTooltip();
-	// this.marqueur.bindTooltip(`${i}`);
     }
 
-    getLatlng(){
-	return { lng: this.objet_initial.coords[0], lat: this.objet_initial.coords[1]};
-    }
-
-    setLatlng(ll){
-	this.objet_initial.coords = [ll.lng, ll.lat];
-    }
 
     nvMarqueur(){
 	const marqueur = new L.marker( this.getLatlng(), {draggable: true, icon: mon_icone('green'), });
@@ -82,6 +60,7 @@ export class Étape{
 						()=>{
 						    this.carte.removeLayer(this.marqueur);
 						    this.toutes_les_étapes.splice(this.numéro,1);
+						    màjNumérosÉtapes(this.toutes_les_étapes, this.numéro);
 						}
 					       );
 		    }
@@ -97,45 +76,9 @@ export class Étape{
 	return marqueur;
     }
 
-    // Renvoie un objet contenant uniquement les données utiles au serveur.
-    versDjango(){
-	return this.objet_initial;
-    }
-
-    // Renvoie le vecteur de this vers autreÉtape. En mètres.
-    // vecteurVersCoords(lon2, lat2){
-    // 	const ll1 = this.getLatlng();
-    // 	const lat1 = ll1[0];
-    // 	const lon1 = ll1[1];
-    // 	const dx = Étape.R_terre * Math.cos(lat1) * (lon2-lon1);
-    // 	const dy = Étape.R_terre * (lat2-lat1);
-    // 	return new Vecteur(dx, dy);
-    // }
-
-    vecteurVers(autreÉtape){
-	return this.vecteurVersLatLng(autreÉtape.getLatlng());
-    }
-
-    vecteurVersLatLng(ll2){
-	const ll1 = this.getLatlng();
-	const dx = Étape.R_terre * Math.cos(ll1.lat*Math.PI/180) * (ll2.lng - ll1.lng)*Math.PI/180;
-	const dy = Étape.R_terre * (ll2.lat - ll1.lat)*Math.PI/180;
-	return new Vecteur(dx, dy);
-    }
 }
 
 
-class Vecteur{
-    
-    constructor(x, y){
-	this.x = x;
-	this.y = y;
-    }
-
-    produitScalaire(autre_vecteur){
-	return this.x*autre_vecteur.x + this.y*autre_vecteur.y;
-    }
-}
 
 
 
@@ -164,7 +107,12 @@ function numOùInsérer(latlng, toutes_les_étapes){
 }
 
 
+function màjNumérosÉtapes(étapes, début){
+    for (let k=début; k<étapes.length; k++){
+	étapes[k].setNuméro(k);
+    }
 
+}
 
 
 // Crée une nouvelle étape
@@ -175,15 +123,13 @@ export function nvÉtape(latlng, carte, toutes_les_étapes){
 
     const i = numOùInsérer(latlng, toutes_les_étapes);
     console.log(`Insertion en ${i}. Nombre d’étapes (avant insertion) ${toutes_les_étapes.length}`);
-    const rés = Étape.ofLatlng(latlng, i, carte, toutes_les_étapes);
+    const rés = ÉtapeMarquée.ofLatlng(latlng, i, carte, toutes_les_étapes);
 
     // Insertion dans la variable globale toutes_les_étapes
     toutes_les_étapes.splice(i, 0, rés);
     
     // màj des numéros des étapes suivante
-    for (let k=i+1; k<toutes_les_étapes.length; k++){
-	toutes_les_étapes[k].setNuméro(k);
-    }
+    màjNumérosÉtapes(toutes_les_étapes, i+1);
 
     return rés;
 }
@@ -212,25 +158,4 @@ export function nvÉtape(latlng, carte, toutes_les_étapes){
 //     // Ajout du champ hidden au formulaire
 //     // const form_relance = document.getElementById("relance_rapide");
 //     // fonctions.addHidden(form_relance, marker.champ_du_form, latlng.lng +","+ latlng.lat);
-// }
-
-
-
-// contenu des popup des marqueurs
-// function supprimeMarqueur(carte, marqueur, num_étape, toutes_les_étapes) {
-    
-//     const btn = document.querySelector(".remove");
-    
-//     btn.addEventListener("click", function () {
-// 	carte.removeLayer(marqueur);
-// 	toutes_les_étapes[num_étape]=null;
-//     });
-// }
-
-
-// // draged
-// function auDéplacement(e, num_étape, toutes_les_étapes) {
-//     let latlng = e.target.getLatLng();
-//     toutes_les_étapes[num_étape].coords = [latlng.lng, latlng.lat];
-//     //document.getElementById(marker.champ_du_form).value = marker.getLatLng().lng + "," + marker.getLatLng().lat;
 // }

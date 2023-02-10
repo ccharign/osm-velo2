@@ -203,13 +203,6 @@ class Rue(models.Model):
         return découpe_chaîne_de_nœuds(self.nœuds_à_découper)
 
     def pour_autocomplète(self, num, bis_ter):
-        #     def chaîne_à_renvoyer(adresse, ville=None, parenthèse=None):
-        # res = ";".join(tout[:-1] + [début+adresse])
-        # if parenthèse:
-        #     res += f" ({parenthèse})"
-        # if ville:
-        #     res += ", " + ville
-        # return res
         à_afficher = ""
         if num:
             à_afficher = f"{num} "
@@ -981,7 +974,6 @@ class GroupeTypeLieu(models.Model):
     def pour_js(self):
         """
         Sortie : dico sérialisable contenant les données nécessaires à la partie client. À savoir
-            - pour afficher un marqueur
             - pour construire l’objet ÉtapeLieu dans Django après retour via le formulaire.
         """
         return {
@@ -1116,7 +1108,13 @@ class Lieu(models.Model):
         Renvoie un dico sérialisable contenant les données pour créer un marqueur leaflet. C’est actuellement la même chose que self.toutes_les_infos().
         Envoyé pour l’affichage du résultat. Contient plus d’infos que pour_js qui est utilisé dans l’autocomplétion.
         """
-        return self.toutes_les_infos()
+        res = self.toutes_les_infos()
+        lon, lat = self.coords()
+        res["coords"] = {"lat": lat, "lng": lon}  # conventions de leaflet
+        res["nom"] = str(self)
+        res["type"] = "lieu"
+        res["pk"] = self.pk
+        return res
 
 
 

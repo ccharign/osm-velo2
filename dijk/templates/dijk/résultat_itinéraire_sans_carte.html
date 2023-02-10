@@ -45,7 +45,7 @@ Cliquez sur un itinéraire pour sa trace gpx.</br>
 </p>
 
 <p>
-  <form action = "{% url 'confirme nv chemin' %}" method="post">
+  <form id="enregistrer_chemin" action = "{% url 'confirme nv chemin' %}" method="post">
     {% csrf_token %}
     
     <ul>

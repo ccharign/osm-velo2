@@ -360,7 +360,9 @@ def vers_une_étape_par_un_sommet(g,
         if s in but_actuel:
             if len(étapes_restantes) == 0:
                 # On est arrivé au bout du chemin!
-                return chemin_reconstruit_par_un_sommet(g, s, toutes_les_étapes, précs_préds), d
+                iti, marqueurs = chemin_reconstruit_par_un_sommet(g, s, toutes_les_étapes, précs_préds)
+                marqueurs.pop()  # On enlève le marqueur d’arrivée
+                return (iti, marqueurs), d
             else:
                 atteints.add(s)
                 if len(atteints) == len(but_actuel):
@@ -412,6 +414,8 @@ def chemin_reconstruit_par_un_sommet(g, sa: int, étapes: list, précs_préds: l
         précs_préds, liste des tableaux préc correspondant aux étapes.
 
     Sortie: (liste des sommets de sa inclus jusqu’au début du chemin, liste des marqueurs)
+    Pas de marqueur pour la première étape.
+    Les marqueurs sont dans l’ordre de l’iti : marqueur d’arrivée à la fin.
 
     Effet de bord : étapes et précs_préds sont vidées.
     """
@@ -421,7 +425,7 @@ def chemin_reconstruit_par_un_sommet(g, sa: int, étapes: list, précs_préds: l
     marqueur = étape.marqueur_leaflet_of_sommet(sa)
     
     if len(précs_préds) == 0:
-        return [sa], [marqueur]
+        return [sa], []  # [marqueur]  # marqueur de début ignoré.
     
     else:
         préc = précs_préds.pop()

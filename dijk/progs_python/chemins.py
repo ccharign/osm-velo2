@@ -67,13 +67,15 @@ class Étape():
         
     def marqueur_leaflet(self, coords):
         """
-        Renvoie le code js pour créer un marqueur pour cette étape.
+        Renvoie le dico sérialisable pour envoyer à js.
         """
-        lon, lat = coords
-        res = self.infos()
-        res["lon"] = lon
-        res["lat"] = lat
-        return res
+        raise RuntimeError(f"Étape.marqueur_leaflet est une méthode abstraite. Le type de self est {type(self)}")
+        # lon, lat = coords
+        # res = self.infos()
+        # # res["lon"] = lon
+        # # res["lat"] = lat
+        # res["coords"] = {"lat": lat, "lng": lon}
+        # return res
 
     
     def marqueur_leaflet_of_sommet(self, s: int):
@@ -127,17 +129,9 @@ class Étape():
             - sinon, renvoie une ÉtapeAdresse en lisant d[champ]
 
         Effet:
-            dans le cas d["données_cachées_"+champ]["type"] == rue, et num présent, on complète d avec les coords de l’adresse.
+            dans le cas d["type"] == rue, et num présent, on complète d avec les coords de l’adresse.
         """
-        
-        # LOG(f"of_dico lancé. d: {d},\n champ:{champ}", bavard=1)
-        # ch_coords = "coords_" + champ
-
-        # if d["données_cachées_"+champ]:
-        #     données_supp = json.loads(d["données_cachées_"+champ])
-        # else:
-        #     données_supp = {}
-
+        assert isinstance(d, dict)
 
         if "type" in d:
             if d["type"] == "lieu":
@@ -151,9 +145,8 @@ class Étape():
                 res = ÉtapeAdresse.of_adresse(g, ad, bavard=bavard)
                 # ad.coords a pu être rempli par la ligne ci-dessus
                 if ad.coords and not d["coords"]:
-                    print("Coordonnées trouvées dans ad. Je les enregistre dans d")
+                    print("Coordonnées trouvées dans ad. Je les enregistre dans d.")
                     d["coords"] = ad.coords
-                    # d["données_cachées_"+champ] = json.dumps(données_supp)
                 return res
 
             elif d["type"] == "gtl":
@@ -163,16 +156,11 @@ class Étape():
             elif d["type"] == "arête":
                 # ÉtapeArête
                 coords = d["coords"]
-                LOG(f"Coords trouvées dans le dico : {coords}, je vais renvoyer un ÉtapeArête", bavard=bavard)
-                # nom, bis_ter, nom, ville = découpe_adresse(d[champ])
-                # ad = Adresse()
-                # ad.rue_initiale = nom
-                # ad.ville = ville
                 return ÉtapeArête.of_coords(coords, g, z_d)
 
             else:
                 # ÉtapeAdresse
-                LOG("Ni lieu ni arête détecté : je renvoie une ÉtapeAdresse")
+                LOG("Type non détecté : je renvoie une ÉtapeAdresse")
                 return ÉtapeAdresse.of_texte(d["adresse"], g, z_d)
 
     
@@ -215,6 +203,7 @@ class ÉtapeAdresse(Étape):
             res.nœuds = set(nœuds_de_la_rue)
         return res
 
+    
     @classmethod
     def of_texte(cls, texte, g, z_d, bavard=0):
         """
@@ -305,13 +294,14 @@ class ÉtapeArête(Étape):
 
     def pour_js(self):
         """
-        NB: pas de méthode pour_js dans la class Arête, car je veux disposer de coords_ini. Ce dernier a été créé par js lors d’u clic sur la carte.
+        NB: pas de méthode pour_js dans la classe Arête, car je veux disposer de coords_ini. Ce dernier a été créé par js lors du clic sur la carte.
         """
+        lon, lat = self.coords_ini
         return {
             "type": "arête",
             "pk": self.pk,
             "nom": self.nom,
-            "coords": self.coords_ini
+            "coords": {"lat": lat, "lng": lon}
         }
 
 
@@ -336,14 +326,17 @@ class ÉtapeLieu(Étape):
     def __str__(self):
         return str(self.lieu)
 
+    def pour_js(self):
+        return self.lieu.pour_marqueur_leaflet()
+
     def marqueur_leaflet_of_sommet(self, s):
         """
-        Rema : comme ce type d’étape n’a qu’un seul lieu, le paramètre s est  ici inutile.
+        Rema : comme ce type d’étape n’a qu’un seul lieu, le paramètre s est ici inutile.
         Il est là pour compatibilité avec la méthode éponyme des autres sous-classes d’Étape.
         """
         return self.lieu.pour_marqueur_leaflet()
 
-    
+
 
 class ÉtapeEnsLieux(Étape):
     """

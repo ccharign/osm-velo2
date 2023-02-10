@@ -101,43 +101,36 @@ for (let iti of DONNÉES.itis){
 // Récupération des étapes //
 //////////////////////////////
 
+function tabVersLatlng(tab){
+    const lat = tab[0];
+    const lng = tab[1];
+    return {lat: lat, lng: lng};
+}
 
 toutes_les_étapes = Pr.récupJson(form_recherche.toutes_les_étapes.value);
 
 // Ajout de coords départ et arrivée
-let iti_vert = dernierÉlém(DONNÉES.itis); // On se base sur l’iti avec le plus grand p_détour
-toutes_les_étapes[0].coords = iti_vert.points[0];
-dernierÉlém(toutes_les_étapes).coords = dernierÉlém(iti_vert.points);
+const iti_vert = dernierÉlém(DONNÉES.itis); // On se base sur l’iti avec le plus grand p_détour
+toutes_les_étapes[0].coords = tabVersLatlng(iti_vert.points[0]);
+dernierÉlém(toutes_les_étapes).coords = tabVersLatlng(dernierÉlém(iti_vert.points));
 
-// Création des objets Étape.
+// Création des objets ÉtapeMarquée.
 // Ceci crée aussi les marqueurs
 for (let i=0; i<toutes_les_étapes.length; i++){
-    toutes_les_étapes[i] = new Marq.Étape(toutes_les_étapes[i], i, laCarte, toutes_les_étapes);
+    toutes_les_étapes[i] = new Marq.ÉtapeMarquée(toutes_les_étapes[i], i, laCarte, toutes_les_étapes);
 }
 
-
-    
-
-
-
-
-// // Recréer les marqueurs
-// for (let i=1; i<toutes_les_étapes.length-1; i++){
-//     let coords = toutes_les_étapes[i].coords;
-//     if (coords){
-// 	const latlng = [coords[1], coords[0]];
-// 	Marq.nvÉtape(latlng, laCarte, i, toutes_les_étapes);
-//     }else{
-// 	console.log("étape sans coords : " + toutes_les_étapes[i].nom);
-//     }
-// }
-
+Pr.màjToutes_les_étapes(
+    document.getElementById("enregistrer_chemin"),
+    toutes_les_étapes);
+console.log(toutes_les_étapes);
+   
 
 
 	
-////////////////////////////////////////
+/////////////////////////////////
 // Gérer les marqueurs //////////
-////////////////////////////////////////
+/////////////////////////////////
 
 laCarte.on("click",
 	   e => {

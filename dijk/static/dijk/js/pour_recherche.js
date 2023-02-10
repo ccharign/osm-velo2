@@ -9,18 +9,19 @@ export function récupJson(texte){
     }
 }
 
+// Remplit le champ toutes_les_étapes du form avec le json de étapes
+export function màjToutes_les_étapes(form, étapes){
+    form.toutes_les_étapes.value = JSON.stringify(
+	étapes.map(
+	    o => {return o.versDjango();}
+	)
+    );
+}
 
 /**
    Transforme les étapes en json et enregistre le tout dans le form, champ toutes_les_étapes puis soumet le form
 */
 export function envoieLeForm(form, étapes){
-    form.toutes_les_étapes.value = JSON.stringify(
-	étapes.map(
-	    o =>{
-		if ("objet_initial" in o){return o.objet_initial;}
-		else {return o;}
-	    }
-	)
-    );
+    màjToutes_les_étapes(form, étapes);
     form.submit();
 }

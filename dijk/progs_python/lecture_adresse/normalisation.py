@@ -233,32 +233,40 @@ class Adresse():
       - rés_nominatim : résultat de cherche_lieu s’il y a eu un appel à cette fonction.
       - coords : initialement None, sera rempli par la fonction recup_nœuds.un_seul_nœud le cas échéant.
       - amen (bool): indique si c'est l'adresse d'un «amenity» de la base.
+      - pk_rue (int ou None): pk de la rue
     """
 
     def __init__(self):
         self.rue_initiale = None
         self.coords = None
         self.num = None
+        self.bis_ter = ""
         self.rue_osm = None
         self.rue_norm = None
         self.ville = None
         self.pays = None
         self.rés_nominatim = None
         self.amen = False
+        self.pk_rue = None
 
         
     @classmethod
     def of_pk_rue(cls, d: dict):
         """
         Entrée:
-            d["pk"], id de la rue dans base.
+            dico d dont les clefs sont:
+              "pk", id de la rue dans base.
+              'bis_ter' (facultatif)
+              'num' (facultatif)
+              'coords'
         """
         res = cls()
+        res.pk_rue = d["pk"]
         res.rue_osm = Rue.objects.get(pk=d["pk"])
-        res.num = str(d["num"])
-        bis_ter = d["bis_ter"]
-        if bis_ter:
-            res.nom += " " + bis_ter.strip()
+        res.num = d.get("num", None)
+        res.bis_ter = d.get("bis_ter", "")
+        if res.bis_ter:
+            res.nom += " " + res.bis_ter.strip()
         res.ville = res.rue_osm.ville
         res.coords = d["coords"]
         return res
@@ -345,15 +353,29 @@ class Adresse():
         
     def __str__(self):
         """
-        Utilisé en particulier pour l’enregistrement dans chemins.csv, pour l’affichage pour vérification à l’utilisateur, et pour la recherche de coordonnése
+        Utilisé en particulier pour l’enregistrement dans la base, pour l’affichage pour vérification à l’utilisateur, et pour la recherche de coordonnées
         """
         return f"{self.num_ou_pas()}{self.rue()}, {self.ville}"
 
+    
     def pour_js(self):
-        return {
-            "type": "adresse",
-            "adresse": str(self)
-        }
+        if self.pk_rue:
+            res = {
+                "type": "rue",
+                "pk": self.pk_rue,
+                "num": self.num_ou_pas(),
+                "bis_ter": self.bis_ter
+            }
+        else:
+            res = {
+                "type": "adresse",
+            }
+        res["adresse"] = str(self)
+        if self.coords:
+            lon, lat = self.coords
+            res["coords"] = {"lng": lon, "lat": lat}
+        return res
+    
     
     def pour_nominatim(self):
         """

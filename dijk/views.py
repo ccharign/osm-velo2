@@ -26,7 +26,6 @@ from .progs_python.utils import dessine_cycla, itinéraire_of_étapes
 
 from .progs_python.graphe_par_django import Graphe_django
 
-
 from .models import Chemin_d, Zone
 
 import dijk.progs_python.autoComplétion as ac

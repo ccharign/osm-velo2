@@ -133,12 +133,13 @@ def itinéraire_of_étapes(étapes,
             s["p_détour_effectif"] = int((s["longueur"]/longueur_ch_direct - 1.) * 100.)
 
     # Ajout de marqueurs pour le début et la fin de l’itinéraire avec le plus grand p_détour
-    coords_départ = g.coords_of_id_osm(itinéraires[-1].liste_sommets[0])  # coords du début de l’iti avec le plus grand p_détour
-    coords_arrivée = g.coords_of_id_osm(itinéraires[-1].liste_sommets[-1])
-    itinéraires[-1].marqueurs = [
-        étapes[0].marqueur_leaflet(coords_départ),
-        étapes[-1].marqueur_leaflet(coords_arrivée)
-    ]
+    # -> délégué au client maintenant
+    # coords_départ = g.coords_of_id_osm(itinéraires[-1].liste_sommets[0])  # coords du début de l’iti avec le plus grand p_détour
+    # coords_arrivée = g.coords_of_id_osm(itinéraires[-1].liste_sommets[-1])
+    # itinéraires[-1].marqueurs = [
+    #     étapes[0].marqueur_leaflet(coords_départ),
+    #     étapes[-1].marqueur_leaflet(coords_arrivée)
+    # ]
     
     return {"stats": stats,
             "chemin": c,
