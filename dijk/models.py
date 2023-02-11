@@ -626,6 +626,7 @@ class Zone(models.Model):
     nom = models.CharField(max_length=100, unique=True)
     ville_défaut = models.ForeignKey(Ville, on_delete=models.CASCADE)
     arbre_arêtes = models.ForeignKey(ArbreArête, on_delete=models.SET_NULL, null=True)
+    inclue_dans = models.ForeignKey("self", related_name="related_manager_sous_zones", blank=True, null=True, default=None, on_delete=models.SET_NULL)
 
     class Meta:
         ordering = ["nom"]

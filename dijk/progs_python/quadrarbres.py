@@ -476,6 +476,7 @@ class QuadrArbreArête(Quadrarbre):
     def sauv_dans_base(self, nv_nœud, nv_segment):
         """
         Effet : sauve l’arbre dans la base.
+        Sortie : racine de l’objet mo.ArbreArête
         """
         print("Création des objets")
         feuilles, nœuds = self.vers_django(nv_nœud, nv_segment, None)
@@ -498,5 +499,6 @@ class QuadrArbreArête(Quadrarbre):
             
         print("Sauvegarde des segments d’arêtes des feuilles")
         sauv_objets_par_lots(feuilles)
+        return nœuds[0][0]
     
 

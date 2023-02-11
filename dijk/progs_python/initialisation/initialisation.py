@@ -16,8 +16,10 @@ from django.db.models import Count
 from dijk.progs_python.params import DONNÉES, RACINE_PROJET
 from initialisation.noeuds_des_rues import extrait_nœuds_des_rues
 from lecture_adresse.normalisation import arbre_rue_dune_ville, partie_commune, prétraitement_rue, normalise_rue
+import networkx as nx
 from graphe_par_networkx import Graphe_nx
-from petites_fonctions import chrono, LOG, supprime_objets_par_lots
+from petites_fonctions import chrono, LOG, supprime_objets_par_lots, paires, distance_euc
+import dijk.progs_python.recup_donnees as rd
 
 import initialisation.vers_django as vd
 from quadrarbres import QuadrArbreSommet, QuadrArbreArête
@@ -26,9 +28,9 @@ from initialisation.amenities import charge_lieux_of_ville
 
 
 
-##########################################################################
-### Fonctions pour (ré)initialiser ou ajouter une nouvelle ville ou zone.
-################################################################################
+#############################################################################
+### Fonctions pour (ré)initialiser ou ajouter une nouvelle ville ou zone. ###
+#############################################################################
 
 
 
@@ -66,6 +68,26 @@ def quadArbreArêtesDeLaBase():
     arbre.sauv_dans_base(ArbreArête, SegmentArête)
 
     
+def créeQuadArbreArêtesDeZone(z_d: mo.Zone, bavard=0) -> ArbreArête:
+    """
+    Crée le quadArbre de la plus grande zone contenant z_d, l’enregistre dans la base, et l’associe à z_d.
+    """
+    print(f"(Arbre des arêtes de la zone {z_d})")
+    # Cas récursif
+    if z_d.inclue_dans:
+        res = créeQuadArbreArêtesDeZone(z_d.inclue_dans, bavard=bavard)
+        z_d.arbre_arêtes = res
+        return res
+
+    # Cas de base
+    else:
+        qaa = QuadrArbreArête.of_list_darêtes_d(z_d.arêtes())
+        res = qaa.sauv_dans_base(ArbreArête, SegmentArête)
+        z_d.arbre_arêtes = res
+        return res
+
+    
+    
 def quadarbre_of_arêtes(arêtes):
     """
     Entrée : itérable d’Arêtes
@@ -85,10 +107,6 @@ def quadArbreArêtesDeVille(v_d: mo.Ville):
     """
     return QuadrArbreArête.of_list_darêtes_d(v_d.arêtes())
 
-
-def quadArbreArêtesDeZone(z_d: mo.Zone, bavard=0):
-    print(f"(Arbre des arêtes de la zone {z_d})")
-    return QuadrArbreArête.of_list_darêtes_d(z_d.arêtes())
 
 
 def quadArbreArêtesDeToutesLesZones():
@@ -166,16 +184,21 @@ def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
         {"city": f"{ville_d.nom_complet}", "postcode": ville_d.code, "country": pays},
         network_type="all",  # Tout sauf private
         retain_all=False,  # Sinon il peut y avoir des enclaves déconnectées car accessibles seulement par chemin privé (ex: CSTJF)
-        buffer_dist=500  # Marge de 500m
+        buffer_dist=500,  # Marge de 500m
+        truncate_by_edge=True,   # garde les arêtes dont une extrémité est dans la zone.
+        simplify=False,          # On simplifiera après places_en_cliques
     )
     print("\n\nRécupération du graphe exact:\n")
     gr_strict = osmnx.graph_from_place(
         {"city": f"{ville_d.nom_complet}", "postcode": ville_d.code, "country": pays},
-        network_type="all", retain_all=True
+        network_type="all",
+        retain_all=True,
+        simplify=False,
     )
 
     g = Graphe_nx(gr_avec_marge)
-
+    places_en_cliques(g, ville_d)
+    osmnx.simplify_graph(g.multidigraphe)
 
     ## Noms des villes ajouté dans g
     for n in gr_strict:
@@ -216,6 +239,42 @@ def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
     )
     return crées, màj
 
+
+def remplaceArête(g: Graphe_nx, s, t, nom: str):
+    """
+    Supprime toutes les arêtes entre s et t et entre t et s et les remplace par une ligne droite dans chaque sens, avec le tag « highway: pedestrian »
+    """
+    d = g.d_euc(s, t)
+    gn = g.multidigraphe
+    if t in gn[s]:
+        for _ in range(len(gn[s][t])):
+            gn.remove_edge(s, t)
+    if s in gn[s]:
+        for _ in range(len(gn[t][s])):
+            gn.remove_edge(t, s)
+    gn.add_edge(s, t, length=d, name=nom, highway="pedestrian")
+    gn.add_edge(t, s, length=d, name=nom, highway="pedestrian")
+    
+
+def places_en_cliques(g: Graphe_nx, ville):
+    rés_overpass = rd.zones_piétonnes(ville.bbox())
+    places = [
+        (i, [s for s in truc._node_ids if s in g])
+        for i, truc in enumerate(rés_overpass.ways)  # + rés_overpass.relations
+    ]
+    places = [(i, p) for (i, p) in places if len(p)>1]  # Aucun ou un seul nœud ça ne sert à rien.
+
+    nb = 0
+    for i, place in places:
+        print(f"Mise en clique de {rés_overpass.ways[i].tags}\n")
+        nom = rés_overpass.ways[i].tags.get("name", "")
+        for (s, t) in paires(place):
+            nb += 1
+            remplaceArête(g, s, t, nom)
+    print(f"{nb} arêtes ajoutées")
+        
+    
+    
 
 def ajoute_ville(nom: str, code: int, nom_zone: str, force=False, pays="France", bavard=0):
     """
@@ -438,7 +497,7 @@ def crée_zone(liste_villes_str, zone: str,
             villes_modifiées.append(v_d)
 
     # Arbre quad des arêtes
-    arbre_a = quadArbreArêtesDeZone(z_d, bavard=bavard)
+    arbre_a = créeQuadArbreArêtesDeZone(z_d, bavard=bavard)
     
 
     # Lieux (besoin de l’arbre des arêtes)
@@ -448,9 +507,6 @@ def crée_zone(liste_villes_str, zone: str,
         print("Problème sur les villes :")
         pprint(échec_lieux)
 
-
-    # ArbreArête de la base
-    quadArbreArêtesDeLaBase()
 
     print("(crée_zone) fini!")
 

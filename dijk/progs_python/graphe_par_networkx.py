@@ -26,7 +26,7 @@ class Graphe_nx():
         villes_of_nœud : dictionnaire nœud -> liste des villes
     """
     
-    def __init__(self, g):
+    def __init__(self, g: nx.MultiDiGraph):
         """ Entrée : g, MultiDiGraph de networkx"""
         self.multidigraphe = g
         print("Calcul de la version sans multiarêtes")
@@ -64,15 +64,15 @@ class Graphe_nx():
         Obtenues dans l’attribut geometry de l’arête.
         """
         
-        arête = min((a for _,a in self.multidigraphe[s][t].items()), key=lambda a: a["length"] )
+        arête = min((a for _, a in self.multidigraphe[s][t].items()), key=lambda a: a["length"])
         if "name" in arête:
-            nom=arête["name"]
+            nom = arête["name"]
         else:
-            nom=None
+            nom = None
         return arête["geometry"].coords, nom
     
 
-    def nom_arête(self,s,t):
+    def nom_arête(self, s, t):
         try:
             return self.digraphe[s][t]["name"]
         except Exception as e:
@@ -84,12 +84,14 @@ class Graphe_nx():
         """
         return self.multidigraphe.nodes[n]["x"], self.multidigraphe.nodes[n]["y"]
 
+    def d_euc(self, s, t):
+        return distance_euc(self.coords_of_nœud(s), self.coords_of_nœud(t))
 
     def simplifie(self):
         """
         Supprime tous les attributs des arêtes, hormis 'length', 'name' et 'geometry'
         """
-        à_garder=["length", "name", "geometry"]
+        à_garder = ["length", "name", "geometry"]
         for s in self.multidigraphe.nodes:
             for t in self.multidigraphe[s]:
                 for i in self.multidigraphe[s][t]:
@@ -105,13 +107,11 @@ class Graphe_nx():
         res = []
         for a in self.multidigraphe[s][t].values():
             if "name" in a:
-                piétonne = a.get("highway")=="pedestrian"
+                piétonne = a.get("highway") == "pedestrian"
                 if isinstance(a["name"], str):
                     res.append((a["name"], piétonne and "place" in a["name"].lower()))
-                else:
-                    res.extend( (r, piétonne and "place" in r.lower()) for r in a["name"])
-        if len(res)==0:
-            LOG(f"L’arête {(s, t)} n’a pas de nom. Voici ses données\n {self.digraphe[s][t]}", bavard=bavard)
+                elif a["name"]:
+                    res.extend((r, piétonne and "place" in r.lower()) for r in a["name"])
         return res
 
     ### Remplacé par villes_dun_sommet
@@ -161,7 +161,7 @@ class Graphe_nx():
         """
         Crée un csv avec la liste des arêtes et leurs longueurs.
         """
-        with open(chemin,"w") as sortie:
+        with open(chemin, "w") as sortie:
             for s in self.digraphe.nodes:
                 for t, données in self.digraphe[s].items():
                     sortie.write(f"{s},{t},{données['length']}\n")

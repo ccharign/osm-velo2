@@ -93,6 +93,14 @@ def milieu(c1, c2):
 ### Itérateurs ###
 ##################
 
+
+def paires(tab):
+    """ Itérateur sur les paires de t (et pas les couples!)"""
+    n = len(tab)
+    for i in range(n):
+        for j in range(i+1, n):
+            yield(tab[i], tab[j])
+        
     
 def deuxConséc(t):
     """ Renvoie un itérateur sur les couples d'éléments consécutifs de t."""
