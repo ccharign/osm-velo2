@@ -1,7 +1,7 @@
 import * as Pr from "./pour_recherche.js";
 import * as AC from "./autoComplete.js";
 import * as Pll from "./pour_leaflet.js";
-import * as É from "./étapes.js";
+import * as É from "./etapes.js";
 
 
 // Spécifique à la recherche initiale:

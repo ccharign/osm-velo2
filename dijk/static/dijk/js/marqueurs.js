@@ -1,5 +1,5 @@
 import * as fonctions from "./fonctions.js";
-import * as É from "./étapes.js";
+import * as É from "./etapes.js";
 import {latLng_of_texte, mon_icone} from "./pour_leaflet.js";
 
 // Pour la gestion des marqueurs sur la carte:
