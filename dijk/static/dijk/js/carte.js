@@ -97,8 +97,15 @@ for (let i=0; i<toutes_les_étapes.length; i++){
 }
 
 
-if (DONNÉES.form_enregistrer_présent){
-    // Le formulaire « Enregistrer contrib » est affiché, remplissons son champ toutes_les_étapes
+
+////////////////////////////////////////////////////
+/////// Formulaire « enregistrer contribution » ////
+////////////////////////////////////////////////////
+
+
+if (DONNÉES.mettre_form_enregistrer){
+
+    document.querySelector("#form_enregistrer").hidden=false;
     Pr.màjToutes_les_étapes(
 	document.getElementById("enregistrer_chemin"),
 	toutes_les_étapes

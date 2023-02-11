@@ -227,6 +227,8 @@ def ajoute_ville(nom: str, code: int, nom_zone: str, force=False, pays="France",
     zone_d = Zone.objects.get(nom=nom_zone)
     ville_d = ville_of_nom_et_code_postal(nom, code)
     charge_ville(ville_d, zone_d, force=force, pays=pays, bavard=bavard)
+    print("Recréation de l’arbre des arêtes")
+    quadArbreArêtesDeLaBase()
 
 
 def charge_ville(ville_d, zone_d,
