@@ -29,30 +29,6 @@ function dernierÉlém(tab){
 }
 
 
-
-// Étapes intermédiaires
-
-
-// // On rajoute le départ devant
-// if (form_recherche["données_cachées_départ"].length > 1){
-//     toutes_les_étapes.unshift(JSON.parse(form_recherche["données_cachées_départ"].value));
-// }else{
-//     console.log("Pas d’autocomplétion utilisée pour le départ");
-//     toutes_les_étapes.unshift(form_recherche["départ"].value);
-// }
-
-
-// // On rajoute l’arrivée à la fin
-// if (form_recherche["données_cachées_arrivée"]){
-//     toutes_les_étapes.unshift(JSON.parse(form_recherche["données_cachées_arrivée"].value));
-// }else{
-//     console.log("Pas d’autocomplétion utilisée pour l’arrivée");
-//     toutes_les_étapes.unshift(form_recherche["arrivée"].value);
-// }
-
-
-
-
 //////////////
 // La carte //
 //////////////
@@ -66,7 +42,7 @@ function onClicSurIti(e, pourcentage_détour){
 }
 
 
-// Dans les itis, on a les marqueurs de début et fin (à enlever à terme...) ainsi que les étapes « passer par »
+// Dans les itis, on a les marqueurs des étapes « passer par » (qui peuvent varier selon l’iti)
 /**
 @param{iti} objet de clefs 
 Affiche l’itinéraire sur la carte indiqué.
@@ -120,10 +96,14 @@ for (let i=0; i<toutes_les_étapes.length; i++){
     toutes_les_étapes[i] = new Marq.ÉtapeMarquée(toutes_les_étapes[i], i, laCarte, toutes_les_étapes);
 }
 
-Pr.màjToutes_les_étapes(
-    document.getElementById("enregistrer_chemin"),
-    toutes_les_étapes);
-console.log(toutes_les_étapes);
+
+if (DONNÉES.form_enregistrer_présent){
+    // Le formulaire « Enregistrer contrib » est affiché, remplissons son champ toutes_les_étapes
+    Pr.màjToutes_les_étapes(
+	document.getElementById("enregistrer_chemin"),
+	toutes_les_étapes
+    );
+}
    
 
 

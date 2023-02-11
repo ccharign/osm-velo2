@@ -422,7 +422,7 @@ def chemin_reconstruit_par_un_sommet(g, sa: int, étapes: list, précs_préds: l
     
     assert len(étapes) == len(précs_préds)+1
     étape = étapes.pop()
-    marqueur = étape.marqueur_leaflet_of_sommet(sa)
+    marqueur = étape.pour_marqueur_of_sommet_osm(sa)
     
     if len(précs_préds) == 0:
         return [sa], []  # [marqueur]  # marqueur de début ignoré.

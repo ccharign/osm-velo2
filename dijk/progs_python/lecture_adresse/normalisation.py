@@ -358,7 +358,7 @@ class Adresse():
         return f"{self.num_ou_pas()}{self.rue()}, {self.ville}"
 
     
-    def pour_js(self):
+    def pour_marqueur(self):
         if self.pk_rue:
             res = {
                 "type": "rue",

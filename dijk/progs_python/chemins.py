@@ -13,6 +13,7 @@ NB: ce sont les chemins qui sont enregistrés dans la base.
 
 import re
 from pprint import pprint
+import abc
 
 from dijk.models import Chemin_d, Arête, Lieu, Sommet, GroupeTypeLieu
 
@@ -36,7 +37,7 @@ class ÉchecChemin(Exception):
     pass
 
 
-class Étape():
+class Étape(abc.ABC):
     """
     Classe mère pour des étapes utilisables dans les variantes de Dijkstra.
     """
@@ -64,8 +65,9 @@ class Étape():
         res = {"nom": str(self)}
         return res
 
-        
-    def marqueur_leaflet(self, coords):
+    
+    @abc.abstractmethod
+    def pour_marqueur(self):
         """
         Renvoie le dico sérialisable pour envoyer à js.
         """
@@ -77,13 +79,22 @@ class Étape():
         # res["coords"] = {"lat": lat, "lng": lon}
         # return res
 
+        
+    def pour_marqueur_of_sommet_osm(self, s: int):
+        """
+        Renvoie le dico pour marqueur, avec en plus les coords fixées à celles du sommet dont l’id osm est passé en arg.
+        """
+        lon, lat = Sommet.objects.get(id_osm=s).coords()
+        rés = self.pour_marqueur()
+        rés["coords"] = {"lat": lat, "lng": lon}
+        return rés
     
-    def marqueur_leaflet_of_sommet(self, s: int):
-        """
-        Renvoie le code js pour créer un marqueur pour cette étape. Marqueur situé sur le sommet s.
-        """
-        s_d = Sommet.objects.get(id_osm=s)
-        return self.marqueur_leaflet(s_d.coords())
+    # def marqueur_leaflet_of_sommet(self, s: int):
+    #     """
+    #     Renvoie le code js pour créer un marqueur pour cette étape. Marqueur situé sur le sommet s.
+    #     """
+    #     s_d = Sommet.objects.get(id_osm=s)
+    #     return self.marqueur_leaflet(s_d.coords())
     
 
     @classmethod
@@ -219,8 +230,8 @@ class ÉtapeAdresse(Étape):
     def infos(self):
         return {"adresse": str(self.adresse)}
 
-    def pour_js(self):
-        return self.adresse.pour_js()
+    def pour_marqueur(self):
+        return self.adresse.pour_marqueur()
 
 
 
@@ -292,9 +303,9 @@ class ÉtapeArête(Étape):
         return f"{self.nom}"
 
 
-    def pour_js(self):
+    def pour_marqueur(self):
         """
-        NB: pas de méthode pour_js dans la classe Arête, car je veux disposer de coords_ini. Ce dernier a été créé par js lors du clic sur la carte.
+        NB: pas de méthode pour_marqueur dans la classe Arête, car je veux disposer de coords_ini. Ce dernier a été créé par js lors du clic sur la carte.
         """
         lon, lat = self.coords_ini
         return {
@@ -326,15 +337,16 @@ class ÉtapeLieu(Étape):
     def __str__(self):
         return str(self.lieu)
 
-    def pour_js(self):
-        return self.lieu.pour_marqueur_leaflet()
+    def pour_marqueur(self):
+        return self.lieu.pour_marqueur()
 
-    def marqueur_leaflet_of_sommet(self, s):
+    def pour_marqueur_of_sommet_osm(self, s: int):
         """
         Rema : comme ce type d’étape n’a qu’un seul lieu, le paramètre s est ici inutile.
         Il est là pour compatibilité avec la méthode éponyme des autres sous-classes d’Étape.
+        Du coup, le marqueur sera placé sur le lieu, et non sur le sommet atteint.
         """
-        return self.lieu.pour_marqueur_leaflet()
+        return self.lieu.pour_marqueur()
 
 
 
@@ -358,8 +370,11 @@ class ÉtapeEnsLieux(Étape):
         assert self.nœuds, f"Aucun lieu trouvé pour {gtl}!"
     
  
-    def marqueur_leaflet_of_sommet(self, s):
-        return self.nœuds[s].pour_marqueur_leaflet()
+    def pour_marqueur_of_sommet_osm(self, s: int):
+        """
+        Renvoie le marqueur du lieu correspondant à s.
+        """
+        return self.nœuds[s].pour_marqueur()
 
 
     @classmethod
@@ -369,10 +384,12 @@ class ÉtapeEnsLieux(Étape):
         """
         return cls(GroupeTypeLieu.objects.get(pk=pk), z_d)
 
+    def pour_marqueur(self):
+        raise ValueError("Pas de marqueur possible pour une ÉtapeEnsLieux!")
     
-    def pour_js(self):
-        assert False, "Pas supposé être utilisé actuellement"
-        return self.gtl.pour_js()
+    # def pour_js(self):
+    #     assert False, "Pas supposé être utilisé actuellement"
+    #     return self.gtl.pour_js()
     
 
 
@@ -596,24 +613,3 @@ class Chemin():
         else:
             à_garder = self.étapes[0:-1:len(self.étapes)//n_étapes] + [self.étapes[-1]]
             return ";".join(map(str, à_garder))
-
-
-
-# def lecture_étape(c):
-#     """ Entrée : chaîne de caractère représentant une étape.
-#         Sortie : nom de rue, ville, pays
-#     """
-#     e = re.compile("([^()]*)(\(.*\))")  # Un texte puis un texte entre parenthèses
-#     essai1 = re.findall(e, c)
-#     if len(essai1) > 0:
-#         rue, ville = essai1[0]
-#         return rue.strip(), ville[1:-1].strip()  # retirer les parenthèses
-#     else:
-#         f = re.compile("^[^()]*$")  # Pas de parenthèse du tout
-#         if re.findall(f, c):
-#             return c.strip(), VILLE_DÉFAUT
-#         else:
-#             raise ValueError(f"chaîne pas correcte : {c}")
-
-
-

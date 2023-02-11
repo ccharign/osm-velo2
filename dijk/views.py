@@ -244,15 +244,15 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_sommets, ét
         ))
 
     # Ce dico sera envoyé au gabarit sous le nom de 'post_préc'
-    données.update({"étapes": ";".join(noms_étapes[1:-1]),
-                    "rues_interdites": ";".join(rues_interdites),
+    données.update({#"étapes": ";".join(noms_étapes[1:-1]),
+                    #"rues_interdites": ";".join(rues_interdites),
                     "pourcentage_détour": ";".join(map(lambda p: str(int(p*100)), ps_détour)),
                     "départ": str(étapes[0]),
                     "arrivée": str(étapes[-1]),
                     "zone_t": z_d.nom,
-                    "marqueurs_i": texte_marqueurs(étapes_interdites),  # Sera mis en hidden dans le formulaire relance_rapide
-                    "marqueurs_é": texte_marqueurs(étapes, supprime_début_et_fin=True),  # idem
-                    })
+                    #"marqueurs_i": texte_marqueurs(étapes_interdites),  # Sera mis en hidden dans le formulaire relance_rapide
+                    #"marqueurs_é": texte_marqueurs(étapes, supprime_début_et_fin=True),  # idem
+    })
 
 
     #texte_étapes_inter = énumération_texte(noms_étapes[1:-1])
@@ -260,7 +260,8 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_sommets, ét
     # données sérialisées pour envoyer à js
     pour_js = {
         "bbox": données["bbox"],
-        "itis": [iti.vers_js() for iti in données["itinéraires"]]
+        "itis": [iti.vers_js() for iti in données["itinéraires"]],
+        "mettre_form_enregistrer": len(étapes) > 2 and len(étapes_sommets)==0,
     }
 
     return render(requête,
@@ -268,11 +269,10 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_sommets, ét
                   {**données,
                    **{
                        #  "texte_étapes_inter": texte_étapes_inter,
-                       "rues_interdites": énumération_texte(rues_interdites),
+                       # "rues_interdites": énumération_texte(rues_interdites),
                        "post_préc": données,
                        "relance_rapide": forms.ToutCaché(initial=données),
-                       "enregistrer_contrib": forms.EnregistrerContrib(initial=données),
-                       # "trajet_retour": forms.ToutCaché(initial=données),
+                       "enregistrer_contrib": forms.EnregistrerContrib(initial=données),  # À enlever à terme
                        "fouine": requête.session.get("fouine", None),
                        "données": json.dumps(pour_js)
                    }

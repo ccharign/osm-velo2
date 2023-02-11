@@ -63,8 +63,8 @@ export class ÉtapeAvecCoords extends Étape{
 
     vecteurVersLatLng(ll2){
 	const ll1 = this.getLatlng();
-	const dx = ÉtapeAvecCoord.R_terre * Math.cos(ll1.lat*Math.PI/180) * (ll2.lng - ll1.lng)*Math.PI/180;
-	const dy = ÉtapeAvecCoord.R_terre * (ll2.lat - ll1.lat)*Math.PI/180;
+	const dx = ÉtapeAvecCoords.R_terre * Math.cos(ll1.lat*Math.PI/180) * (ll2.lng - ll1.lng)*Math.PI/180;
+	const dy = ÉtapeAvecCoords.R_terre * (ll2.lat - ll1.lat)*Math.PI/180;
 	return new Vecteur(dx, dy);
     }
 

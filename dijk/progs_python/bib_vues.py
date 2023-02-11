@@ -89,7 +89,7 @@ def z_é_i_d(g, données):
     # données["toutes_les_étapes"] = json.dumps(étapes_dicos)
     # recréation du champ toutes_les_étapes : il y aura éventuellement plus d’infos.
     données["toutes_les_étapes"] = json.dumps([
-        é.pour_js() for é in étapes
+        é.pour_marqueur() for é in étapes
     ])
     
     # Étapes sommet

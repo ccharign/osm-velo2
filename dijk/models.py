@@ -1011,8 +1011,6 @@ class Lieu(models.Model):
 
     # Liste des champs à envoyer au constructeur
     _champs = ["nom", "nom_norm", "lon", "lat", "horaires", "tél", "id_osm", "json_tout", "autre_nom"]
-
-
     
     
     def __hash__(self):
@@ -1103,9 +1101,9 @@ class Lieu(models.Model):
                 "àCacher": json.dumps(self.pour_js())
                 }
 
-    def pour_marqueur_leaflet(self):
+    def pour_marqueur(self):
         """
-        Renvoie un dico sérialisable contenant les données pour créer un marqueur leaflet. C’est actuellement la même chose que self.toutes_les_infos().
+        Renvoie un dico sérialisable contenant les données pour créer un marqueur leaflet.
         Envoyé pour l’affichage du résultat. Contient plus d’infos que pour_js qui est utilisé dans l’autocomplétion.
         """
         res = self.toutes_les_infos()
@@ -1196,7 +1194,7 @@ class Lieu(models.Model):
         res.json_tout = nv_json_tout
         
         # Type osm du lieu
-        res.type_lieu = TypeLieu.of_dico(d, créer_type)
+        res.type_lieu = TypeLieu.of_dico(d_final, créer_type)
 
         # Adresse
         # Géré via l’arête maintenant... Éventuellement mettre le numéro ?
