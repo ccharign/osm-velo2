@@ -19,18 +19,25 @@
 <div class="row">
     
   <div class="col-md-9">
-    <!-- La carte -->
-    {% block carte %}
-    {% endblock %}
+    <div class="row">
 
-    <!-- Bouton relancer le calcul -->
-    {% block modifs_rapides %}
-    {% endblock %}
+      <!-- La carte -->
+      {% block carte %}
+      {% endblock %}
+    </div>
 
-    <!-- Trajet retour -->
-    {% block retour %}
-    {% endblock %}
-
+    <div class="row">
+      <div class="col-sm">
+	<!-- Bouton relancer le calcul -->
+	{% block modifs_rapides %}
+	{% endblock %}
+      </div>
+      <div class="col-sm">
+	<!-- Trajet retour -->
+	{% block retour %}
+	{% endblock %}
+      </div>
+    </div>
   </div>
 
 
@@ -47,12 +54,6 @@
 </div>
 
 
-<div class="row">
-
-</div>
-<br><br>
-
-
 
 
 <!-- Formulaire complet pour relancer le calcul -->
@@ -60,7 +61,7 @@
 <!-- <h4> Plus d’options </h4> -->
 
   
-<!--   {% block relancer_calcul %} -->
-<!--   {% endblock %} -->
+<!--   { % block relancer_calcul % } -->
+<!--   { % endblock % } -->
 
 {% endblock contenu %}
