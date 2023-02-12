@@ -8,12 +8,12 @@ from django.db import transaction, close_old_connections
 from dijk.models import Rue, Ville, Arête, Sommet, Cache_Adresse, Zone, Ville_Zone
 import dijk.models as mo
 
-import recup_donnees as rd
-from params import LOG, DONNÉES, LOG_PB
-from petites_fonctions import deuxConséc, chrono, distance_euc
-import dijkstra
-from lecture_adresse.arbresLex import ArbreLex
-import lecture_adresse.normalisation as no
+import dijk.progs_python.recup_donnees as rd
+from dijk.progs_python.params import LOG, DONNÉES, LOG_PB
+from dijk.progs_python.petites_fonctions import deuxConséc, chrono, distance_euc
+from dijk.progs_python import dijkstra
+from dijk.progs_python.lecture_adresse.arbresLex import ArbreLex
+import dijk.progs_python.lecture_adresse.normalisation as no
 #from quadrarbres import QuadrArbreArête
 
 
@@ -40,102 +40,104 @@ class Graphe_django():
     
     def __init__(self):
         self.dico_voisins = {}
-        self.cycla_max = {}
-        self.cycla_min = {}
+        #self.cycla_max = {}
+        #self.cycla_min = {}
         self.arbre_villes = ArbreLex()
         self.dico_Sommet = {}
         self.dico_voisins = {}
         self.arbres_des_rues = {}
         self.zones = []
-        self.cycla_max = {}
-        self.cycla_min = {}
+        #self.cycla_max = {}
+        #self.cycla_min = {}
         self.arbre_cache = {}
         self.arbre_arêtes = {}
         self.arbre_lex_zone = {}
     
         
-    def charge_zone(self, zone_t, bavard=0):
+    def charge_zone(self, zone_t: str, bavard=0) -> Zone:
         """
         Charge les données présentes dans la base concernant la zone indiquée.
         """
+
         close_old_connections()
         z_d = Zone.objects.get(nom=zone_t)
-        if z_d not in self.zones:
-            print(f"Zone pas en mémoire : {z_d}. Voici les zones que j’ai chargées : {self.zones}")
 
-            dossier_données = os.path.join(DONNÉES, str(z_d))
-            os.makedirs(dossier_données, exist_ok=True)
+        
+        # Voyons si z_d ou une parent est déjà chargée:
+        for z in self.zones:
+            if z_d.estInclueDans(z):
+                self.arbre_arêtes[z_d.nom] = self.arbre_arêtes[z.nom]
+                # self.cycla_max[z_d] = self.cycla_max[z]
+                # self.cycla_min[z_d] = self.cycla_min[z]
+                return z_d
             
-            ## Dicos des villes et des rues
-            print("Chargement des arbres lex pour villes et rues...")
-            tic = perf_counter()
-            self.arbre_lex_zone[z_d] = ArbreLex()
-            for v_d in z_d.villes():
-                self.arbre_villes.insère(v_d.nom_norm)
-                self.arbres_des_rues[v_d.nom_norm] = ArbreLex.of_fichier(os.path.join(DONNÉES, v_d.nom_norm))
-                self.arbre_lex_zone[z_d].rajoute(self.arbres_des_rues[v_d.nom_norm])
-            chrono(tic, " les arbres lex.")
 
-            
-            ## Cache
-            print("Chargement du cache")
-            villes = Ville_Zone.objects.filter(zone=z_d)
-            self.arbre_cache[zone_t] = ArbreLex.of_iterable(
-                [str(a.adresse) for a in Cache_Adresse.objects.filter(ville__in=Subquery(villes.values("ville")))]
-            )
+        # Chargement de la zone
+        print(f"Zone pas en mémoire : {z_d}. Voici les zones que j’ai chargées : {self.zones}")
 
-            ## Sommets
-            tic = perf_counter()
+        dossier_données = os.path.join(DONNÉES, str(z_d))
+        os.makedirs(dossier_données, exist_ok=True)
 
-            for s in z_d.sommets():
-                self.dico_Sommet[s.id_osm] = s
-                self.dico_voisins[s.id_osm] = []
-            tic = chrono(tic, "Chargement des sommets")
+        ## Dicos des villes et des rues
+        print("Chargement des arbres lex pour villes et rues...")
+        tic = perf_counter()
+        self.arbre_lex_zone[z_d] = ArbreLex()
+        for v_d in z_d.villes():
+            self.arbre_villes.insère(v_d.nom_norm)
+            self.arbres_des_rues[v_d.nom_norm] = ArbreLex.of_fichier(os.path.join(DONNÉES, v_d.nom_norm))
+            self.arbre_lex_zone[z_d].rajoute(self.arbres_des_rues[v_d.nom_norm])
+        chrono(tic, " les arbres lex.")
 
-            
-            ## Arêtes
-            d_arête_of_pk = {}  # Pour le chargement de l’arbre quad.
-            arêtes_de_z = z_d.arêtes()
-            cyclaMin = float("inf")
-            cyclaMax = 0.
-            for a in arêtes_de_z:
-                cyclaMax = max(cyclaMax, a.cyclabilité())
-                cyclaMin = min(cyclaMin, a.cyclabilité())
-                s = a.départ.id_osm
-                t = a.arrivée.id_osm
-                d_arête_of_pk[a.pk] = a
-                if a.cyclabilité() > 0:  # ceci supprime les autoroutes actuellement
-                    self.dico_voisins[s].append((t, a))
-            tic = chrono(tic, "Chargement des arêtes.")
 
-            ## Vérif que les sommets d’arrivée sont dans le dico des sommets
-            print("Vérif que les sommets d’arrivée sont connus")
-            for l in self.dico_voisins.values():
-                for s, _ in l:
-                    assert t in self.dico_Sommet
-            print("C’est bon")
-            
-            ## Arbre quad des arêtes:
-            #chemin = os.path.join(dossier_données, f"arbre_arêtes_{z_d}")
-            tic = perf_counter()
-            #LOG(f"Chargement de l’arbre quad des arêtes depuis {chemin}", bavard=bavard)
-            LOG("Chargement de l’arbre des arêtes dans la base")
-            #self.arbre_arêtes[z_d.nom] = QuadrArbreArête.of_fichier(chemin)
-            self.arbre_arêtes[z_d.nom] = mo.ArbreArête.racine()
-            tic = chrono(tic, "Chargement de l’arbre quad des arêtes", force=True)
-                
-                
-            ## Cycla min et max
-            self.cycla_max[z_d] = cyclaMax
-            self.cycla_min[z_d] = cyclaMin
-            # self.calcule_cycla_min_max(z_d)
-            # chrono(tic, "Calcul des cycla min et max", force=True)
-            
-            self.zones.append(z_d)
-            
-        else:
-            print(f"Zone déjà en mémoire : {z_d}.")
+        ## Cache
+        print("Chargement du cache")
+        villes = Ville_Zone.objects.filter(zone=z_d)
+        self.arbre_cache[zone_t] = ArbreLex.of_iterable(
+            [str(a.adresse) for a in Cache_Adresse.objects.filter(ville__in=Subquery(villes.values("ville")))]
+        )
+
+        ## Sommets
+        tic = perf_counter()
+        for s in z_d.sommets():
+            self.dico_Sommet[s.id_osm] = s
+            self.dico_voisins[s.id_osm] = []
+        tic = chrono(tic, "Chargement des sommets")
+
+
+        ## Arêtes
+        d_arête_of_pk = {}  # Pour le chargement de l’arbre quad.
+        # cyclaMin = float("inf")
+        # cyclaMax = 0.
+        for a in z_d.arêtes():
+            # cyclaMax = max(cyclaMax, a.cyclabilité())
+            # cyclaMin = min(cyclaMin, a.cyclabilité())
+            s = a.départ.id_osm
+            t = a.arrivée.id_osm
+            d_arête_of_pk[a.pk] = a
+            #if a.cyclabilité() > 0:  # ceci supprime les autoroutes actuellement
+            self.dico_voisins[s].append((t, a))
+        tic = chrono(tic, "Chargement des arêtes.")
+
+        ## Vérif que les sommets d’arrivée sont dans le dico des sommets
+        # print("Vérif que les sommets d’arrivée sont connus")
+        # for l in self.dico_voisins.values():
+        #     for s, _ in l:
+        #         assert t in self.dico_Sommet
+        # print("C’est bon")
+
+        ## Arbre quad des arêtes:
+        self.arbre_arêtes[z_d.nom] = z_d.arbre_arêtes
+
+
+        ## Cycla min et max
+        # self.cycla_max[z_d] = cyclaMax
+        # self.cycla_min[z_d] = cyclaMin
+        # self.calcule_cycla_min_max(z_d)
+        # chrono(tic, "Calcul des cycla min et max", force=True)
+
+        self.zones.append(z_d)
         return z_d
+
 
 
     def vérif_zone(self, z_t):
@@ -245,6 +247,7 @@ class Graphe_django():
 
         
     def calcule_cycla_min_max(self, z_d, arêtes=None):
+        raise DeprecationWarning("Graphe_django.calcule_cycla_min_max est déprécié. Passer par Zone.calculeCyclaMinEtMax")
         if not arêtes:
             arêtes = z_d.arêtes()
             
@@ -279,10 +282,6 @@ class Graphe_django():
         else:
             iti, l_ressentie = dijkstra.iti_étapes_ensembles(self, chemin, bavard=bavard)
             return dijkstra.Itinéraire(self, iti, l_ressentie, chemin.couleur, chemin.p_détour)
-            
-        # assert all(t in self.dico_voisins for (s, t) in deuxConséc(iti)), "Itinéraire pas valide"
-
-        
     
 
     def itinéraire_sommets(self, chemin, bavard=0):
@@ -362,25 +361,16 @@ class Graphe_django():
             if persévérant and len(tout)>0:
                 # essai 3 : recherche de tous les nœuds dans la bb enveloppante de tout.
                 bbe = rd.bb_enveloppante(tout, bavard=bavard-1)
-                tol=0
-                dtol=0.001
-                while len(res)==0:
+                tol = 0
+                dtol = 0.001
+                while len(res) == 0:
                     LOG(f"(g.nœuds_of_rue) Recherche dans la bb enveloppante avec tol={tol}.", bavard=bavard)
                     res = [ n for n in rd.nœuds_dans_bb(bbe, tol=tol) if n in self]
-                    tol+=dtol
+                    tol += dtol
                 self.ajoute_rue(adresse, res, bavard=bavard)
                 return res
             else:
                 return []
-            # else:
-            #     LOG("Aucun de ces nœuds n’est dans g :(. Je calcule les nœuds connectés:", bavard=bavard)
-            #     reliés = rd.nœuds_reliés(tout)
-            #     if bavard>0: print(f"nœuds reliés : {reliés}")
-            #     res = [n for n in rd.nœuds_reliés(tout) if n in self ]
-            #     if bavard>0: print(f"Parmi ceux-ci, voici ceux qui sont dans g : {res}")
-            #     if len(res)>0:
-            #         #self.ajoute_rue(adresse, res, bavard=bavard)
-            #         return res
 
     
     def ajoute_rue(self, adresse, nœuds, bavard=0):

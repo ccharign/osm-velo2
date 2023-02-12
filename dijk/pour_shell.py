@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+
 from importlib import reload
 from pprint import pprint
 import osmnx
@@ -8,24 +9,26 @@ from django.db import close_old_connections
 import dijk.models as mo
 import dijk.views as v
 
-import progs_python.initialisation.initialisation as ini
-from progs_python.initialisation.initialisation import charge_fichier_cycla_défaut as charge_cycla_defaut, ajoute_ville, crée_zone
-from progs_python.initialisation.communes import charge_villes
-import progs_python.utils as utils
-import progs_python.initialisation.amenities as amen
-from progs_python.utils import lecture_tous_les_chemins
+import dijk.progs_python.initialisation.initialisation as ini
+from dijk.progs_python.initialisation.initialisation import charge_fichier_cycla_défaut as charge_cycla_defaut, ajoute_ville, crée_zone
+from dijk.progs_python.initialisation.communes import charge_villes
+import dijk.progs_python.utils as utils
+import dijk.progs_python.recup_donnees as rd
+import dijk.progs_python.initialisation.amenities as amen
+from dijk.progs_python.utils import lecture_tous_les_chemins
 
-
-#osmnx.config(use_cache=True, log_console=True)
 osmnx.settings.use_cache = True
 osmnx.settings.log_console = True
 
-def entraine_tout(bavard=0):
+
+def entraine_tout(bavard=2):
     """
     Lance la lecture de tous les chemins de la base.
     """
     for z_d in mo.Zone.objects.all():
         v.g.charge_zone(z_d.nom)
+        assert v.g.arbre_arêtes[z_d.nom] is not None, f"{z_d} n’a pas d’arbreArête"
+    
     lecture_tous_les_chemins(v.g, bavard=bavard)
 
 

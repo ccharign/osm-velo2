@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 
+import dijk.models as mo
 
 import folium
 
@@ -33,10 +34,11 @@ def couleur_of_int(val, mini, maxi):
         return TAB_COULEURS[i]
 
 
-def couleur_of_cycla(a, g, z_d):
+def couleur_of_cycla(a, z_d: mo.Zone):
     """Renvoie un entier dans [|0, NB_COUL[|. 1 est associé à NB_COUL//2, mini à 0, maxi à 1."""
     val = a.cyclabilité()
-    mini, maxi = g.cycla_min[z_d], g.cycla_max[z_d]
+    mini, maxi = z_d.cycla_min, z_d.cycla_max
+    assert mini < 1. < maxi, f"mini={mini} et maxi={maxi}"
     if val == maxi:
         i = NB_COUL-1
     elif val <= 1.:
@@ -83,7 +85,7 @@ def ajuste_fenêtre(lons, lats, carte):
     carte.fit_bounds([(s, o), (n, e)])
 
 
-def folium_of_chemin(g, z_d, iti_d, p, carte=None, tiles="cartodbpositron", zoom=1, fit=False, **kwargs):
+def folium_of_chemin(g, z_d, iti_d, carte=None, tiles="cartodbpositron", zoom=1, fit=False, **kwargs):
     """
     Entrées :
         g (graphe)
@@ -111,7 +113,7 @@ def folium_of_chemin(g, z_d, iti_d, p, carte=None, tiles="cartodbpositron", zoom
 
     for a in iti_d:
         # L’arête avec couleur cycla
-        pl = polyline_of_arête(g, a, color=couleur_of_cycla(a, g, z_d), opacity=.1, weight=6, **kwargs)
+        pl = polyline_of_arête(g, a, color=couleur_of_cycla(a, z_d), opacity=.1, weight=6, **kwargs)
         pl.add_to(carte)
         # L’arête avec couleur passée en arg
         pl = polyline_of_arête(g, a, color=couleur, opacity=.6, weight=2, **kwargs)
@@ -121,7 +123,6 @@ def folium_of_chemin(g, z_d, iti_d, p, carte=None, tiles="cartodbpositron", zoom
         o, e = sorted([cd[0], cf[0]])  # lon
         s, n = sorted([cd[1], cf[1]])  # lat
         carte.fit_bounds([(s, o), (n, e)])
-
 
     return carte
 

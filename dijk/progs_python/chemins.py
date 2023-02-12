@@ -12,17 +12,21 @@ NB: ce sont les chemins qui sont enregistrés dans la base.
 
 
 import re
+import json
 from pprint import pprint
 import abc
 
 from dijk.models import Chemin_d, Arête, Lieu, Sommet, GroupeTypeLieu
+import dijk.models as mo
 
 from dijk.progs_python.petites_fonctions import milieu
 from params import LOG
+from dijk.progs_python.apprentissage import lecture_meilleur_chemin  # Uniquement pour la conversion à la nouvelle manière d’enregistrer les chemins.
 
 # from lecture_adresse.normalisation0 import découpe_adresse
 from lecture_adresse.normalisation import Adresse
 from lecture_adresse.recup_noeuds import nœuds_of_étape, un_seul_nœud
+from dijk.progs_python.graphe_par_django import Graphe_django
 
 
 def sans_guillemets(c):
@@ -45,6 +49,7 @@ class Étape(abc.ABC):
     def __init__(self):
         self.nœuds = set()
         self.nom = ""
+        self.coords = None
 
         
     def __str__(self):
@@ -72,12 +77,6 @@ class Étape(abc.ABC):
         Renvoie le dico sérialisable pour envoyer à js.
         """
         raise RuntimeError(f"Étape.marqueur_leaflet est une méthode abstraite. Le type de self est {type(self)}")
-        # lon, lat = coords
-        # res = self.infos()
-        # # res["lon"] = lon
-        # # res["lat"] = lat
-        # res["coords"] = {"lat": lat, "lng": lon}
-        # return res
 
         
     def pour_marqueur_of_sommet_osm(self, s: int):
@@ -88,14 +87,7 @@ class Étape(abc.ABC):
         rés = self.pour_marqueur()
         rés["coords"] = {"lat": lat, "lng": lon}
         return rés
-    
-    # def marqueur_leaflet_of_sommet(self, s: int):
-    #     """
-    #     Renvoie le code js pour créer un marqueur pour cette étape. Marqueur situé sur le sommet s.
-    #     """
-    #     s_d = Sommet.objects.get(id_osm=s)
-    #     return self.marqueur_leaflet(s_d.coords())
-    
+
 
     @classmethod
     def of_texte(cls, texte, g, z_d, nv_cache=1, bavard=0):
@@ -252,11 +244,12 @@ class ÉtapeArête(Étape):
         self.pk = None
         self.adresse = Adresse()
         self.nom = None
-    
+
+        
     @classmethod
     def of_arête(cls, a, coords, ad=None):
         res = cls()
-        res.coords_ini = coords
+        res.coords = coords
         res.nœuds = set((a.départ.id_osm, a.arrivée.id_osm))
         res.nom = a.nom
         res.pk = a.pk
@@ -289,11 +282,11 @@ class ÉtapeArête(Étape):
         return cls.of_arête(a, coords, ad=ad)
     
     
-    def str_pour_chemin(self):
-        """
-        Sera utilisé pour enregistrement dans la base.
-        """
-        return f"Arête{self.coords_ini[0]},{self.coords_ini[1]}"
+    # def str_pour_chemin(self):
+    #     """
+    #     Sera utilisé pour enregistrement dans la base.
+    #     """
+    #     return f"Arête{self.coords_ini[0]},{self.coords_ini[1]}"
     
         
     def __str__(self):
@@ -307,7 +300,7 @@ class ÉtapeArête(Étape):
         """
         NB: pas de méthode pour_marqueur dans la classe Arête, car je veux disposer de coords_ini. Ce dernier a été créé par js lors du clic sur la carte.
         """
-        lon, lat = self.coords_ini
+        lon, lat = self.coords
         return {
             "type": "arête",
             "pk": self.pk,
@@ -315,7 +308,7 @@ class ÉtapeArête(Étape):
             "coords": {"lat": lat, "lng": lon}
         }
 
-
+        
 class ÉtapeLieu(Étape):
     """
     Étape venant d’un Lieu de la base.
@@ -326,13 +319,14 @@ class ÉtapeLieu(Étape):
         self.nom = l.nom
         self.nœuds = set((l.arête.départ.id_osm, l.arête.arrivée.id_osm))
         self.adresse = l.adresse
+        self.coords = l.coords()
 
-    def str_pour_chemin(self):
-        """
-        Sera utilisé pour enregistrement dans la base.
-        NB : au chargement du chemin, deviendra une ÉtapeArête.
-        """
-        return f"Arête{self.lieu.lon},{self.lieu.lat}"
+    # def str_pour_chemin(self):
+    #     """
+    #     Sera utilisé pour enregistrement dans la base.
+    #     NB : au chargement du chemin, deviendra une ÉtapeArête.
+    #     """
+    #     return f"Arête{self.lieu.lon},{self.lieu.lat}"
 
     def __str__(self):
         return str(self.lieu)
@@ -435,9 +429,11 @@ class Chemin():
                     - texte (None ou str), texte d'où vient le chemin (pour déboguage)
                     - zone (models.Zone)
     """
-    def __init__(self, z_d, étapes, étapes_sommets, p_détour, couleur: str, AR, interdites={}, texte_interdites=""):
+    def __init__(
+            self, z_d: mo.Zone, étapes: list, étapes_sommets, p_détour: float, couleur: str, AR: bool, interdites={}, texte_interdites=""
+    ):
         assert isinstance(étapes_sommets, list)
-        assert p_détour >= 0 and p_détour <= 2, "Y aurait-il confusion entre la proportion et le pourcentage de détour?"
+        assert 0 <= p_détour <= 2, "Y aurait-il confusion entre la proportion et le pourcentage de détour?"
         self.étapes = étapes
         self.étapes_sommets = étapes_sommets
         self.p_détour = p_détour
@@ -450,17 +446,48 @@ class Chemin():
     
 
     @classmethod
-    def of_django(cls, c_d, g, bavard=0):
+    def of_django_vieux(cls, c_d, g, bavard=0):
+        """
+        Quand les étapes étaient enregistrées par leur adresse.
+        """
         return cls.of_données(g, c_d.zone, c_d.ar, c_d.p_détour, c_d.étapes_texte, c_d.interdites_texte, bavard=bavard)
 
     
+    @classmethod
+    def convertit_tous_chemins(cls, g):
+        """
+        Convertit tous les chemins de la base : ce seront les coords des étapes qui seront enregistrées.
+        """
+        for c_d in Chemin_d.objects.all():
+            g.charge_zone(c_d.zone)
+            c_d.zone.calculeCyclaMinEtMax()
+            if c_d.étapes_texte[:2] != "[[":
+                c = cls.of_django_vieux(c_d, g, bavard=1)
+                lecture_meilleur_chemin(g, c, bavard=0)  # Pour remplir les coords de départ et arrivée
+                c.vers_django()
+                c_d.delete()
+            
+    
+    @classmethod
+    def of_django(cls, c_d: Chemin_d, g, bavard=0):
+        """
+        Note : la couleur sera « purple ».
+        Pas d’arêtes interdites.
+        """
+        étapes = [ÉtapeArête.of_coords(coords, g, c_d.zone) for coords in c_d.étapes_c()]
+        return cls(c_d.zone, étapes, [], c_d.p_détour, "purple", c_d.ar)
+        
+    
     def vers_django(self, utilisateur=None, bavard=0):
         """
-        Transfert le chemin dans la base.
+        Effet : Sauvegarde le chemin dans la base.
         Sortie : l’instance de Chemin_d créée, ou celle déjà présente le cas échéant.
         """
         assert not self.étapes_sommets, "Les étapes chemins avec étapes_sommets ne sont pas conçus pour être enregistrés."
-        étapes_t = ";".join(é.str_pour_chemin() for é in self.étapes)
+        #étapes_t = ";".join(é.str_pour_chemin() for é in self.étapes)
+        étapes_c = [é.coords for é in self.étapes]
+        assert all(c for c in étapes_c)
+        étapes_t = json.dumps(étapes_c)
         rues_interdites_t = self.noms_rues_interdites
         début, fin = étapes_t[:255], étapes_t[-255:]
         interdites_début, interdites_fin = rues_interdites_t[:255], rues_interdites_t[-255:]
@@ -490,7 +517,7 @@ class Chemin():
             )
             c_d.save()
             return c_d
-
+        
     
     @classmethod
     def of_ligne(cls, ligne, g, tol=.25, bavard=0):
@@ -537,16 +564,16 @@ class Chemin():
         return chemin
 
 
-    def sauv_bdd(self):
-        """
-        Enregistre le chemin dans la base.
-        """
-        c = Chemin_d(p_détour=self.p_détour,
-                     étapes=";".join(é.str_pour_chemin() for é in self.étapes),
-                     ar=self.AR,
-                     interdites=self.noms_rues_interdites,
-                     )
-        c.sauv()
+    # def sauv_bdd(self):
+    #     """
+    #     Enregistre le chemin dans la base.
+    #     """
+    #     c = Chemin_d(p_détour=self.p_détour,
+    #                  étapes=";".join(é.str_pour_chemin() for é in self.étapes),
+    #                  ar=self.AR,
+    #                  interdites=self.noms_rues_interdites,
+    #                  )
+    #     c.sauv()
 
 
     @classmethod
@@ -580,10 +607,10 @@ class Chemin():
     #     """ Renvoie le plus court chemin du départ à l’arrivée."""
     #     return dijkstra.chemin_entre_deux_ensembles(g, self.départ(), self.arrivée(), 0)
     
-    def direct(self):
-        """ Renvoie le chemin sans ses étapes intermédaires."""
+    # def direct(self):
+    #     """ Renvoie le chemin sans ses étapes intermédaires."""
         
-        return Chemin([self.départ(), self.arrivée()], self.p_détour, True)
+    #     return Chemin([self.départ(), self.arrivée()], self.p_détour, True)
     
     def __str__(self):
         res = f"AR : {self.AR}\np_détour : {self.p_détour}\nÉtapes : " + ";".join(map(str, self.étapes))

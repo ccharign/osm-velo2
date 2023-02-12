@@ -83,8 +83,8 @@ def initGroupesTypesLieux(chemin="dijk/progs_python/initialisation/données_à_c
 #         Lieu.objects.bulk_update(à_maj, ["ville", "adresse"])
 
 
-    
-def charge_lieux_of_ville(v_d, arbre_a=None, bavard=0, force=False):
+
+def charge_lieux_of_ville(v_d, arbre_a, bavard=0, force=False):
     """
     Effet :
         Récupère sur osm les amenities, shops, leisure et tourism de la ville, et remplit les tables TypeLieu et Lieu avec.
@@ -94,8 +94,8 @@ def charge_lieux_of_ville(v_d, arbre_a=None, bavard=0, force=False):
 
     LOG(f"Lieux de {v_d}", bavard=1)
 
-    if not arbre_a:
-        arbre_a = mo.ArbreArête.racine()
+    # if not arbre_a:
+    #     arbre_a = mo.ArbreArête.racine()
         
     LOG("Récupération des lieux via overpass", bavard=1)
     ll = rd.lieux_of_ville(v_d, arbre_a, bavard=bavard, force=force)
@@ -104,8 +104,8 @@ def charge_lieux_of_ville(v_d, arbre_a=None, bavard=0, force=False):
     v_d.save()
 
     LOG(f"charge_lieux_of_ville({v_d}) fini !")
-    
-    
+
+
 
 def charge_lieux_of_zone(z_t, force=False):
     """

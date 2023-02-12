@@ -2,8 +2,9 @@ import json
 from pprint import pformat
 import os
 import math
+from typing_extensions import Self
 
-from django.db import models, close_old_connections, transaction
+from django.db import models, close_old_connections, transaction, connection
 
 from dijk.progs_python.params import LOG, DONNÉES
 from dijk.progs_python.lecture_adresse.normalisation0 import partie_commune
@@ -455,6 +456,22 @@ class ArbreArête(models.Model, qa.Quadrarbre):
         """
         return self.related_manager_fils.all()
 
+    
+    @classmethod
+    def effaceTout(cls):
+        """
+        Supprime toutes les entrées directement via du sql, dans les tables des ArbreArête et des SegmentArête.
+        """
+        with connection.cursor() as cursor:
+
+            requête = 'DELETE FROM {}'.format(cls._meta.db_table)
+            print(requête)
+            cursor.execute(requête)
+            
+            requête = 'DELETE FROM {}'.format(SegmentArête._meta.db_table)
+            print(requête)
+            cursor.execute(requête)
+
 
     def ancètre(self):
         """
@@ -506,13 +523,20 @@ class ArbreArête(models.Model, qa.Quadrarbre):
                 
             
 
+    # Maintenant il y a plusieurs arbres dans la base. Ne plus utiliser ceci!
     @classmethod
-    def racine(cls):
+    def uneRacine(cls) -> Self:
         """
-        Renvoie la racine de l’arbre de toute la base. Obtenu en remontant depuis le premier élément de la base.
+        Renvoie une racine d’un arbre la base. Obtenu en remontant depuis le premier élément de la base.
         """
         return cls.objects.all().first().ancètre()
-    
+
+
+    def getZones(self):
+        """
+        Sortie: querySet des zones associées à cet arbre. (Càd la racine de l’arbre associé à la zone est self.)
+        """
+        return Zone.objects.filter(arbre_arêtes=self)
     
     def segment(self):
         """
@@ -578,9 +602,11 @@ class ArbreArête(models.Model, qa.Quadrarbre):
 
 
     def supprime(self):
-
+        """
+        Efface l’arbre issu de self.
+        """
         hauteur = int(math.log(ArbreArête.objects.all().count(), 4))  # Approximation de la hauteur
-        for prof in range(hauteur-5, 0, -1):
+        for prof in range(hauteur-6, 0, -5):
             print(f"(Suppression de l’étage {prof})")
             self.supprime_étage(prof)
         
@@ -627,20 +653,42 @@ class Zone(models.Model):
     ville_défaut = models.ForeignKey(Ville, on_delete=models.CASCADE)
     arbre_arêtes = models.ForeignKey(ArbreArête, on_delete=models.SET_NULL, null=True)
     inclue_dans = models.ForeignKey("self", related_name="related_manager_sous_zones", blank=True, null=True, default=None, on_delete=models.SET_NULL)
-
+    cycla_min = models.FloatField(default=1.0)
+    cycla_max = models.FloatField(default=1.0)
+    
     class Meta:
         ordering = ["nom"]
     
     def villes(self):
         return tuple(rel.ville for rel in Ville_Zone.objects.filter(zone=self).prefetch_related("ville"))
 
+    def plusGrandeZoneContenant(self) -> Self:
+        """
+        Renvoie la plus grande zone dans laquelle self est inclue, pour la relation inclue_dans
+        """
+        if not self.inclue_dans:
+            return self
+        else:
+            return self.inclue_dans.plusGrandeZoneContenant()
 
+        
+    def estInclueDans(self, autre) -> bool:
+        """
+        Indique si autre figure parmi les zones contenant self.
+        """
+        if self == autre:
+            return True
+        if not self.inclue_dans:
+            return False
+        return self.inclue_dans.estInclueDans(autre)
+
+    
     def arêtes(self):
         """
         Sortie (queryset) : les arêtes des villes de la zone
         """
         villes = self.villes()
-        return Arête.objects.filter(villes__in=villes).prefetch_related("départ", "arrivée")
+        return Arête.objects.filter(villes__in=villes, cycla_défaut__gt=0.0).prefetch_related("départ", "arrivée")
         
     def sommets(self):
         """
@@ -654,12 +702,46 @@ class Zone(models.Model):
     def ajoute_ville(self, ville):
         rel = Ville_Zone(ville=ville, zone=self)
         rel.save()
-    
+
+    def associeArbreArêteAncètre(self):
+        """
+        Associe à self l’arbreArête de la plus grande zone contenant self.
+        """
+        ancètre = self.plusGrandeZoneContenant()
+        self.arbre_arêtes_id = ancètre.arbre_arêtes_id
+        self.save()
+        
     def __str__(self):
         return self.nom
     
     def __hash__(self):
         return self.pk
+
+
+    def calculeCyclaMinEtMax(self):
+        """
+        Rema : pour cycla__min, la cycla défaut n’est prise en compte que si aucune arête ne dispose de cycla.
+               pour cycla_max en revanche elle est toujours prise en compte.
+        """
+        arêtes = self.arêtes()
+            
+        self.cycla_min = arêtes.aggregate(models.Min("cycla"))["cycla__min"]
+        
+        if self.cycla_min is None:
+            cycla_défaut_min = arêtes.aggregate(models.Min("cycla_défaut"))["cycla_défaut__min"]
+            self.cycla_min = cycla_défaut_min
+        # else:
+        #     self.cycla_min = min(cycla_défaut_min, cycla_min)
+
+        cycla_max = arêtes.aggregate(models.Max("cycla"))["cycla__max"]
+        cycla_défaut_max = arêtes.aggregate(models.Max("cycla_défaut"))["cycla_défaut__max"]
+        if cycla_max is None:
+            self.cycla_max = cycla_défaut_max
+        else:
+            self.cycla_max = max(cycla_défaut_max, cycla_max)
+            
+        print(f"Cycla min et max pour la zone {self}: {self.cycla_min}, {self.cycla_max}")
+        self.save()
 
     
     def sauv_csv(self, chemin_csv=DONNÉES) -> str:
@@ -792,8 +874,11 @@ class Chemin_d(models.Model):
             self.save()
             
             
-    def étapes(self):
-        return self.étapes_texte.split(";")
+    def étapes_c(self) -> list:
+        """
+        Renvoie la liste des coords des étapes de self.
+        """
+        return json.loads(self.étapes_texte)
 
     
     def rues_interdites(self):

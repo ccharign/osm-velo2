@@ -285,8 +285,9 @@ def calcul_itinéraires(requête, ps_détour, z_d, étapes, étapes_sommets, ét
 
 
 
-
+####################################
 ### Ajout d’un nouvel itinéraire ###
+####################################
 
 
 def confirme_nv_chemin(requête):
@@ -295,38 +296,33 @@ def confirme_nv_chemin(requête):
     """
     nb_lectures = 30
 
-    try:
-        données = récup_données(requête.POST, forms.EnregistrerContrib)
-        z_d, étapes, étapes_interdites, étapes_sommets, _ = z_é_i_d(g, données)
-        if étapes_sommets:
-            raise RuntimeError("Ne pas enregistrer avec des étapes « passer par »")
-        AR = bool_of_checkbox(requête.POST, "AR")
-        
-        def traite_un_chemin(pourcentage_détour: int):
-            c = Chemin.of_étapes(z_d, étapes, pourcentage_détour, AR, g, étapes_interdites=étapes_interdites, nv_cache=2, bavard=2)
-            chemins.append(c)
-            c_d = c.vers_django(bavard=1)
-            prop_modif = n_lectures(nb_lectures, g, [c], bavard=1)
-            c_d.dernier_p_modif = prop_modif
-            c_d.save()
+    données = récup_données(requête.POST, forms.EnregistrerContrib)
+    z_d, étapes, étapes_interdites, étapes_sommets, _ = z_é_i_d(g, données)
+    if étapes_sommets:
+        raise RuntimeError("Ne pas enregistrer avec des étapes « passer par »")
+    AR = bool_of_checkbox(requête.POST, "AR")
 
-        chemins = []
-        for id_chemin in requête.POST.keys():
-            if id_chemin[:2] == "ps" and requête.POST[id_chemin] == "on":
-                pourcentage_détour = int(id_chemin[2:])
-                traite_un_chemin(pourcentage_détour)
+    def traite_un_chemin(pourcentage_détour: int):
+        c = Chemin.of_étapes(z_d, étapes, pourcentage_détour, AR, g, étapes_interdites=étapes_interdites, nv_cache=2, bavard=2)
+        chemins.append(c)
+        prop_modif = n_lectures(nb_lectures, g, [c], bavard=1)
+        c_d = c.vers_django(bavard=1)
+        c_d.dernier_p_modif = prop_modif
+        c_d.save()
 
-        if données["autre_p_détour"]:
-            traite_un_chemin(données["autre_p_détour"])
+    chemins = []
+    for id_chemin in requête.POST.keys():
+        if id_chemin[:2] == "ps" and requête.POST[id_chemin] == "on":
+            pourcentage_détour = int(id_chemin[2:])
+            traite_un_chemin(pourcentage_détour)
 
-        LOG("Calcul des nouveaux cycla_min et cycla_max", bavard=1)
-        g.calcule_cycla_min_max(z_d)
-        
-        return render(requête, "dijk/merci.html", {"chemin": chemins, "zone_t": z_d.nom})
-    
-    except Exception as e:
-        traceback.print_exc()
-        return autreErreur(requête, e)
+    if données["autre_p_détour"]:
+        traite_un_chemin(données["autre_p_détour"])
+
+    LOG("Calcul des nouveaux cycla_min et cycla_max", bavard=1)
+    z_d.calculeCyclaMinEtMax()
+
+    return render(requête, "dijk/merci.html", {"chemin": chemins, "zone_t": z_d.nom})
 
 
 ### traces gpx ###

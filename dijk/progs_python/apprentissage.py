@@ -29,15 +29,22 @@ def dico_arêtes(iti):
 def lecture_meilleur_chemin(g, chemin, bavard=0):
     """
     Entrée : le chemin à suivre, instance de Chemin.
-    Effet : Compare chemin avec le chemin renvoyé par g.chemin. Multiplie par 1+ETA la cyclabilité de chaque arrête présente dans chemin mais pas dans l'autre et multiplie par 1-ETA chaque arrête présente dans l'autre et pas dans chemin.
+
+    Effet :
+         Compare chemin avec le chemin renvoyé par g.chemin. Multiplie par 1+ETA la cyclabilité de chaque arrête présente dans chemin mais pas dans l'autre et multiplie par 1-ETA chaque arrête présente dans l'autre et pas dans chemin.
+        En outre les coords du départ et de l’arrivée sont enregistrées dans les étapes correspondantes.
+
     Sortie : nb d'arêtes modifiées, longueur du trajet direct
     """
+    
     assert not chemin.étapes_sommets, "Les étapes chemins avec étapes_sommets ne sont pas conçus pour être utilisés dans l’apprentissage."
     
     iti_complet, _ = g.itinéraire_sommets(chemin, bavard=bavard-1)
     # Pour vieux chemin, je prends le chemin qui utilise le même nœud de départ et d’arrivée que chemin_complet (pour éviter de biaiser l’apprentissage dans le cas de gros ensembles)
     s_départ = iti_complet[0]
     s_arrivée = iti_complet[-1]
+    chemin.étapes[0].coords = g.coords_of_id_osm(s_départ)
+    chemin.étapes[-1].coords = g.coords_of_id_osm(s_arrivée)
     vieux_iti, longueur = dijkstra.itinéraire(g, s_départ, s_arrivée, chemin.p_détour, bavard=bavard-1)
     arêtes_chemin = dico_arêtes(iti_complet)
     arêtes_vieux_chemin = dico_arêtes(vieux_iti)

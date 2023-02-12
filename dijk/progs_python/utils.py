@@ -277,12 +277,11 @@ def dessine_cycla(g, z_d, où_enregistrer, bavard=0):
     Entrée : où_enregistrer (str) adresse et nom du fichier à créer.
     Effet : Crée la carte de la cyclabilité.
     """
-    #g.calcule_cycla_min_max(z_d)
 
     arêtes = []
 
     for a in z_d.arêtes().exclude(cycla__isnull=True).prefetch_related("départ", "arrivée"):
-        arêtes.append((a, {"color": couleur_of_cycla(a, g, z_d), "popup": a.cycla}))
+        arêtes.append((a, {"color": couleur_of_cycla(a, z_d), "popup": a.cycla}))
 
     carte = folium_of_arêtes(g, arêtes)
 
@@ -325,6 +324,7 @@ def lecture_tous_les_chemins(g, z_t=None, n_lectures_max=20, bavard=1):
                 LOG(f"\nLecture de {c}.\n {n_modif} arêtes modifiées, distance = {l}.\n\n", bavard=bavard)
                 if n_modif > 0:
                     à_lire_après.append(c)
+                    c.zone.calculeCyclaMinEtMax()
                 else:
                     c.c_d.save()
             except Exception as e:

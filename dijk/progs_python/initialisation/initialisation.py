@@ -3,7 +3,6 @@
 
 import os
 import osmnx
-import math
 
 from time import perf_counter
 from pprint import pprint, pformat
@@ -13,16 +12,16 @@ from dijk.models import Ville, Zone, Cache_Adresse, Ville_Zone, Sommet, Rue, Ar�
 import dijk.models as mo
 from django.db.models import Count
 
-from dijk.progs_python.params import DONNÉES, RACINE_PROJET
+from dijk.progs_python.params import RACINE_PROJET
 from initialisation.noeuds_des_rues import extrait_nœuds_des_rues
 from lecture_adresse.normalisation import arbre_rue_dune_ville, partie_commune, prétraitement_rue, normalise_rue
 import networkx as nx
 from graphe_par_networkx import Graphe_nx
-from petites_fonctions import chrono, LOG, supprime_objets_par_lots, paires, distance_euc
+from petites_fonctions import chrono, LOG, supprime_objets_par_lots, paires
 import dijk.progs_python.recup_donnees as rd
 
 import initialisation.vers_django as vd
-from quadrarbres import QuadrArbreSommet, QuadrArbreArête
+from quadrarbres import QuadrArbreArête
 from initialisation.amenities import charge_lieux_of_ville
 
 
@@ -47,9 +46,11 @@ def supprimeTousArbresArêtesDeLaBase():
     Efface tous les arbres arêtes de la base.
     """
     if mo.ArbreArête.objects.all().count() > 0:
-        a = mo.ArbreArête.racine()
+        a = mo.ArbreArête.uneRacine()
+        print(f"Suppression de l’arbre de {a.getZones().all()}")
         a.supprime()
         supprimeTousArbresArêtesDeLaBase()
+    # mo.ArbreArête.effaceTout()
     
 
 def quadArbreArêtesDeLaBase():
@@ -58,25 +59,41 @@ def quadArbreArêtesDeLaBase():
     """
     print("Suppression de l’ancien arbre")
     supprimeTousArbresArêtesDeLaBase()
-    print("Création de l’arbre de toute la base")
-    print(" Récupération de toutes les arêtes")
-    l = list(Arête.objects.all())
-    #assert all(isinstance(a, Arête) for a in l), f"Un truc n’est pas une arête"
-    print("Création de l’arbre (type QuadrArbreArête)")
-    arbre = QuadrArbreArête.of_list_darêtes_d(l)
-    print("Sauvegarde de l’arbre dans la base")
-    arbre.sauv_dans_base(ArbreArête, SegmentArête)
+
+    # Création des arbres
+    for z in mo.Zone.objects.all():
+        if not z.inclue_dans:
+            créeQuadArbreArêtesDeZone(z)
+
+    # Association des arbres aux sous-zones
+    for z in mo.Zone.objects.all():
+        if z.inclue_dans:
+            z.arbre_arêtes = z.plusGrandeZoneContenant().arbre_arêtes
+            z.save()
+        
+    # print("Création de l’arbre de toute la base")
+    # print(" Récupération de toutes les arêtes")
+    # l = list(Arête.objects.all())
+    # #assert all(isinstance(a, Arête) for a in l), f"Un truc n’est pas une arête"
+    # print("Création de l’arbre (type QuadrArbreArête)")
+    # arbre = QuadrArbreArête.of_list_darêtes_d(l)
+    # print("Sauvegarde de l’arbre dans la base")
+    # arbre.sauv_dans_base(ArbreArête, SegmentArête)
 
     
 def créeQuadArbreArêtesDeZone(z_d: mo.Zone, bavard=0) -> ArbreArête:
     """
-    Crée le quadArbre de la plus grande zone contenant z_d, l’enregistre dans la base, et l’associe à z_d.
+    Effet : Crée le quadArbre de la plus grande zone contenant z_d, l’enregistre dans la base, et l’associe à z_d ainsi qu’à toutes les zones contenant z_d.
+    Sortie : l’arbre créé.
     """
+    
     print(f"(Arbre des arêtes de la zone {z_d})")
+    
     # Cas récursif
     if z_d.inclue_dans:
         res = créeQuadArbreArêtesDeZone(z_d.inclue_dans, bavard=bavard)
         z_d.arbre_arêtes = res
+        z_d.save()
         return res
 
     # Cas de base
@@ -84,6 +101,7 @@ def créeQuadArbreArêtesDeZone(z_d: mo.Zone, bavard=0) -> ArbreArête:
         qaa = QuadrArbreArête.of_list_darêtes_d(z_d.arêtes())
         res = qaa.sauv_dans_base(ArbreArête, SegmentArête)
         z_d.arbre_arêtes = res
+        z_d.save()
         return res
 
     
@@ -257,6 +275,8 @@ def remplaceArête(g: Graphe_nx, s, t, nom: str):
     
 
 def places_en_cliques(g: Graphe_nx, ville):
+
+    # Récupération des zones piétonnes
     rés_overpass = rd.zones_piétonnes(ville.bbox())
     places = [
         (i, [s for s in truc._node_ids if s in g])
@@ -264,6 +284,7 @@ def places_en_cliques(g: Graphe_nx, ville):
     ]
     places = [(i, p) for (i, p) in places if len(p)>1]  # Aucun ou un seul nœud ça ne sert à rien.
 
+    # Création des nouvelles arêtes
     nb = 0
     for i, place in places:
         print(f"Mise en clique de {rés_overpass.ways[i].tags}\n")

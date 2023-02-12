@@ -130,6 +130,7 @@ class Quadrarbre():
     
     def __len__(self):
         """ Renvoie le nb de feuilles."""
+        raise RuntimeError("Le calcul de la longeur d’un arbre est trop lent; cette méthode a été supprimée.")
         if self.fils is None:
             return 1
         else:
