@@ -222,7 +222,7 @@ def transfert_graphe(g, ville_d,
     LOG(f"Ajout des {len(à_créer)} nouveaux sommets dans la base")
     sauv_objets_par_lots(à_créer)
     LOG(f"Mise à jour des {len(à_màj)} sommets modifiés")
-    Sommet.objects.bulk_update(à_màj, ["lon", "lat"])
+    Sommet.objects.bulk_update(à_màj, ["lon", "lat"], batch_size=5000)
 
     sommets_venant_du_graphe = à_créer+à_màj
 
@@ -236,8 +236,8 @@ def transfert_graphe(g, ville_d,
     dico_voisins = {}
     toutes_les_arêtes = Arête.objects.all().select_related("départ", "arrivée")
     for a in toutes_les_arêtes:
-        s = a.départ#.id_osm
-        t = a.arrivée#e.id_osm
+        s = a.départ
+        t = a.arrivée
         if s not in dico_voisins:
             dico_voisins[s] = []
         dico_voisins[s].append((t, a))
@@ -274,11 +274,6 @@ def transfert_graphe(g, ville_d,
                     Si elle est dans les nouvelles, elle est mise dans à_màj avec sa binôme, qui est supprimée de nouvelles_arêtes.
                     Sinon elle est mise dans à_supprimer
                 """
-                
-                if va.départ.id_osm == 3206065247 and va.arrivée.id_osm == 7972899167:
-                    print(f"récup_arête lancé sur l’arête {va}.\n nouvelles arêtes: {pformat(nouvelles_arêtes)}.\n Géométrie : {va.geom}, {[a.geom for a in nouvelles_arêtes]}")
-                    
-                    
                 for (i, na) in enumerate(nouvelles_arêtes):
                     if na == va:  # NB: le __eq__ se base sur la géom.
                         à_màj.append((va, na))
@@ -325,7 +320,6 @@ def transfert_graphe(g, ville_d,
     à_màj = []
     à_supprimer = []
     à_garder = []
-    #with transaction.atomic():  # Utile pour les suppressions d’anciennes arêtes.
     for s in gx.nodes:
         s_d = tous_les_sommets.get(id_osm=s)
         for t, _ in gx[s].items():
@@ -348,7 +342,7 @@ def transfert_graphe(g, ville_d,
     
     if à_màj:
         LOG(f"Mise à jour des {len(à_màj)} anciennes arêtes", bavard=bavard)
-        Arête.objects.bulk_update(à_màj, champs_arêtes_à_màj)
+        Arête.objects.bulk_update(à_màj, champs_arêtes_à_màj, batch_size=5000)
     else:
         LOG("Pas d’arête à mettre à jour", bavard=bavard)
         
