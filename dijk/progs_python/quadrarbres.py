@@ -128,13 +128,13 @@ class Quadrarbre():
             return res
 
     
-    def __len__(self):
-        """ Renvoie le nb de feuilles."""
-        raise RuntimeError("Le calcul de la longeur d’un arbre est trop lent; cette méthode a été supprimée.")
-        if self.fils is None:
-            return 1
-        else:
-            return sum(len(f) for f in self.fils)
+    # def __len__(self):
+    #     """ Renvoie le nb de feuilles."""
+    #     raise RuntimeError("Le calcul de la longeur d’un arbre est trop lent; cette méthode a été supprimée.")
+    #     if self.fils is None:
+    #         return 1
+    #     else:
+    #         return sum(len(f) for f in self.fils)
 
         
     def bbox_contient(self, bb: (float, float, float, float)) -> bool:
