@@ -267,7 +267,7 @@ def remplaceArête(g: Graphe_nx, s, t, nom: str):
     if t in gn[s]:
         for _ in range(len(gn[s][t])):
             gn.remove_edge(s, t)
-    if s in gn[s]:
+    if s in gn[t]:
         for _ in range(len(gn[t][s])):
             gn.remove_edge(t, s)
     gn.add_edge(s, t, length=d, name=nom, highway="pedestrian")
