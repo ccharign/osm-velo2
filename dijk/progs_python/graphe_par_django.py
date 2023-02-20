@@ -239,11 +239,6 @@ class Graphe_django():
         a_d = self.meilleure_arête(s, t, p_détour)
         a_d.incr_cyclabilité(dc)
         a_d.save()
-        # Il faudrait avoir la zone...
-        # if dc > 0:
-        #     self.cycla_max = max(self.cycla_max, a_d.cycla)
-        # else:
-        #     self.cycla_min = min(self.cycla_min, a_d.cycla)
 
         
     def calcule_cycla_min_max(self, z_d, arêtes=None):

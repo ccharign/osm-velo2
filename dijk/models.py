@@ -295,12 +295,12 @@ def longueur_arête(s_d, t_d, a):
               g (graphe_par_django)
     Sortie : min(a["length"], d_euc(s,t))
     """
-    deuc = distance_euc(s_d.coords(), t_d.coords())
-    if a["length"] < deuc:
-        print(f"Distance euc ({deuc}) > a['length'] ({a['length']}) pour l’arête {a} de {s_d} à {t_d}")
-        return deuc
-    else:
-        return a["length"]
+    #deuc = distance_euc(s_d.coords(), t_d.coords())
+    # if a["length"] < deuc:
+    #     print(f"Distance euc ({deuc}) > a['length'] ({a['length']}) pour l’arête {a} de {s_d} à {t_d}")
+    #     return deuc
+    # else:
+    return a["length"]
 
 
 class Arête(models.Model):

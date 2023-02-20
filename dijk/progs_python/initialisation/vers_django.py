@@ -13,7 +13,7 @@ from pprint import pformat, pprint
 from django.db import transaction, close_old_connections
 from django.db.models import Q
 
-from dijk.models import Ville, Rue, Sommet, Arête, Chemin_d, Ville_Zone, Zone, Lieu
+from dijk.models import Ville, Rue, Sommet, Arête, Chemin_d, Zone, Lieu
 from dijk.progs_python.lecture_adresse.normalisation import prétraitement_rue, partie_commune
 from params import LOG
 from petites_fonctions import intersection, sauv_objets_par_lots
@@ -61,31 +61,6 @@ def arbre_des_villes(zone_d=None):
     return res
 
 
-
-        
-# def nv_ville(nom, code, zone_d, tol=3):
-#     """
-#     Effet : si pas déjà présente, rajoute la ville dans la base django et dans l'arbre lex ARBRE_VILLES.
-#     Sortie : l'objet Ville créé ou récupéré dans la base.
-#     """
-#     nom_norm = partie_commune(nom)
-#     arbre = arbre_des_villes(zone_d=zone_d)
-#     dans_arbre, d = arbre.mots_les_plus_proches(à_mettre_dans_arbre(nom_norm, code), d_max=tol)
-    
-#     if len(dans_arbre) > 0:
-#         print(f"Ville(s) trouvée(s) dans l'arbre : {tuple(dans_arbre)}")
-#         nom_n_corrigé, code_corrigé = tuple(dans_arbre)[0].split("|")
-#         if d>0:
-#             LOG(f"Avertissement : la ville {nom_norm, code} a été corrigée en {nom_n_corrigé, code_corrigé}")
-#         v_d = Ville.objects.get(nom_norm=nom_n_corrigé, code=code_corrigé)
-#         return v_d
-    
-#     else:
-#         v_d = Ville(nom_complet=nom, code=code, nom_norm=nom_norm)
-#         v_d.save()
-#         rel = Ville_Zone(ville=v_d, zone=zone_d)
-#         rel.save()
-#         return v_d
 
     
 def liste_attributs(g):
@@ -181,38 +156,6 @@ def désoriente(g, bavard=0):
                 for a in gx[s][t].values():
                     if a["highway"] != "cycleway" and not any("rond point" in c for c in map(partie_commune, tuple_valeurs(a, "name"))) and not existe_inverse(s, t, a):
                         ajoute_inverse(s, t, a)
-
-
-# @transaction.atomic
-# def sauv_données(à_sauver):
-#     """
-#     Sauvegarde les objets en une seule transaction.
-#     Pour remplacer bulk_create si besoin du champ id nouvellement créé.
-#     """
-#     for o in à_sauver:
-#         o.save()
-#     LOG("fin de sauv_données")
-
-
-
-# def a_la_valeur(a, att, val):
-#     """
-#     Entrée : a (arête nx)
-#              att
-#              val
-#     Indique si l’arête a à la valeur val pour l’attribut att
-#     """
-#     if att in a:
-#         if isinstance(a[att], str):
-#             return a[att]==val
-#         elif isinstance(a[att], list):
-#             return val in a[att]
-#         else:
-#             print(f"Avertissement : l’attribut {att} pour l’arête {a} n’était ni un str ni un list.")
-#             return False
-#     else:
-#         return False
-
     
 
 
@@ -384,21 +327,18 @@ def transfert_graphe(g, ville_d,
     à_garder = []
     #with transaction.atomic():  # Utile pour les suppressions d’anciennes arêtes.
     for s in gx.nodes:
-            s_d = tous_les_sommets.get(id_osm=s)
-            for t, _ in gx[s].items():
-                if t != s:  # Suppression des boucles
-                    nb += 1
-                    if nb%500==0: print(f"    {nb} arêtes traitées\n ")  #{temps}\n{nb_appels}\n")
-                    t_d = tous_les_sommets.get(id_osm=t)
-                    if rapide < 2:
-                        à_s, à_c, à_m, à_g = correspondance(s_d, t_d, gx)
-                        # if s_d.id_osm == 3206065247 and t_d.id_osm == 7972899167:
-                        #     print(f"Arête problématique ! {à_s, à_c, à_m, à_g}")
-                        #     input("")
-                        à_supprimer.extend(à_s)
-                        à_créer.extend(à_c)
-                        à_màj.extend(à_m)
-                        à_garder.extend(à_g)
+        s_d = tous_les_sommets.get(id_osm=s)
+        for t, _ in gx[s].items():
+            if t != s:  # Suppression des boucles
+                nb += 1
+                if nb%500==0: print(f"    {nb} arêtes traitées\n ")  #{temps}\n{nb_appels}\n")
+                t_d = tous_les_sommets.get(id_osm=t)
+                if rapide < 2:
+                    à_s, à_c, à_m, à_g = correspondance(s_d, t_d, gx)
+                    à_supprimer.extend(à_s)
+                    à_créer.extend(à_c)
+                    à_màj.extend(à_m)
+                    à_garder.extend(à_g)
 
     LOG(f"Suppression de {len(à_supprimer)} arêtes.", bavard=bavard)
     supprime_tout(à_supprimer)
@@ -567,15 +507,15 @@ def met_en_clique(g, nœuds, nom, cycla_défaut=1.1, bavard=0):
     print(f"{cpt} nouvelles arêtes créées.")
     
     
-def place_en_clique(g, v_d):
-    """
-    Effet : Transforme en clique toutes les places.
-    """
-    for r in Rue.objects.filter(
-            Q(nom_complet__icontains="place") | Q(nom_complet__icontains="square"),
-            ville=v_d):
-        print(f"Mise en clique : {r}")
-        met_en_clique(g, r.nœuds(), r.nom_complet)
+# def place_en_clique(g, v_d):
+#     """
+#     Effet : Transforme en clique toutes les places.
+#     """
+#     for r in Rue.objects.filter(
+#             Q(nom_complet__icontains="place") | Q(nom_complet__icontains="square"),
+#             ville=v_d):
+#         print(f"Mise en clique : {r}")
+#         met_en_clique(g, r.nœuds(), r.nom_complet)
     
 
 
