@@ -21,7 +21,7 @@ class Itinéraire():
         liste_arêtes (Arête list)
         longueur (float), longueur ressentie
         couleur (str)
-        marqueurs (list[str]), liste de marqueurs à afficher. Il s’agit du code leaflet à mettre dans la partie script de la page html.
+        marqueurs (list[dict]), liste de marqueurs à afficher. Pour chaque marqueur est enregistré un dico sérialisable à jsonner.
     """
     
     def __init__(self, g, sommets: tuple, longueur: float, couleur: str, p_détour: float, marqueurs=None):
@@ -293,7 +293,7 @@ def iti_qui_passe_par_un_sommet(g, c, bavard=0):
     Sortie (Itinéraire) : plus court itinéraire passant par un sommet de chaque étape, longueur d’icelui.
     Pour l’instant, les étapes intermédaires classiques sont ignorées : seules sont prises en compte le départ, l’arrivée, et les étapes_sommets.
     """
-    correction_max = 1. / formule_pour_correction_longueur(1., g.cycla_max[c.zone], c.p_détour)
+    correction_max = 1. / formule_pour_correction_longueur(1., c.zone.cycla_max, c.p_détour)
     étapes = [c.arrivée()] + list(reversed(c.étapes_sommets))  # La fonction vers_une_étape_par_un_sommet prend les étapes à atteindre avec la première à droite et la dernière à gauche.
     dist = {s: 0. for s in c.départ().nœuds}
     (sommets, marqueurs), longueur = vers_une_étape_par_un_sommet(
