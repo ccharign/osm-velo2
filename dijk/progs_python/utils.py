@@ -186,7 +186,7 @@ def gpx_of_iti(iti_d, bavard=0):
 # Affichage folium avec couleur
 # voir https://stackoverflow.com/questions/56234047/osmnx-plot-a-network-on-an-interactive-web-map-with-different-colours-per-infra
 
-def dessine(listes_chemins, g, z_d, ad_départ, ad_arrivée, où_enregistrer, bavard=0, fouine=False):
+def dessine(listes_chemins, g, z_d: mo.Zone, ad_départ, ad_arrivée, où_enregistrer, bavard=0, fouine=False):
     """
     Entrées :
       - listes_chemins : liste de couples (liste d'Arêtes, couleur)
@@ -272,14 +272,14 @@ def moyenne(t):
     return sum(t) / len(t)
 
 
-def dessine_cycla(g, z_d, où_enregistrer, bavard=0):
+def dessine_cycla(g, z_d: mo.Zone, où_enregistrer, bavard=0):
     """
     Entrée : où_enregistrer (str) adresse et nom du fichier à créer.
     Effet : Crée la carte de la cyclabilité.
     """
 
     arêtes = []
-
+    z_d.calculeCyclaMinEtMax()
     for a in z_d.arêtes().exclude(cycla__isnull=True).prefetch_related("départ", "arrivée"):
         arêtes.append((a, {"color": couleur_of_cycla(a, z_d), "popup": a.cycla}))
 
@@ -348,7 +348,7 @@ def réinit_cycla(g, z_t=None, nb_lectures=6, bavard=0):
     if z_t is None:
         à_parcourir = g.zones
     else:
-        z=g.charge_zone(z_t)
+        z = g.charge_zone(z_t)
         à_parcourir = [z]
     for z in à_parcourir:
         print(f"Effaçage de la cyclabilité des arêtes de la zone {z}")
