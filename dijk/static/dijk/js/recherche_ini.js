@@ -71,7 +71,7 @@ function récup_départ(){
     if (case_géol.checked){
 	//let latlon = leForm.localisation.value.split(",").map(parseFloat); // NB: les coords ont déjà été enregistrées dans le format lon,lat
 	const ll = {lat: localisation.latitude, lng:localisation.longitude};
-	ÉTAPES[0] = new É.ÉtapeAvecCoordsÉtapeAvecCoord({type: "arête", coords: ll}, ll);
+	ÉTAPES[0] = new É.ÉtapeAvecCoords({type: "arête", coords: ll}, ll);
 	
     }else if (!ÉTAPES[0].objet_initial){ // l’objet Étape du départ n’a pas été rempli
 	// Je fais une étape adresse avec le contenu du champ (qui n’a donc pas été autocomplété)
