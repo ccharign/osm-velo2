@@ -117,18 +117,16 @@ def complétion(à_compléter: str, nbMax: int, z_d):
     lieux = mo.Lieu.objects.filter(ville__in=req_villes).prefetch_related("ville", "type_lieu")
     for mot in mots:
         lieux = lieux.filter(nom_norm__contains=mot)
-    
+
     print(f"{len(lieux)} lieux trouvées")
     
     res.ajoute_un_paquet([l.pour_autocomplète() for l in lieux])
 
 
     # Recherche dans les rues
-
     début = " ".join(x for x in [num, bis_ter] if x)
     if début:
         début += " "
-        
     rues = mo.Rue.objects.filter(nom_norm__icontains=rue, ville__in=req_villes).prefetch_related("ville")
     res.ajoute_un_paquet([r.pour_autocomplète(num, bis_ter) for r in rues])
 
@@ -146,8 +144,3 @@ def complétion(à_compléter: str, nbMax: int, z_d):
     #     print(f"Trouvé dans CacheNomRue : {chose}")
     #     chaîne = chaîne_à_renvoyer(chose.nom_osm, chose.ville.nom_complet)
     #     res.ajoute(chaîne_à_renvoyer(chose.nom_osm, chose.ville.nom_complet))
-
-
-
-
-    

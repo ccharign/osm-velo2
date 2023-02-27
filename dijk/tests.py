@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.test import Client
 from django.db import close_old_connections
 
-import dijk.pour_shell as sh
+from dijk.pour_shell import mo
 
 import dijk.progs_python.initialisation.amenities as amen
 import dijk.progs_python.initialisation as ini
@@ -24,10 +24,11 @@ import dijk.progs_python.initialisation.communes as communes
 import dijk.progs_python.recup_donnees as rd
 
 
-gre = sh.mo.Ville.objects.get(nom_complet="Grenoble")
-pau = sh.mo.Ville.objects.get(nom_complet="Pau")
-pag = sh.mo.Zone.objects.get(nom="Pau_agglo")
-ousse = sh.mo.Ville.objects.get(nom_complet="Ousse")
+gre = mo.Ville.objects.get(nom_complet="Grenoble")
+pau = mo.Ville.objects.get(nom_complet="Pau")
+pauz = mo.Zone.objects.get(nom="Pau")
+pag = mo.Zone.objects.get(nom="Pau_agglo")
+ousse = mo.Ville.objects.get(nom_complet="Ousse")
 
 
 # Create your tests here.

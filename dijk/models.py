@@ -101,6 +101,9 @@ class Ville(models.Model):
     def __str__(self):
         return self.nom_complet
 
+    def __gt__(self, autre):
+        return self.population > autre.population
+
     def avec_code(self):
         return f"{self.code} {self.nom_complet}"
 
@@ -974,8 +977,15 @@ class TypeLieu(models.Model):
     nom_osm = models.CharField(max_length=200)
     nom_français = models.TextField(blank=True, default=None, null=True)
 
-    _cat_à_afficher = {"tourism": "(tourisme)", "shop": "(commerce)", "leisure": "(loisirs)", "amenity": ""}
+    # Attention à l’ordre ci-dessous : en cas de plusieurs tags, c’est le premier qui sera pris en compte.
+    _cat_à_afficher = {"tourism": "(tourisme)", "shop": "(commerce)", "leisure": "(loisirs)", "amenity": "", "railway": "", "public_transport": "(transports en commun)"}
+    _types_à_ignorer = {
+        "amenity": ("shelter",),
+        "public_transport": ("stop_position",),
+        "railway": ("rail",)
+    }
 
+    
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["catégorie", "nom_osm"], name="Une seule entrée pour chaque (catégorie, nom_osm).")
@@ -990,6 +1000,14 @@ class TypeLieu(models.Model):
     def __hash__(self):
         return self.nom_osm.__hash__()
 
+
+    def estInutile(self) -> bool:
+        """
+        Indique si le type figure dans ceux de _types_à_ignorer
+        """
+        return self.catégorie in self._types_à_ignorer and self.nom_osm in self._types_à_ignorer[self.catégorie]
+    
+    
     def pour_overpass(self):
         """
         Renvoie la chaîne de caractère [catégorie~nom_osm]
@@ -1002,6 +1020,7 @@ class TypeLieu(models.Model):
         Entrées:
            d, dico issu d’une recherche overpass
            créer_type : Pour un lieu pas présent dans la base, il sera rajouté si créer_type est vrai, et la fonction renverra None dans le cas contraire.
+           json_tout : le json de d. Utilisé uniquement pour traiter le cas des arrêts de bus et autres POI liés aux transports publics.
         Sortie:
            le TypeLieu correspondant à d
         """
@@ -1012,11 +1031,7 @@ class TypeLieu(models.Model):
             if cat in d:
                 nom_osm = d[cat]
                 catégorie = cat
-
-        # Beaucoup de lieux sans catégorie sont des arrêts de bus. Je fais un cas particulier:
-        if catégorie == "autre" and "public_transport" in d["json_tout"]:
-            catégorie = "amenity"
-            nom_osm = "public_transport"
+                break           # Pour rester sur le premier trouvé.
 
         # Voyons si déjà présent dans la base
         tls = cls.objects.filter(nom_osm=nom_osm, catégorie=catégorie)
@@ -1034,6 +1049,15 @@ class TypeLieu(models.Model):
             else:
                 return None
 
+    @classmethod
+    def supprimerLesInutiles(cls):
+        """
+        Supprime toutes les entrées d’un des types de lieu indiqué dans cls._types_à_ignorer
+        """
+        print("Suppression des types de lieux marqués comme inutiles.")
+        for (cat, tls) in cls._types_à_ignorer.items():
+            print(cat, tls)
+            print(Lieu.objects.filter(type_lieu__nom_osm__in=tls, type_lieu__catégorie=cat).delete())
 
 
 class GroupeTypeLieu(models.Model):
@@ -1202,14 +1226,14 @@ class Lieu(models.Model):
 
 
 
-    def ajoute_arête_la_plus_proche(self, arbre_arêtes, dmax=30):
+    def ajoute_arête_la_plus_proche(self, arbre_arêtes: ArbreArête, dmax=30.):
         """
         Entrée :
             arbre_arêtes un Q arbre d’arêtes
 
         Effet:
             l’arête la plus proche de self est ajoutée dans l’attribut arête.
-            Enregistre aussi la ville de l’arête. Pour simplifier, c’est la première ville qui est prise dans le cas où l’arête est sur une frontière.
+            Enregistre aussi la ville de l’arête. Dans le cas où l’arête est sur une frontière c’est la ville avec la plus grande population qui est gardée.
             La modif n’est *pas* sauvegardée, pour permettre un bulk_update ultérieur.
 
         Param :
@@ -1219,7 +1243,7 @@ class Lieu(models.Model):
         if d < dmax:
             a_d = Arête.objects.get(pk=a.pk)
             self.arête = a_d
-            self.ville = self.arête.villes.first()
+            self.ville = max(self.arête.villes.all())  # La relation d’ordre sur les villes est la population
 
             
     def rassemble(self, autre):
@@ -1228,11 +1252,11 @@ class Lieu(models.Model):
         Effet: autre est supprimé de la base, et ses infos sont fusionnées avec celles de self.
         """
         # TODO
-        pass
+        raise NotImplementedError()
 
     
     @classmethod
-    def of_dico(cls, d, arbre_a, tous_les_id_osm=None, créer_type=False, force=False):
+    def of_dico(cls, d: dict, arbre_a: ArbreArête, tous_les_id_osm=None, créer_type=False, force=False):
         """
         Entrée:
             d (str-> T dico), dico contenant les données à utiliser. Au minimum lon et lat. Tous les champs qui ne servent pas à remplir un attribut de l’objet seront jsonisés dans json_autres_données.
@@ -1252,6 +1276,10 @@ class Lieu(models.Model):
 
         La création ou la modif n’est pas sauvegardée pour permettre un bulk_create ou bulk_update ultérieur.
         """
+
+        type_du_lieu = TypeLieu.of_dico(d, créer_type)
+        if type_du_lieu.estInutile():
+            return None, False, False
         
         nv_json_tout = json.dumps(d)  # le dico d’origine figurera dans l’attribut json_tout
         d_final = {c: d[c] for c in cls._champs if c in d}  # Le dico à envoyer au constructeur
@@ -1267,8 +1295,8 @@ class Lieu(models.Model):
             else:
                 # lieu à mettre à jour
                 res = ancien
-                for attr, value in d_final.items():
-                    setattr(res, attr, value)
+                for attr, val in d_final.items():
+                    setattr(res, attr, val)
                 créé, utile = False, True
         else:
             # Nouveau lieu
@@ -1280,8 +1308,8 @@ class Lieu(models.Model):
         res.json_tout = nv_json_tout
         
         # Type osm du lieu
-        res.type_lieu = TypeLieu.of_dico(d_final, créer_type)
-
+        res.type_lieu = type_du_lieu
+        
         # Adresse
         # Géré via l’arête maintenant... Éventuellement mettre le numéro ?
         # if "addr:street" in d:

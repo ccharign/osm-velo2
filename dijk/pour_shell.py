@@ -39,14 +39,15 @@ def mise_à_jour():
     print("Chargement de toutes les zones:\n")
     for z in mo.Zone.objects.all():
         v.g.charge_zone(z.nom)
+        amen.charge_lieux_of_zone(z, force=True)
 
     print("Entraînement:\n")
     utils.lecture_tous_les_chemins(v.g)
 
-    print("Chargement des lieux:")
-    villes = mo.Ville.objects.filter(données_présentes=True)
-    for ville in villes:
-        amen.charge_lieux_of_ville(ville)
+    # print("Chargement des lieux:")
+    # villes = mo.Ville.objects.filter(données_présentes=True)
+    # for ville in villes:
+    #     amen.charge_lieux_of_ville(ville, v.g.arbre_arêtes[v])
 
     print("fini!\n")
 

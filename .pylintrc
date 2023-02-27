@@ -65,7 +65,7 @@ ignored-modules=
 
 # Use multiple processes to speed up Pylint. Specifying 0 will auto-detect the
 # number of processors available to use.
-jobs=1
+jobs=0
 
 # Control the amount of potential inferred values when inferring a single
 # object. This can help the performance when dealing with large functions or
@@ -150,7 +150,9 @@ disable=raw-checker-failed,
         suppressed-message,
         useless-suppression,
         deprecated-pragma,
-        use-symbolic-message-instead
+        use-symbolic-message-instead,
+	non-ascii-name,
+	invalid-name,
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -245,7 +247,7 @@ overgeneral-exceptions=BaseException,
 [CLASSES]
 
 # Warn about protected attribute access inside special methods
-check-protected-access-in-special-methods=no
+check-protected-access-in-special-methods=yes
 
 # List of method names used to declare (i.e. assign) instance attributes.
 defining-attr-methods=__init__,
@@ -275,7 +277,7 @@ valid-metaclass-classmethod-first-arg=cls
 additional-builtins=
 
 # Tells whether unused global variables should be treated as a violation.
-allow-global-unused-variables=yes
+allow-global-unused-variables=no
 
 # List of names allowed to shadow builtins
 allowed-redefined-builtins=
@@ -353,7 +355,7 @@ indent-after-paren=4
 indent-string='    '
 
 # Maximum number of characters on a single line.
-max-line-length=100
+max-line-length=150
 
 # Maximum number of lines in a module.
 max-module-lines=1000
@@ -364,7 +366,7 @@ single-line-class-stmt=no
 
 # Allow the body of an if to be on the same line as the test if there is no
 # else.
-single-line-if-stmt=no
+single-line-if-stmt=yes
 
 
 [LOGGING]
@@ -441,7 +443,7 @@ const-naming-style=UPPER_CASE
 
 # Minimum line length for functions/classes that require docstrings, shorter
 # ones are exempt.
-docstring-min-length=-1
+docstring-min-length=5
 
 # Naming style matching correct function names.
 function-naming-style=snake_case
@@ -559,7 +561,7 @@ missing-member-hint-distance=1
 
 # The total number of similar names that should be taken in consideration when
 # showing a hint for a missing member.
-missing-member-max-choices=1
+missing-member-max-choices=2
 
 # Regex pattern to define which classes are considered mixins.
 mixin-class-rgx=.*[Mm]ixin

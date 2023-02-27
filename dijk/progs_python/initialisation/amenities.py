@@ -42,46 +42,6 @@ def initGroupesTypesLieux(chemin="dijk/progs_python/initialisation/données_à_c
             gtl.save()
 
 
-# def charge_type_lieux(ld):
-#     """
-#     ld (liste de dico), contient le résultat d’un récup_amenities
-#     Effet : remplit la table TypeAmenity avec les nouveaux. Demande interactivement la traduction en français.
-#     """
-
-#     déjà_présente = set(TypeLieu.objects.values_list("nom_osm", "catégorie"))
-
-#     for r in ld:
-#         if (r["type"], r["catégorie"]) in déjà_présente:
-#             # mise à jour ?
-#             None
-#         else:
-#             tl = TypeLieu(nom_osm=r["type"], catégorie=r["catégorie"])
-#             nom_traduit = input(f"Traduction de {r['type']} ? C’est pour {r['name']} ({r['catégorie']}). ")
-#             close_old_connections()
-#             tl.nom_français = nom_traduit
-#             déjà_présente.add((r["type"], r["catégorie"]))
-#             tl.save()
-#             if not nom_traduit:
-#                 print(f"J’ignorerai à l’avenir le type {r['type']}")
-
-
-                
-# def ajoute_ville_et_rue(ll, taille_paquets=1000, force=False, bavard=0):
-#     """
-#     Entrée : ll (Lieu iterable)
-#     Effet : ajoute les adresses et les villes trouvées sur data.gouv.
-#     Paramètres :
-#         force, si True, écrase les données déjà présentes.
-#         taille_paquets : nb de lieux à envoyer à la fois à data.gouv.
-#     """
-
-#     nb_traités = 0
-#     nb_problèmes = 0
-#     for paquet in morceaux_tableaux(ll, taille_paquets):
-#         print(f"{nb_traités} lieux traités")
-#         nb_traités += taille_paquets
-#         Lieu.objects.bulk_update(à_maj, ["ville", "adresse"])
-
 
 
 def charge_lieux_of_ville(v_d, arbre_a, bavard=0, force=False):
@@ -93,31 +53,27 @@ def charge_lieux_of_ville(v_d, arbre_a, bavard=0, force=False):
     """
 
     LOG(f"Lieux de {v_d}", bavard=1)
-
-    # if not arbre_a:
-    #     arbre_a = mo.ArbreArête.racine()
-        
     LOG("Récupération des lieux via overpass", bavard=1)
     ll = rd.lieux_of_ville(v_d, arbre_a, bavard=bavard, force=force)
-
     v_d.lieux_calculés = datetime.date.today()
     v_d.save()
-
     LOG(f"charge_lieux_of_ville({v_d}) fini !")
 
 
 
-def charge_lieux_of_zone(z_t, force=False):
+def charge_lieux_of_zone(z_d: Zone, force=False):
     """
     Params:
         force, si Vrai force la mise à jour des lieux déjà présents, et des lieux des villes pour lesquelles lieux_calculés est aujourd’hui.
         L’option force=False est pratique pour relancer le calcul sur les villes qui ont échoué à un premier essai.
     """
     close_old_connections()
-    z_d = Zone.objects.get(nom=z_t)
-    arbre_a = QuadrArbreArête.of_list_darêtes_d(z_d.arêtes())
-    for rel in z_d.ville_zone_set.all():
-        if force or rel.ville.lieux_calculés < datetime.date.today():
-            charge_lieux_of_ville(rel.ville, force=force, arbre_a=arbre_a)
+    #z_d = Zone.objects.get(nom=z_t)
+
+    #arbre_a = QuadrArbreArête.of_list_darêtes_d(z_d.arêtes())
+    for ville in z_d.villes():
+        if force or ville.lieux_calculés < datetime.date.today():
+            charge_lieux_of_ville(ville, z_d.arbre_arêtes, force=force)
             print("Pause de 10s pour overpass")
             time.sleep(10)
+    TypeLieu.supprimerLesInutiles()

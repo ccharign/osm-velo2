@@ -317,7 +317,8 @@ def zones_piétonnes(bbox, bavard=0):
 
 def tousLesLieuxNommés(bbox, bavard=0):
     """
-    Renvoie la requête overpass pour récupérer tous les lieux nommés dans la bbox indiquée. Les rues (highway) sont exclues.
+    Renvoie la requête overpass pour récupérer tous les lieux nommés dans la bbox indiquée.
+    Les rues (highway) sont exclues.
     """
     
     return f"""
@@ -327,17 +328,6 @@ def tousLesLieuxNommés(bbox, bavard=0):
     );
     out center;
     """
-    # return f"""
-    # [out:json];
-    # {{{{geocodeArea: {area_overpass}}}}}->.searchArea;
-    # (
-    # nwr[name][!highway](area.searchArea);
-    # );
-    # out center;
-    # """
-
-
-
     
 
 
@@ -379,7 +369,7 @@ def coords_of_objet_overpy(o, type_objet_osm: str):
         return float(o.center_lon), float(o.center_lat)
 
 
-def traitement_req_récup_lieux(requête: str, arbre_a, tous_les_id_osm=None, force=False, bavard=0):
+def traitement_req_récup_lieux(requête: str, arbre_a: mo.ArbreArête, tous_les_id_osm=None, force=False, bavard=0):
     """
     Entrées:
         req : une requête overpass
@@ -443,10 +433,10 @@ def dicos_of_requête(requête: str, bavard=0) -> list:
     return res
 
 
-def lieux_of_ville(ville, arbre_a, bavard=0, force=False):
+def lieux_of_ville(ville: mo.Ville, arbre_a: mo.ArbreArête, bavard=0, force=False):
+    
     """
     Entrée :
-        ville (objet avec un attribut nom_complet)
         arbre_a, arbre d’arête utilisé pour associer l’arête la plus proche à chaque lieu.
 
     Sortie (Lieu list) : liste de Lieux (objets osm avec un tag «name») obtenus en cherchant la ville dans overpass.
@@ -456,15 +446,9 @@ def lieux_of_ville(ville, arbre_a, bavard=0, force=False):
     Paramètres:
         force, si True on màj tous les lieux déjà présents, même si même dico obtenu par traitement_req_récup_lieux
     """
+    
     res = []
     tous_les_id_osm = set([i for i, in mo.Lieu.objects.all().values_list("id_osm")])
-    # for catégorie_lieu in ["amenity", "shop", "tourism", "leisure"]:
-    #     print(f"\nRecherche des lieux pour la catégorie {catégorie_lieu}")
-    #     requête = récup_catégorie_lieu(
-    #         catégorie_lieu,
-    #         préfixe_requête=f'area[name="{ville.nom_complet}"]->.searchArea;',
-    #         bavard=bavard
-    #     )
     requête = tousLesLieuxNommés(ville.bbox())
     LOG(requête, bavard=bavard)
     à_c, à_m = traitement_req_récup_lieux(requête, arbre_a, tous_les_id_osm, force=force, bavard=bavard)
@@ -472,7 +456,6 @@ def lieux_of_ville(ville, arbre_a, bavard=0, force=False):
     print(f"(lieux_of_ville) Création de {len(à_c)} nouveaux lieux")
     mo.Lieu.objects.bulk_create(à_c, batch_size=2000)
     tous_les_id_osm.update((l.id_osm for l in à_c))
-    
     print(f"(lieux_of_ville) Màj des {len(à_m)} lieux modifiés")
     mo.Lieu.objects.bulk_update(à_m, ["nom", "horaires", "tél", "type_lieu", "json_tout", "ville", "arête"], batch_size=2000)
 

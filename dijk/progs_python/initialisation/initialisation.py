@@ -274,7 +274,11 @@ def remplaceArête(g: Graphe_nx, s, t, nom: str):
     gn.add_edge(t, s, length=d, name=nom, highway="pedestrian")
     
 
+    
 def places_en_cliques(g: Graphe_nx, ville):
+    """
+    Récupère les zones piétonnes de la ville et ajoute les cliques correspondantes au graphe g.
+    """
 
     # Récupération des zones piétonnes
     rés_overpass = rd.zones_piétonnes(ville.bbox())
@@ -284,6 +288,9 @@ def places_en_cliques(g: Graphe_nx, ville):
     ]
     places = [(i, p) for (i, p) in places if len(p)>1]  # Aucun ou un seul nœud ça ne sert à rien.
 
+    
+
+    
     # Création des nouvelles arêtes
     nb = 0
     for i, place in places:
