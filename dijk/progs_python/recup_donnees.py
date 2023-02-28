@@ -297,10 +297,13 @@ def nœuds_of_idsrue(ids_rue, bavard=0):
 
 
 
-def zones_piétonnes(bbox, bavard=0):
+def zones_piétonnes(bbox, g, bavard=0) -> list:
     """
-    Renvoie les zones piétonnes (area=yes, highway=pedestrian ou footway) de la zone indiquée.
+    Sortie :  les zones piétonnes (area=yes, highway=pedestrian ou footway) de la zone indiquée.
+    liste de couples (nom, liste de nœuds).
+    Seules les zones ayant au moins deux sommets sont renvoyées.
     """
+    
     requête = f"""
     [out:json];
     (
@@ -311,7 +314,25 @@ def zones_piétonnes(bbox, bavard=0):
 
     api = overpy.Overpass(url="https://lz4.overpass-api.de/api/interpreter", max_retry_count=3, retry_timeout=5)
     LOG(f"requête overpass : \n{requête}", bavard=bavard)
-    return api.query(requête)
+    rés_req = api.query(requête)
+
+    places = []
+    for w in rés_req.ways:
+        nœuds = [s for s in w._node_ids if s in g]
+        if len(nœuds) > 1:
+            nom = w.tags.get("name", "")
+            places.append((nom, nœuds))
+    
+    # places = [
+    #     (i, [s for s in truc._node_ids if s in g])
+    #     for i, truc in enumerate(rés_req.ways)  # + rés_overpass.relations
+    # ]
+
+    print("Avertissement : les places sous forme de relation ne sont pas récupérées actuellement")
+    ways_des_rel = []
+
+  
+    return places
     
 
 

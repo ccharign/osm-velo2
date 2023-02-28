@@ -8,16 +8,11 @@ données_inutiles
 **/tmp**
 tmp**
 log
-site_velo/dijk/tmp/**
-site_velo/dijk/templates/dijk/cycla**
-site_velo/dijk/templates/dijk/résultat_itinéraire_complet*
-site_velo/site_velo/settings.py
+dijk/tmp/**
+dijk/templates/dijk/cycla**
+site_velo/settings.py
 **iti_folium.html
-**/cycla.html
 **.log
-site_velo/dijk/données/Pau/Cyclabilité.csv
-site_velo/dijk/données/Pau/cache_adresses.csv
-site_velo/dijk/données/Pau/sauv**
 **/iti_folium.html
 **/settings.py
 **passenger*
@@ -26,6 +21,6 @@ site_velo/dijk/données/Pau/sauv**
 **/données/**
 !**/à_laisser_dans_git**
 passenger.log
-site_velo/db.sqlite*
+db.sqlite*
 **flycheck**
 **.png

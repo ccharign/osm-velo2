@@ -280,22 +280,12 @@ def places_en_cliques(g: Graphe_nx, ville):
     Récupère les zones piétonnes de la ville et ajoute les cliques correspondantes au graphe g.
     """
 
-    # Récupération des zones piétonnes
-    rés_overpass = rd.zones_piétonnes(ville.bbox())
-    places = [
-        (i, [s for s in truc._node_ids if s in g])
-        for i, truc in enumerate(rés_overpass.ways)  # + rés_overpass.relations
-    ]
-    places = [(i, p) for (i, p) in places if len(p)>1]  # Aucun ou un seul nœud ça ne sert à rien.
-
-    
-
+    places = rd.zones_piétonnes(ville.bbox())
     
     # Création des nouvelles arêtes
     nb = 0
-    for i, place in places:
-        print(f"Mise en clique de {rés_overpass.ways[i].tags}\n")
-        nom = rés_overpass.ways[i].tags.get("name", "")
+    for nom, place in places:
+        print(f"Mise en clique de {nom}")
         for (s, t) in paires(place):
             nb += 1
             remplaceArête(g, s, t, nom)

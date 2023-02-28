@@ -14,6 +14,8 @@ from dijk.progs_python.petites_fonctions import deuxConséc, chrono, distance_eu
 from dijk.progs_python import dijkstra
 from dijk.progs_python.lecture_adresse.arbresLex import ArbreLex
 import dijk.progs_python.lecture_adresse.normalisation as no
+
+from graphe_base import Graphe
 #from quadrarbres import QuadrArbreArête
 
 
@@ -22,7 +24,7 @@ class VillePasTrouvée(Exception):
 
 
     
-class Graphe_django():
+class Graphe_django(Graphe):
     """
     Cette classe sert d'interface avec la base Django.
     Attribut:
@@ -40,15 +42,11 @@ class Graphe_django():
     
     def __init__(self):
         self.dico_voisins = {}
-        #self.cycla_max = {}
-        #self.cycla_min = {}
         self.arbre_villes = ArbreLex()
         self.dico_Sommet = {}
         self.dico_voisins = {}
         self.arbres_des_rues = {}
         self.zones = []
-        #self.cycla_max = {}
-        #self.cycla_min = {}
         self.arbre_cache = {}
         self.arbre_arêtes = {}
         self.arbre_lex_zone = {}
@@ -67,8 +65,6 @@ class Graphe_django():
         for z in self.zones:
             if z_d.estInclueDans(z):
                 self.arbre_arêtes[z_d.nom] = self.arbre_arêtes[z.nom]
-                # self.cycla_max[z_d] = self.cycla_max[z]
-                # self.cycla_min[z_d] = self.cycla_min[z]
                 return z_d
             
 
@@ -128,13 +124,6 @@ class Graphe_django():
         ## Arbre quad des arêtes:
         self.arbre_arêtes[z_d.nom] = z_d.arbre_arêtes
 
-
-        ## Cycla min et max
-        # self.cycla_max[z_d] = cyclaMax
-        # self.cycla_min[z_d] = cyclaMin
-        # self.calcule_cycla_min_max(z_d)
-        # chrono(tic, "Calcul des cycla min et max", force=True)
-
         self.zones.append(z_d)
         return z_d
 
@@ -168,10 +157,6 @@ class Graphe_django():
     def coords_of_id_osm(self, s):
         return self.dico_Sommet[s].coords()
 
-
-    def d_euc(self, s, t):
-        cs, ct = self.coords_of_id_osm(s), self.coords_of_id_osm(t)
-        return distance_euc(cs, ct)
 
     def supprime_sommets_isolés(self):
         """
