@@ -160,9 +160,10 @@ def morceaux_tableaux(t, taille):
 def supprime_objets_par_lots(l, taille_lots=2000):
     n = 0
     for lot in morceaux_tableaux(l, taille_lots):
-        with transaction.atomic():
-            for x in lot:
-                x.delete()
+        # with transaction.atomic():
+        #     for x in lot:
+        #         x.delete()
+        lot.delete()
         n += taille_lots
         print(f"{n} objets supprimés")
 
