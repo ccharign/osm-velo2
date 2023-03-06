@@ -169,16 +169,19 @@ def supprime_objets_par_lots(l, taille_lots=2000):
 
 
 
-def supprimeQuerySetParLots(q, taille_lots=5000):
+def supprimeQuerySetParLots(q, taille=5000):
     """
     Entrée: q, queryset
     Effet : les éléments de q sont supprimés en appelant la méthode delete sur des sous-queryset de taille taille_lots.
     """
     n = 0
-    for lot in morceaux_tableaux(q, taille_lots):
-        lot.delete()
-        n += taille_lots
+    i = 0
+    # for lot in morceaux_tableaux(q, taille_lots):
+    for i in range(taille, len(q), taille):
+        q[i-taille:taille].delete()
+        n += taille
         print(f"{n} objets supprimés")
+    q[i:].delete()
     
 
 def sauv_objets_par_lots(l, taille_lots=2000):
