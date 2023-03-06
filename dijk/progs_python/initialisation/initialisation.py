@@ -17,7 +17,7 @@ from initialisation.noeuds_des_rues import extrait_nœuds_des_rues
 from lecture_adresse.normalisation import arbre_rue_dune_ville, partie_commune, prétraitement_rue, normalise_rue
 import networkx as nx
 from graphe_par_networkx import Graphe_nx
-from petites_fonctions import chrono, LOG, supprime_objets_par_lots, paires
+from petites_fonctions import chrono, LOG, supprime_objets_par_lots, paires, supprimeQuerySetParLots
 import dijk.progs_python.recup_donnees as rd
 
 import initialisation.vers_django as vd
@@ -513,7 +513,7 @@ def crée_zone(liste_villes_str, zone: str,
 
             print("Suppression des relations sommet-ville et arête-ville :")
             #supprime_objets_par_lots(list(Sommet.villes.through.objects.filter(ville_id=v.id)))
-            rels = Sommet.villes.through.objects.filter(ville_id=v.id) 
+            rels = Sommet.villes.through.objects.filter(ville_id=v.id)
             print(rels._raw_delete(rels.db))
             #supprime_objets_par_lots(list(Arête.villes.through.objects.filter(ville_id=v.id)))
             rels = Arête.villes.through.objects.filter(ville_id=v.id)
@@ -522,7 +522,7 @@ def crée_zone(liste_villes_str, zone: str,
             
             sansVille = Sommet.objects.all().alias(nbvilles=Count("villes")).filter(nbvilles=0)
             print(f"Suppression des {len(sansVille)}sommets orphelins :")
-            supprime_objets_par_lots(list(sansVille))
+            supprimeQuerySetParLots(sansVille)
             # Ceci supprime au passage les arêtes liées aux sommets supprimés
             
         Cache_Adresse.objects.all().delete()
