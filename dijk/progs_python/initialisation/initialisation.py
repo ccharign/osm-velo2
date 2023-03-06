@@ -513,9 +513,11 @@ def crée_zone(liste_villes_str, zone: str,
 
             print("Suppression des relations sommet-ville et arête-ville :")
             #supprime_objets_par_lots(list(Sommet.villes.through.objects.filter(ville_id=v.id)))
-            print(Sommet.villes.through.objects.filter(ville_id=v.id)._raw_delete())
+            rels = Sommet.villes.through.objects.filter(ville_id=v.id) 
+            print(rels._raw_delete(rels.db))
             #supprime_objets_par_lots(list(Arête.villes.through.objects.filter(ville_id=v.id)))
-            print(Arête.villes.through.objects.filter(ville_id=v.id)._raw_delete())
+            rels = Arête.villes.through.objects.filter(ville_id=v.id)
+            print(rels._raw_delete(rels.db))
             
             
             sansVille = Sommet.objects.all().alias(nbvilles=Count("villes")).filter(nbvilles=0)
