@@ -132,15 +132,6 @@ def itinéraire_of_étapes(étapes,
         for s in stats:
             s["p_détour_effectif"] = int((s["longueur"]/longueur_ch_direct - 1.) * 100.)
 
-    # Ajout de marqueurs pour le début et la fin de l’itinéraire avec le plus grand p_détour
-    # -> délégué au client maintenant
-    # coords_départ = g.coords_of_id_osm(itinéraires[-1].liste_sommets[0])  # coords du début de l’iti avec le plus grand p_détour
-    # coords_arrivée = g.coords_of_id_osm(itinéraires[-1].liste_sommets[-1])
-    # itinéraires[-1].marqueurs = [
-    #     étapes[0].marqueur_leaflet(coords_départ),
-    #     étapes[-1].marqueur_leaflet(coords_arrivée)
-    # ]
-    
     return {"stats": stats,
             "chemin": c,
             "noms_étapes": [str(é) for é in étapes],
@@ -179,93 +170,63 @@ def gpx_of_iti(iti_d, bavard=0):
 
 #################### Affichage ####################
 
-# Pour utiliser folium sans passer par osmnx regarder :
-# https://stackoverflow.com/questions/57903223/how-to-have-colors-based-polyline-on-folium
 
-
-# Affichage folium avec couleur
-# voir https://stackoverflow.com/questions/56234047/osmnx-plot-a-network-on-an-interactive-web-map-with-different-colours-per-infra
-
-def dessine(listes_chemins, g, z_d: mo.Zone, ad_départ, ad_arrivée, où_enregistrer, bavard=0, fouine=False):
-    """
-    Entrées :
-      - listes_chemins : liste de couples (liste d'Arêtes, couleur)
-      - g (instance de Graphe)
-      - ad_départ, ad_arrivée (instances d’Adresse). Pour la première et la dernière partie de l’itinéraire et les marqueurs de départ et arrivée.
-      - où_enregistrer : adresse du fichier html à créer
-    Sortie:
-       la carte
-       la bounding box
-    Effet:
-      Crée le fichier html de la carte superposant tous les itinéraires fournis.
-    """
-
-    # Initialisation de la carte avec le premier chemin.
-    l, _, _ = listes_chemins[0]
-    
-    # Je mets les coords de début et fin du premier itinéraire si les champs coords des adresses n’était pas remplis.
-    cd = l[0].départ.coords()
-    cf = l[0].arrivée.coords()
-    o, e = sorted([cd[0], cf[0]])  # lon
-    s, n = sorted([cd[1], cf[1]])  # lat
-    if not ad_départ.coords:
-        ad_départ.coords = cd
-    if not ad_arrivée.coords:
-        ad_arrivée.coords = cf
-
-    
-
-    carte = None
-    for l, coul, p in listes_chemins:
-        carte = folium_of_chemin(g, z_d, l, p, carte=carte, color=coul)
-
-    ajoute_marqueur(ad_départ, carte, fouine=fouine)
-    ajoute_marqueur(ad_arrivée, carte, fouine=fouine)
-
-    # Bonus
-    Fullscreen(title="Plein écran", title_cancel="Quitter le plein écran").add_to(carte)
-    LocateControl(locateOptions={"enableHighAccuracy":True}).add_to(carte)
-
-    # modif de la carte
-    nom_carte = carte.get_name()
-    carte.get_root().script.add_child(
-        Element(f"""
-        $(document).ready(function() {{
-            gèreLesClics({nom_carte});
-            marqueurs_of_form(document.getElementById("relance_rapide"), {nom_carte});
-            L.tileLayer.provider('CyclOSM').addTo({nom_carte});
-        ;}});
-""")
-    )
-    carte.save(où_enregistrer)
-    return carte, (s,o,n,e)
-
-
-
-
-# def dessine_chemin(c, g, où_enregistrer=os.path.join(TMP, "chemin.html"), ouvrir=False, bavard=0):
+# def dessine(listes_chemins, g, z_d: mo.Zone, ad_départ, ad_arrivée, où_enregistrer, bavard=0, fouine=False):
 #     """
 #     Entrées :
-#        - c (instance de Chemin)
-#        - g (instance de Graphe)
-#        - p_détour (float ou float list) : liste des autres p_détour pour lesquels lancer et afficher le calcul.
-#        - où_enregistrer : adresse où enregistrer le html produit.
-#        - ouvrir (bool) : Si True, lance le navigateur sur la page créée.
-
-#     Effet : Crée une carte html avec le chemin direct en rouge, et le chemin compte tenu de la cyclabilité en bleu.
-#     Sortie : Longueur du chemin, du chemin direct.
+#       - listes_chemins : liste de couples (liste d'Arêtes, couleur)
+#       - g (instance de Graphe)
+#       - ad_départ, ad_arrivée (instances d’Adresse). Pour la première et la dernière partie de l’itinéraire et les marqueurs de départ et arrivée.
+#       - où_enregistrer : adresse du fichier html à créer
+#     Sortie:
+#        la carte
+#        la bounding box
+#     Effet:
+#       Crée le fichier html de la carte superposant tous les itinéraires fournis.
 #     """
 
-#     # Calcul des chemins
-#     c_complet, _ = dijkstra.chemin_étapes_ensembles(g, c)
-#     longueur = g.longueur_itinéraire(c_complet, c.p_détour)
+#     # Initialisation de la carte avec le premier chemin.
+#     l, _, _ = listes_chemins[0]
     
-#     départ, arrivée = c_complet[0], c_complet[-1]
-#     c_direct, _ = dijkstra.chemin(g, départ, arrivée, 0)
-#     longueur_direct = g.longueur_itinéraire(c_direct, 0)
+#     # Je mets les coords de début et fin du premier itinéraire si les champs coords des adresses n’était pas remplis.
+#     cd = l[0].départ.coords()
+#     cf = l[0].arrivée.coords()
+#     o, e = sorted([cd[0], cf[0]])  # lon
+#     s, n = sorted([cd[1], cf[1]])  # lat
+#     if not ad_départ.coords:
+#         ad_départ.coords = cd
+#     if not ad_arrivée.coords:
+#         ad_arrivée.coords = cf
 
-#     dessine([(c_complet, "blue", c.p_détour), (c_direct,"red", 0)], g, où_enregistrer, ouvrir=ouvrir)
-#     return longueur, longueur_direct
+    
+
+#     carte = None
+#     for l, coul, p in listes_chemins:
+#         carte = folium_of_chemin(g, z_d, l, p, carte=carte, color=coul)
+
+#     ajoute_marqueur(ad_départ, carte, fouine=fouine)
+#     ajoute_marqueur(ad_arrivée, carte, fouine=fouine)
+
+#     # Bonus
+#     Fullscreen(title="Plein écran", title_cancel="Quitter le plein écran").add_to(carte)
+#     LocateControl(locateOptions={"enableHighAccuracy":True}).add_to(carte)
+
+#     # modif de la carte
+#     nom_carte = carte.get_name()
+#     carte.get_root().script.add_child(
+#         Element(f"""
+#         $(document).ready(function() {{
+#             gèreLesClics({nom_carte});
+#             marqueurs_of_form(document.getElementById("relance_rapide"), {nom_carte});
+#             L.tileLayer.provider('CyclOSM').addTo({nom_carte});
+#         ;}});
+# """)
+#     )
+#     carte.save(où_enregistrer)
+#     return carte, (s,o,n,e)
+
+
+
 
 
 def moyenne(t):
@@ -288,8 +249,8 @@ def dessine_cycla(g, z_d: mo.Zone, où_enregistrer, bavard=0):
     carte.save(où_enregistrer)
     print(f"Carte enregistrée à {où_enregistrer}")
 
-    
-    
+
+
 ### Apprentissage ###
 
 def lecture_tous_les_chemins(g, z_t=None, n_lectures_max=20, bavard=1):
@@ -355,6 +316,6 @@ def réinit_cycla(g, z_t=None, nb_lectures=6, bavard=0):
         with transaction.atomic():
             arêtes = Arête.objects.filter(zone=z)
             for a in arêtes:
-                a.cycla=None
+                a.cycla = None
         for _ in range(nb_lectures):
             lecture_tous_les_chemins(g, z.nom, bavard=bavard-1)

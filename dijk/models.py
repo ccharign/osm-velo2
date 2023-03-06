@@ -662,7 +662,7 @@ class Zone(models.Model):
     class Meta:
         ordering = ["nom"]
     
-    def villes(self):
+    def villes(self) -> tuple:
         return tuple(rel.ville for rel in Ville_Zone.objects.filter(zone=self).prefetch_related("ville"))
 
     def plusGrandeZoneContenant(self) -> Self:
@@ -692,7 +692,8 @@ class Zone(models.Model):
         """
         villes = self.villes()
         return Arête.objects.filter(villes__in=villes, cycla_défaut__gt=0.0).prefetch_related("départ", "arrivée")
-        
+
+    
     def sommets(self):
         """
         Générateur des sommets de self.
@@ -703,8 +704,10 @@ class Zone(models.Model):
 
     
     def ajoute_ville(self, ville):
-        rel = Ville_Zone(ville=ville, zone=self)
-        rel.save()
+        if ville not in self.villes():
+            rel = Ville_Zone(ville=ville, zone=self)
+            rel.save()
+            
 
     def associeArbreArêteAncètre(self):
         """

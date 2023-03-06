@@ -194,26 +194,39 @@ def chrono(tic, tâche, bavard=1, force=False):
     """
     tac = time.perf_counter()
     temps = tac-tic
-    if temps>.1 or force:
+    if temps > .1 or force:
         LOG(f"{round(time.perf_counter()-tic, 2)}s pour {tâche}", "perfs", bavard=bavard)
     return tac
+
+
+def déco_chrono(f):
+    """
+    Décorateur simple qui affiche le temps mis par f
+    """
+    def nv_f(*args, **kwargs):
+        tic = time.perf_counter()
+        rés = f(*args, **kwargs)
+        print(f"Temps mis par {f.__name__} : {time.perf_counter()-tic}")
+        return rés
+    return nv_f
 
 
 # Une fabrique de décorateurs.
 def mesure_temps(nom, temps, nb_appels):
     """
     Entrées : temps et nb_appels deux dicos dont nom est une clef.
+    Sortie : décorateur qui ajoute 1 dans nb_appels[nom] et le temps d’exécution dans temps[nom].
     """
     def décorateur(f):
         def nv_f(*args, **kwargs):
-            tic=time.perf_counter()
-            res=f(*args, **kwargs)
-            temps[nom]+=time.perf_counter()
-            nb_appels[nom]+=1
+            tic = time.perf_counter()
+            res = f(*args, **kwargs)
+            temps[nom] += time.perf_counter() - tic
+            nb_appels[nom] += 1
             return res
         return nv_f
     return décorateur
-        
+
 
 
 

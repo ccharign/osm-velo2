@@ -280,7 +280,7 @@ def places_en_cliques(g: Graphe_nx, ville):
     Récupère les zones piétonnes de la ville et ajoute les cliques correspondantes au graphe g.
     """
 
-    places = rd.zones_piétonnes(ville.bbox())
+    places = rd.zones_piétonnes(ville.bbox(), g)
     
     # Création des nouvelles arêtes
     nb = 0
@@ -380,7 +380,7 @@ def crée_tous_les_arbres_des_rues():
         )
 
 
-À_RAJOUTER_PAU = {
+ZONE_PAU = {
     "Pau": 64000,
     "Gelos": 64110,
     "Lée": 64320,
@@ -395,7 +395,6 @@ def crée_tous_les_arbres_des_rues():
     "Mazères-Lezons": 64110
 }.items()
 
-#VDS_PAU = [Ville.objects.get(nom_norm=partie_commune(v)) for v, _ in À_RAJOUTER_PAU]
 
 ZONE_VOIRON = {
     "voiron": 38500,
@@ -405,6 +404,7 @@ ZONE_VOIRON = {
     "saint aupre": 38960,
 }.items()
 
+
 ZONE_GRENOBLE = [
     ("Grenoble", 38000),
     ("Saint Martin d’Hères", 38400),
@@ -412,9 +412,10 @@ ZONE_GRENOBLE = [
     ("Poisat", 38309),
     ("Voreppe", 38340),
     ("Échirolles", 38130),
+    ("Fontaine", 38600),
+    ("Gières", 38610)
 ]
 
-#VDS_GRE = [Ville.objects.get(nom_norm=partie_commune(v)) for v, _ in ZONE_GRENOBLE]
 
 def ville_of_nom_et_code_postal(nom: str, code: int):
     """
@@ -436,6 +437,7 @@ def crée_les_arbres_darêtes(villes_modifiées, bavard=0):
     Crée et sauvegarde les arbres d’arêtes des zones contenant au moins une des ville de villes_modifiées.
     Sortie : dictionnaire zone->arbre
     """
+    raise DeprecationWarning
     LOG("\nCréation des R-arbres des arêtes", bavard=bavard)
     zones_modifiées = set()
     res = {}
@@ -449,53 +451,75 @@ def crée_les_arbres_darêtes(villes_modifiées, bavard=0):
 
 
 def crée_zone(liste_villes_str, zone: str,
-              réinit=False, effacer_cache=False, bavard=2, rapide=0,
-              force_lieux=False
+              réinit_données=False,
+              réinit_zone=False,
+              effacer_cache=False, bavard=2, rapide=0,
+              force_lieux=False,
+              inclue_dans: str = None,
+              contient: str = None
               ):
     """
     Entrée : liste_villes, itérable de (nom de ville, code postal). La ville par défaut sera la première de cette liste.
              zone (str), nom de la zone
 
     Effet : charge toutes ces ville dans la base, associées à la zone indiquée.
-            Si la zone n’existe pas, elle sera créée, en y associant ville_défaut.
-            Si la zone existe, l’ancienne est supprimée.
+            Si la zone n’existe pas, elle sera créée.
+            ## Si la zone existe, l’ancienne est supprimée. -> Plus le cas !
 
     Paramètres:
-       Si réinit, tous les éléments associés à la zone (villes, rues, sommets, arêtes) ainsi que le cache sont au préalable supprimés.
+       Si réinit_données, tous les éléments associés à la zone (villes, rues, sommets, arêtes) ainsi que le cache sont au préalable supprimés.
        Si force_lieux, on charge les lieux même pour les villes qui avaient données_présentes à True.
+       Si réinit_zone, la zone est effacée puis recréée, ce qui réinitialise les villes contenues et les relation inclue_dans.
        À FAIRE : Si effacer_cache, tous les fichiers .json du dossier cache du répertoire courant seront effacés.
+       inclue_dans : nom d’une autre zone, qui sera marquée comme contenant la zone créée.
+       contient : nom d’une autre zone, qui sera marquée comme contenue dans la zone crée.
+
 
     Sortie (Ville list) : liste des villes pour lesquelles on n’a pas pu récupérer les lieux.
     """
     
     close_old_connections()
 
-    # Récup des villes :
+    ## Récup des villes :
     liste_villes_d = [ville_of_nom_et_code_postal(*c) for c in liste_villes_str]
     
-    # Récupération ou création de la zone :
+    ## Récupération ou création de la zone :
     z_d, créée = Zone.objects.get_or_create(nom=zone, ville_défaut=liste_villes_d[0])
-    if not créée:
+    if not créée and réinit_zone:
         z_d.sauv_csv()
         z_d.delete()
         z_d = Zone(nom=zone, ville_défaut=liste_villes_d[0])
         z_d.save()
         z_d.charge_csv()
+    # Associer les villes à la zone
     for v in liste_villes_d:
         z_d.ajoute_ville(v)
+    # Les relations d’inclusion dans une autre zone
+    if inclue_dans:
+        z_d.inclue_dans = Zone.objects.get(nom=inclue_dans)
+        z_d.save()
+    if contient:
+        grande_zone = Zone.objects.get(nom=contient)
+        grande_zone.inclue_dans = z_d
+        grande_zone.save()
         
-    # Réinitialisation de la zone :
-    if réinit:
+        
+    ## Réinitialisation de la zone :
+    if réinit_données:
         for v in liste_villes_d:
             v.données_présentes = False
             v.save()
             print(f"J’ai mis données présentes à False pour {v}.")
 
-            print("Suppression des relation sommet-ville et arête-ville :")
-            supprime_objets_par_lots(list(Sommet.villes.through.objects.filter(ville_id=v.id)))
-            supprime_objets_par_lots(list(Arête.villes.through.objects.filter(ville_id=v.id)))
-            print("Suppression des sommets orphelins :")
+            print("Suppression des relations sommet-ville et arête-ville :")
+            #supprime_objets_par_lots(list(Sommet.villes.through.objects.filter(ville_id=v.id)))
+            print(Sommet.villes.through.objects.filter(ville_id=v.id)._raw_delete())
+            #supprime_objets_par_lots(list(Arête.villes.through.objects.filter(ville_id=v.id)))
+            print(Arête.villes.through.objects.filter(ville_id=v.id)._raw_delete())
+            
+            
             sansVille = Sommet.objects.all().alias(nbvilles=Count("villes")).filter(nbvilles=0)
+            print(f"Suppression des {len(sansVille)}sommets orphelins :")
             supprime_objets_par_lots(list(sansVille))
             # Ceci supprime au passage les arêtes liées aux sommets supprimés
             
@@ -503,10 +527,10 @@ def crée_zone(liste_villes_str, zone: str,
 
     # Vidage du cache d’osmnx ?
     
-    # Chargement des villes :
-    LOG(f"\nChargement des villes {liste_villes_d}", bavard=bavard)
+    ## Chargement des villes :
     villes_modifiées = []
     for v_d in liste_villes_d:
+        LOG(f"\nChargement de {v_d}", bavard=bavard)
         _, données_ajoutées = charge_ville(
             v_d, z_d,
             bavard=bavard, rapide=rapide, rajouter_les_lieux=False
@@ -514,17 +538,22 @@ def crée_zone(liste_villes_str, zone: str,
         if données_ajoutées or force_lieux:
             villes_modifiées.append(v_d)
 
-    # Arbre quad des arêtes
+    ## Arbre quad des arêtes de la plus grande zone contenant z_d
     arbre_a = créeQuadArbreArêtesDeZone(z_d, bavard=bavard)
     
 
-    # Lieux (besoin de l’arbre des arêtes)
+    ## Lieux (besoin de l’arbre des arêtes)
     LOG("\nChargement des lieux")
     échec_lieux = charge_lieux_of_liste_ville(villes_modifiées, arbre_a)
     if échec_lieux:
         print("Problème sur les villes :")
         pprint(échec_lieux)
 
+
+    ## Entrainement sur les trajets sauvegardés
+    if réinit_données:
+        print(f"Entrainement")
+        
 
     print("(crée_zone) fini!")
 

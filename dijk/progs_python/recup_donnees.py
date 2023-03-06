@@ -8,6 +8,7 @@ import json
 import urllib.parse
 from pprint import pprint, pformat
 import subprocess
+from functools import reduce
 
 import geopy
 import overpy
@@ -276,27 +277,26 @@ def nœuds_reliés(nœuds):
 # nœuds de place saint louis de gonzague = [782224313, 782408135, 8428498156, 782155281, 343660472, 782224313]
 
 
-def nœuds_of_idsrue(ids_rue, bavard=0):
+def nœudsOfIdsway(ids_ways, api, bavard=0):
     """
     Entrée : ids_rue (int itérable), ids osm de ways.
     Sortie : liste des nœuds de celles-ci.
     """
-    assert len(list(ids_rue)) > 0, f"(rd.nœuds_of_idsrue) J’ai reçu ids_rue={list(ids_rue)}"
-    api = overpy.Overpass(url="https://lz4.overpass-api.de/api/interpreter", max_retry_count=3)
     requête = f"""
-            way(id:{",".join(map(str, ids_rue))});
+            way(id:{",".join(map(str, ids_ways))});
             out;"""
     LOG(requête, bavard=bavard)
-    print("J’attends 5s pour overpass.")
-    time.sleep(5)
-    res_req = api.query(requête)
-    res = []
-    for w in res_req.ways:
-        res.extend(w._node_ids)
-    return res
+    print("J’attends 3s pour overpass.")
+    time.sleep(3)
+    rés_req = api.query(requête)
+    return reduce(
+        lambda x, y: x+y,
+        [w._node_ids for w in rés_req.ways],
+        []
+    )
 
 
-
+    
 def zones_piétonnes(bbox, g, bavard=0) -> list:
     """
     Sortie :  les zones piétonnes (area=yes, highway=pedestrian ou footway) de la zone indiquée.
@@ -309,10 +309,10 @@ def zones_piétonnes(bbox, g, bavard=0) -> list:
     (
     nwr[area='yes'][highway='pedestrian']{bbox};
     );
-    out center;
+    out;
     """
 
-    api = overpy.Overpass(url="https://lz4.overpass-api.de/api/interpreter", max_retry_count=3, retry_timeout=5)
+    api = overpy.Overpass(url="https://lz4.overpass-api.de/api/interpreter", max_retry_count=5, retry_timeout=5)
     LOG(f"requête overpass : \n{requête}", bavard=bavard)
     rés_req = api.query(requête)
 
@@ -322,16 +322,14 @@ def zones_piétonnes(bbox, g, bavard=0) -> list:
         if len(nœuds) > 1:
             nom = w.tags.get("name", "")
             places.append((nom, nœuds))
-    
-    # places = [
-    #     (i, [s for s in truc._node_ids if s in g])
-    #     for i, truc in enumerate(rés_req.ways)  # + rés_overpass.relations
-    # ]
+    # return rés_req.relations
 
-    print("Avertissement : les places sous forme de relation ne sont pas récupérées actuellement")
-    ways_des_rel = []
+    for r in rés_req.relations:
+        nom = r.tags.get("name", "")
+        ways = [w.ref for w in r.members]
+        nœuds = [n for n in nœudsOfIdsway(ways, api) if n in g]
+        places.append((nom, nœuds))
 
-  
     return places
     
 
