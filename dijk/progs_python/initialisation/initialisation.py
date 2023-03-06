@@ -522,7 +522,8 @@ def crée_zone(liste_villes_str, zone: str,
             
             sansVille = Sommet.objects.all().alias(nbvilles=Count("villes")).filter(nbvilles=0)
             print(f"Suppression des {len(sansVille)}sommets orphelins :")
-            supprimeQuerySetParLots(sansVille)
+            #supprimeQuerySetParLots(sansVille)
+            sansVille.delete()
             # Ceci supprime au passage les arêtes liées aux sommets supprimés
             
         Cache_Adresse.objects.all().delete()
