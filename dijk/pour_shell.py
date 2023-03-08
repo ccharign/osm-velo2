@@ -21,10 +21,12 @@ osmnx.settings.use_cache = True
 osmnx.settings.log_console = True
 
 
-def entraine_tout(bavard=2):
+def entraine_tout(bavard: int = 2):
     """
     Lance la lecture de tous les chemins de la base.
     """
+    assert isinstance(bavard, int)
+    close_old_connections()
     for z_d in mo.Zone.objects.all():
         v.g.charge_zone(z_d.nom)
         assert v.g.arbre_arêtes[z_d.nom] is not None, f"{z_d} n’a pas d’arbreArête"
@@ -36,10 +38,10 @@ def mise_à_jour():
     """
     Lance l’entraînement et met à jour les lieux de toutes les zones de la base.
     """
-    print("Chargement de toutes les zones:\n")
+    
     for z in mo.Zone.objects.all():
         v.g.charge_zone(z.nom)
-        amen.charge_lieux_of_zone(z, force=True)
+        amen.charge_lieux_of_zone(z, force=True, réinit=True)
 
     print("Entraînement:\n")
     utils.lecture_tous_les_chemins(v.g)

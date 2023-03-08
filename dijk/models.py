@@ -8,10 +8,10 @@ from django.db import models, close_old_connections, transaction, connection
 
 from dijk.progs_python.params import LOG, DONNÉES
 from dijk.progs_python.lecture_adresse.normalisation0 import partie_commune
-from dijk.progs_python.petites_fonctions import distance_euc
 import dijk.progs_python.quadrarbres as qa
 
 from dijk.progs_python.lecture_adresse.normalisation0 import prétraitement_rue
+
 
 def objet_of_dico(
         cls, d,
@@ -665,6 +665,12 @@ class Zone(models.Model):
     def villes(self) -> tuple:
         return tuple(rel.ville for rel in Ville_Zone.objects.filter(zone=self).prefetch_related("ville"))
 
+    def sousZones(self):
+        """
+        Renvoie les sous-zones de self.
+        """
+        filles = self.related_manager_sous_zones
+
     def plusGrandeZoneContenant(self) -> Self:
         """
         Renvoie la plus grande zone dans laquelle self est inclue, pour la relation inclue_dans
@@ -716,9 +722,11 @@ class Zone(models.Model):
         ancètre = self.plusGrandeZoneContenant()
         self.arbre_arêtes_id = ancètre.arbre_arêtes_id
         self.save()
+
         
     def __str__(self):
         return self.nom
+
     
     def __hash__(self):
         return self.pk
@@ -788,7 +796,15 @@ class Zone(models.Model):
                     ch.save()
                 nb += 1
             LOG(f"{nb} chemins ont été chargés")
-        
+
+    
+    def entraîne(self):
+        """
+        Lance l’entraînement sur tous les chemins de la zone.
+        """
+
+        raise NotImplementedError()
+        TODO
 
 
 class Ville_Zone(models.Model):

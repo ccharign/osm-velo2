@@ -57,7 +57,7 @@ def quadArbreArêtesDeLaBase():
     """
     Crée l’arbre de toutes les arêtes de la base et l’enregistre dans celle-ci.
     """
-    print("Suppression de l’ancien arbre")
+    print("Suppression des anciens arbres")
     supprimeTousArbresArêtesDeLaBase()
 
     # Création des arbres
@@ -547,7 +547,7 @@ def crée_zone(liste_villes_str, zone: str,
 
     ## Lieux (besoin de l’arbre des arêtes)
     LOG("\nChargement des lieux")
-    échec_lieux = charge_lieux_of_liste_ville(villes_modifiées, arbre_a)
+    échec_lieux = charge_lieux_of_liste_ville(villes_modifiées, arbre_a, réinit=True)
     if échec_lieux:
         print("Problème sur les villes :")
         pprint(échec_lieux)
@@ -555,13 +555,13 @@ def crée_zone(liste_villes_str, zone: str,
 
     ## Entrainement sur les trajets sauvegardés
     if réinit_données:
-        print(f"Entrainement")
+        print(f"Entrainement (Pas encore implémenté! Utiliser pour_shell.entraine_tout)")
         
 
     print("(crée_zone) fini!")
 
 
-def charge_lieux_of_liste_ville(villes, arbre_a: QuadrArbreArête) -> list:
+def charge_lieux_of_liste_ville(villes, arbre_a: QuadrArbreArête, réinit=False) -> list:
     """
     Charge les lieux des villes de la liste éponyme.
     Sortie : villes pour lesquelles charge_lieux_of_ville a échoué.
@@ -569,7 +569,7 @@ def charge_lieux_of_liste_ville(villes, arbre_a: QuadrArbreArête) -> list:
     pb = []
     for v_d in villes:
         try:
-            charge_lieux_of_ville(v_d, arbre_a=arbre_a)
+            charge_lieux_of_ville(v_d, arbre_a=arbre_a, réinit=réinit)
         except Exception as e:
             print(f"Problème pour {v_d}")
             pprint(e)

@@ -44,15 +44,19 @@ def initGroupesTypesLieux(chemin="dijk/progs_python/initialisation/données_à_c
 
 
 
-def charge_lieux_of_ville(v_d, arbre_a, bavard=0, force=False):
+def charge_lieux_of_ville(v_d: mo.Ville, arbre_a: mo.ArbreArête, bavard=0, force=False, réinit=False):
     """
     Effet :
-        Récupère sur osm les amenities, shops, leisure et tourism de la ville, et remplit les tables TypeLieu et Lieu avec.
+        Récupère sur osm les lieux de la ville, et remplit les tables TypeLieu et Lieu avec.
     Params:
-        - force : si True, remplace les lieux déjà présentes.
+        - force : si True, remplace les lieux déjà présents.
     """
 
     LOG(f"Lieux de {v_d}", bavard=1)
+    if réinit:
+        print("Suppression des anciens lieux")
+        à_supprimer = mo.Lieu.objects.filter(ville=v_d)
+        print(à_supprimer.delete())
     LOG("Récupération des lieux via overpass", bavard=1)
     ll = rd.lieux_of_ville(v_d, arbre_a, bavard=bavard, force=force)
     v_d.lieux_calculés = datetime.date.today()
@@ -61,7 +65,7 @@ def charge_lieux_of_ville(v_d, arbre_a, bavard=0, force=False):
 
 
 
-def charge_lieux_of_zone(z_d: Zone, force=False):
+def charge_lieux_of_zone(z_d: Zone, force=False, réinit=False):
     """
     Params:
         force, si Vrai force la mise à jour des lieux déjà présents, et des lieux des villes pour lesquelles lieux_calculés est aujourd’hui.
@@ -73,7 +77,7 @@ def charge_lieux_of_zone(z_d: Zone, force=False):
     #arbre_a = QuadrArbreArête.of_list_darêtes_d(z_d.arêtes())
     for ville in z_d.villes():
         if force or ville.lieux_calculés < datetime.date.today():
-            charge_lieux_of_ville(ville, z_d.arbre_arêtes, force=force)
+            charge_lieux_of_ville(ville, z_d.arbre_arêtes, force=force, réinit=réinit)
             print("Pause de 10s pour overpass")
             time.sleep(10)
     TypeLieu.supprimerLesInutiles()

@@ -1,26 +1,13 @@
-
-from importlib import reload
 from functools import reduce
 from pprint import pprint
 
 
 from django.test import TestCase
 from django.test import Client
-from django.db import close_old_connections
 
-from dijk.pour_shell import mo
-
-import dijk.progs_python.initialisation.amenities as amen
-import dijk.progs_python.initialisation as ini
-from dijk.progs_python.initialisation.communes import charge_villes
-from dijk.progs_python.initialisation.initialisation import À_RAJOUTER_PAU, crée_zone, ZONE_GRENOBLE, charge_ville
-
-import dijk.progs_python.utils as utils
+from dijk.pour_shell import *
 
 import dijk.models as mo
-import dijk.views as v
-import dijk.progs_python.initialisation.communes as communes
-
 import dijk.progs_python.recup_donnees as rd
 
 
@@ -33,7 +20,7 @@ ousse = mo.Ville.objects.get(nom_complet="Ousse")
 
 # Create your tests here.
 
-    
+
 def test_data_gouv(nb=5):
     """
     Teste adresses_of_liste_lieux sur les nb premiers lieux de la base.
@@ -48,7 +35,9 @@ def test_data_gouv(nb=5):
 
 
 def sommetsdéconnectés(g):
-
+    """
+    Renvoie la liste des sommets non connectés au sommet de départ (arbitrairement le 1000-ième de g).
+    """
     départ = list(g.dico_Sommet.keys())[1000]
     vu = set((départ,))
     àVisiter = [départ]
@@ -62,6 +51,7 @@ def sommetsdéconnectés(g):
     
     pas_vus = [t for t in g.dico_Sommet.keys() if t not in vu]
     return pas_vus
+
 
 def arêtesSortant(g, ens_sommet):
     """
@@ -78,6 +68,9 @@ def arêtesSortant(g, ens_sommet):
 
 
 def nomsDesDéconnectés(g):
+    """
+    Sortie : liste des arêtes reliées à un sommet déconnecté de g.
+    """
     déconnectés = sommetsdéconnectés(g)
     arêtes_déconnectées = reduce(
         lambda a, b: a+b,
@@ -88,8 +81,19 @@ def nomsDesDéconnectés(g):
 
 
 def lieuxSansArête():
+    """
+    Sortie : queryset des lieux sans arête.
+    """
     return mo.Lieu.objects.filter(arête=None)
 
+
+def structureArbreArête():
+
+    def vérifUnArbre(r: mo.ArbreArête):
+        """
+        Vérifie que toutes les feuilles sont attachées à un unique segment.
+        """
+        
 
 
 class TestVues(TestCase):

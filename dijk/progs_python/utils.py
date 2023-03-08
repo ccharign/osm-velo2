@@ -14,7 +14,7 @@ from dijk.progs_python.petites_fonctions import chrono, deuxConséc, LOG
 
 import dijk.models as mo
 from dijk.models import Chemin_d, Arête
-
+from dijk.progs_python.graphe_base import Graphe
 
 tic = perf_counter()
 from mon_folium import folium_of_chemin, ajoute_marqueur, folium_of_arêtes, couleur_of_cycla, color_dict, NB_COUL
@@ -253,12 +253,16 @@ def dessine_cycla(g, z_d: mo.Zone, où_enregistrer, bavard=0):
 
 ### Apprentissage ###
 
-def lecture_tous_les_chemins(g, z_t=None, n_lectures_max=20, bavard=1):
+
+def lecture_tous_les_chemins(g: Graphe, z_t=None, n_lectures_max=20, bavard=1):
     """
     Lance l’apprentissage sur chaque chemin de la zone. Si None, parcourt toutes les zones de g.
     On lit n_lectures_max fois la liste de tous les chemins, ceux qui n’ont pas été modifiés étant retirés de la liste.
     """
+    assert isinstance(g, Graphe)
+    assert isinstance(bavard, int)
     close_old_connections()
+    
     if z_t is None:
         à_parcourir = g.zones
     else:
@@ -268,7 +272,7 @@ def lecture_tous_les_chemins(g, z_t=None, n_lectures_max=20, bavard=1):
     # Liste des chemins à lire
     à_lire = []
     for z in à_parcourir:
-        print(f"\nEntrainement sur la zone {z}")
+        print(f"\nEntraînement sur la zone {z}")
         for c_d in Chemin_d.objects.filter(zone=z):
             c = chemins.Chemin.of_django(c_d, g, bavard=bavard-1)
             c.c_d = c_d
