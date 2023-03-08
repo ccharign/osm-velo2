@@ -133,11 +133,21 @@ def testChemins():
 RUES_À_TESTER = {
     "Pau_agglo": ["ρ veroniques", "ρ dou barthouil", "ρ castetnau", "passage louis sallenave"]
 }
-SOMMETS_À_TESTER = []
+
+SOMMETS_À_TESTER = {
+    "Pau_agglo": [286807996,    # Sallenave
+                  459812763,    # Véroniques
+                  2361682557,   # Barthouil
+                  339803913     # Cartetnau
+                  ]
+}
 
 def chronoDijkstra(g: Graphe, bavard=1):
     #sh.chargeToutesLesZones(sh.v.g)
     # sommets = [g.sommetOfId_osm(io) for io in SOMMETS_OSM]
+
+    
+    print("Chrono des iti_étapes_ensembles")
     tic0 = perf_counter()
     for z_t, rues_t in RUES_À_TESTER.items():
         z_d = g.charge_zone(z_t)
@@ -149,6 +159,18 @@ def chronoDijkstra(g: Graphe, bavard=1):
             c = sh.ch.Chemin(z_d, [s, t], [], 0.2, "black", False, interdites={}, texte_interdites="")
             tic = perf_counter()
             dijkstra.iti_étapes_ensembles(g, c, bavard=bavard-1)
+            print(f"\n{s}->{t}: {perf_counter()-tic}\n")
+    print(f"Temps total : {perf_counter()-tic0}")
+
+    
+    print("chrono de dijkstra.itinéraire")
+    tic0 = perf_counter()
+    for z_t, rues_t in RUES_À_TESTER.items():
+        z_d = g.charge_zone(z_t)
+
+        for (s, t) in pf.paires(SOMMETS_À_TESTER):
+            tic = perf_counter()
+            dijkstra.itinéraire(g, s, t, .2, bavard=bavard-1)
             print(f"\n{s}->{t}: {perf_counter()-tic}\n")
     print(f"Temps total : {perf_counter()-tic0}")
 
