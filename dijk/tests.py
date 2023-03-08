@@ -104,7 +104,15 @@ def structureArbreArête():
 
     for a in mo.ArbreArête.objects.all():
         if a not in vus:
-            vérifUnArbre(a)
+            vérifUnArbre(a.ancètre())
+
+            
+def testChemins():
+    """
+    Vérifie que la lecture de chaque chemin de la base fonctionne.
+    """
+    raise NotImplementedError()
+
 
 
 class TestVues(TestCase):

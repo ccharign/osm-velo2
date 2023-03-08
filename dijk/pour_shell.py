@@ -32,8 +32,7 @@ def entraine_tout(bavard: int = 2):
     for z_d in mo.Zone.objects.all():
         v.g.charge_zone(z_d.nom)
         assert v.g.arbre_arêtes[z_d.nom] is not None, f"{z_d} n’a pas d’arbreArête"
-    close_old_connections()
-    lecture_tous_les_chemins(bavard=bavard)
+    lecture_tous_les_chemins(v.g, bavard=bavard)
 
 
 def mise_à_jour():
