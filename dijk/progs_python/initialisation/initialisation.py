@@ -15,7 +15,6 @@ from django.db.models import Count
 from dijk.progs_python.params import RACINE_PROJET
 from initialisation.noeuds_des_rues import extrait_nœuds_des_rues
 from lecture_adresse.normalisation import arbre_rue_dune_ville, partie_commune, prétraitement_rue, normalise_rue
-import networkx as nx
 from graphe_par_networkx import Graphe_nx
 from petites_fonctions import chrono, LOG, supprime_objets_par_lots, paires, supprimeQuerySetParLots
 import dijk.progs_python.recup_donnees as rd
@@ -33,13 +32,6 @@ from initialisation.amenities import charge_lieux_of_ville
 
 
 
-# def quadArbreDeZone(z_d, bavard=0):
-#     l = list(Sommet.objects.filter(villes__zone=z_d))
-#     tic = perf_counter()
-#     res = QuadrArbreSommet.of_list(l)
-#     chrono(tic, f"arbre quad de la zone {z_d}", bavard=bavard)
-#     return res
-
 
 def supprimeTousArbresArêtesDeLaBase():
     """
@@ -53,32 +45,27 @@ def supprimeTousArbresArêtesDeLaBase():
     # mo.ArbreArête.effaceTout()
     
 
-def quadArbreArêtesDeLaBase():
+def quadArbresArêtesDeLaBase():
     """
-    Crée l’arbre de toutes les arêtes de la base et l’enregistre dans celle-ci.
+    Crée les arbres de toutes les zones non inclues dans une autre et les enregistre dans la base.
     """
+    
     print("Suppression des anciens arbres")
     supprimeTousArbresArêtesDeLaBase()
 
     # Création des arbres
     for z in mo.Zone.objects.all():
         if not z.inclue_dans:
+            print(f"Création de l’arbre de {z}")
             créeQuadArbreArêtesDeZone(z)
 
     # Association des arbres aux sous-zones
     for z in mo.Zone.objects.all():
         if z.inclue_dans:
-            z.arbre_arêtes = z.plusGrandeZoneContenant().arbre_arêtes
+            ancêtre = z.plusGrandeZoneContenant()
+            print(f"J’associe à la zone {z} l’arbre de {ancêtre}")
+            z.arbre_arêtes = ancêtre.arbre_arêtes
             z.save()
-        
-    # print("Création de l’arbre de toute la base")
-    # print(" Récupération de toutes les arêtes")
-    # l = list(Arête.objects.all())
-    # #assert all(isinstance(a, Arête) for a in l), f"Un truc n’est pas une arête"
-    # print("Création de l’arbre (type QuadrArbreArête)")
-    # arbre = QuadrArbreArête.of_list_darêtes_d(l)
-    # print("Sauvegarde de l’arbre dans la base")
-    # arbre.sauv_dans_base(ArbreArête, SegmentArête)
 
     
 def créeQuadArbreArêtesDeZone(z_d: mo.Zone, bavard=0) -> ArbreArête:
@@ -127,47 +114,14 @@ def quadArbreArêtesDeVille(v_d: mo.Ville):
 
 
 
-def quadArbreArêtesDeToutesLesZones():
-    """
-    Enregistre dans la base la racine de l’arbre de chaque zone.
-    """
-    for z_d in mo.Zone.all():
-        a = quadArbreArêtesDeZone(z_d)
-        z_d.arbre_arêtes = a
-        z_d.save()
-
-    
-# def quadArbreAretesDeZone(z_d, sauv=True, bavard=0):
+# def quadArbreArêtesDeToutesLesZones():
 #     """
-#     Entrée : z_d (mo.Zone)
-#     Sortie : arbre des arêtes de cette zone.
-#     Effet : si sauv, recalcule et enregistre l’arbre à l’adresse "{DONNÉES}/{z_d.nom}/arbre_arêtes_{z_d}"
-#             sinon, l’arbre est chargé depuis le disque.
+#     Enregistre dans la base la racine de l’arbre de chaque zone.
 #     """
-    
-#     if sauv:
-#         #  Création et sauvegarde de l’arbre
-#         l = list(z_d.arêtes())
-#         LOG(f"Villes de la zone {z_d} : {tuple(z_d.villes())}\n {len(l)} arêtes.", bavard=bavard)
-#         tic = perf_counter()
-#         res = QuadrArbreArête.of_list_darêtes_d(l)
-#         rép = os.path.join(DONNÉES, z_d.nom)
-#         os.makedirs(rép, exist_ok=True)
-#         res.sauv(os.path.join(rép, f"arbre_arêtes_{z_d}"))
-#         print(f"Arbre sauvegardé dans {os.path.join(rép, f'arbre_arêtes_{z_d}')}")
-#         chrono(tic, f"création et sauvegarde de l’arbre quad de la zone {z_d}", bavard=bavard)
-
-#     else:
-#         #  Chargement de l’arbre
-#         dossier_données = os.path.join(DONNÉES, str(z_d))
-#         chemin = os.path.join(dossier_données, f"arbre_arêtes_{z_d}")
-#         tic = perf_counter()
-#         LOG(f"Chargement de l’arbre quad des arêtes depuis {chemin}", bavard=bavard)
-#         res = QuadrArbreArête.of_fichier(chemin)
-#         tic = chrono(tic, "Chargement de l’arbre quad des arêtes", force=True)
-                
-#     return res
-
+#     for z_d in mo.Zone.all():
+#         a = quadArbreArêtesDeZone(z_d)
+#         z_d.arbre_arêtes = a
+#         z_d.save()
 
 
 
