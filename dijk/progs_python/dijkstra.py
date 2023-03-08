@@ -72,12 +72,12 @@ class Itinéraire():
 
 ## Pour A* : heuristique qui ne surestime jamais la vraie distance. -> prendre le min {d(s, a)/g.cycla_max pour a dans arrivée}
 
-def heuristique(g, s, arrivée, correction_max):
-    """
-    correction_max (float) : valeur max par laquelle une longueur peut être divisée.
-    Voir models.formule_pour_correction_longueur.
-    """
-    return min(g.d_euc(s, a) for a in arrivée)/correction_max
+# def heuristique(g, s, arrivée, correction_max):
+#     """
+#     correction_max (float) : valeur max par laquelle une longueur peut être divisée.
+#     Voir models.formule_pour_correction_longueur.
+#     """
+#     return min(g.d_euc(s, a) for a in arrivée)/correction_max
 
 
 
@@ -146,7 +146,7 @@ def arêtesDoubles(g, s, p_détour, interdites):
 
 
 
-def vers_une_étape(g, départ, arrivée, p_détour, dist, pred, première_étape, correction_max, interdites, bavard=0):
+def vers_une_étape(g, départ, arrivée, p_détour, dist, pred, première_étape, interdites, bavard=0):
     """
     Entrées : - g, graphe avec méthode voisins qui prend un sommet et un p_détour et qui renvoie une liste de (voisin, longueur de l’arête)
               - départ et arrivée, ensembles de sommets
@@ -154,7 +154,6 @@ def vers_une_étape(g, départ, arrivée, p_détour, dist, pred, première_étap
               - dist : dictionnaire donnant la distance initiale à prendre pour chaque élément de départ (utile quand départ sera une étape intermédiaire)
               - pred : dictionnaire des prédécesseurs déjà calculés.
               - première_étape (bool) : indique si on en est à la première étape du trajet final.
-              - correction_max (float) : valeur max par laquelle une longueur peut être divisée à cause de la cycla.
               - interdites : arêtes interdites. dico s->voisins interdits depuis s.
 
     Effet : pred et dist sont remplis de manière à fournir tous les plus courts chemins d’un sommet de départ vers un sommet d’arrivée, en prenant compte des bonus/malus liés aux valeurs initiales de dist.
@@ -172,7 +171,7 @@ def vers_une_étape(g, départ, arrivée, p_détour, dist, pred, première_étap
         """
         Entasse dans àVisiter le couple (d+heuristique, s)
         """
-        heappush(àVisiter, (d+heuristique(g, s, arrivée, correction_max), s))
+        heappush(àVisiter, (d, s))
         
     for (s, d) in dist.items():
         entasse(s, d)
@@ -209,10 +208,10 @@ def vers_une_étape(g, départ, arrivée, p_détour, dist, pred, première_étap
             
 
     if len(sommetsFinalsTraités) == 0:
-        _, plus_proche = min((heuristique(g, s, arrivée, correction_max), s) for s in dist.keys())
-        chemin = [plus_proche]
-        reconstruction(chemin, pred, départ)
-        raise PasDeChemin(f"Pas réussi à atteindre l’étape {arrivée}.\n Le sommet atteint le plus proche est {plus_proche}, le chemin pour y aller est :\n {chemin}.")
+        # _, plus_proche = min((heuristique(g, s, arrivée, correction_max), s) for s in dist.keys())
+        # chemin = [plus_proche]
+        # reconstruction(chemin, pred, départ)
+        raise PasDeChemin(f"Pas réussi à atteindre l’étape {arrivée}.\n")
     if not fini:
         LOG_PB(f"Avertissement : je n’ai pas réussi à atteindre tous les sommets de {arrivée}.\n Sommets non atteints:{[s for s in arrivée if s not in sommetsFinalsTraités]}.")
 
@@ -243,8 +242,8 @@ def iti_étapes_ensembles(g, c, bavard=0):
     Sortie (int list × float): plus court chemin d’un sommet de étapes[0] vers un sommet de étapes[-1] qui passe par au moins une arête de chaque étape intérmédiaire, longueur de l’itinéraire.
     """
     LOG(f"Recherche d’un itinéraire pour le chemin {c}", bavard=bavard)
-    correction_max = 1. / formule_pour_correction_longueur(1., c.zone.cycla_max, c.p_détour)
-    LOG(f"correction_max : {correction_max}", bavard=bavard-1)
+    #correction_max = 1. / formule_pour_correction_longueur(1., c.zone.cycla_max, c.p_détour)
+    #LOG(f"correction_max : {correction_max}", bavard=bavard-1)
     étapes = c.étapes
     départ = étapes[0].nœuds
     arrivée = étapes[-1].nœuds
@@ -255,7 +254,7 @@ def iti_étapes_ensembles(g, c, bavard=0):
 
     for i in range(1, len(étapes)):
         LOG(f"Recherche d’un chemin de {étapes[i-1]} à {étapes[i]}.", bavard=bavard)
-        vers_une_étape(g, étapes[i-1].nœuds, étapes[i].nœuds, c.p_détour, dist, pred, i==1, correction_max, c.interdites, bavard=bavard)
+        vers_une_étape(g, étapes[i-1].nœuds, étapes[i].nœuds, c.p_détour, dist, pred, i==1, c.interdites, bavard=bavard)
         LOG(f"Je suis arrivé à {étapes[i]}", bavard=bavard)
         preds_précs.append(copy.deepcopy(pred))  # pour la reconstruction finale
         # preds_précs[k] contient les données pour aller de étapes[k] vers étapes[k+1], k==i-1
@@ -267,11 +266,7 @@ def iti_étapes_ensembles(g, c, bavard=0):
     for i in range(len(étapes)-1, 0, -1):
         reconstruction(iti, preds_précs[i-1], étapes[i-1].nœuds)
     iti.reverse()
-    s_d = iti[0]
-    h = heuristique(g, s_d, arrivée, correction_max)
-    if h > dist[fin]*1.1:
-        raise RuntimeError(f"L’heuristique {h} était plus grande que la distance finale {dist[fin]} pour {c}.")
-    LOG(f"(\ndijkstra.chemin_étapes_ensembles) Pour le chemin {c}, j’ai obtenu l’itinéraire\n {iti}. \n L’heuristique était {h}, la distance euclidienne {g.d_euc(s_d,fin)} et la longueur (ressentie) trouvée {dist[fin]}", bavard=bavard-1)
+
     return iti, dist[fin]
 
 
@@ -293,13 +288,13 @@ def iti_qui_passe_par_un_sommet(g, c, bavard=0):
     Sortie (Itinéraire) : plus court itinéraire passant par un sommet de chaque étape, longueur d’icelui.
     Pour l’instant, les étapes intermédaires classiques sont ignorées : seules sont prises en compte le départ, l’arrivée, et les étapes_sommets.
     """
-    correction_max = 1. / formule_pour_correction_longueur(1., c.zone.cycla_max, c.p_détour)
+    #correction_max = 1. / formule_pour_correction_longueur(1., c.zone.cycla_max, c.p_détour)
     étapes = [c.arrivée()] + list(reversed(c.étapes_sommets))  # La fonction vers_une_étape_par_un_sommet prend les étapes à atteindre avec la première à droite et la dernière à gauche.
     dist = {s: 0. for s in c.départ().nœuds}
     (sommets, marqueurs), longueur = vers_une_étape_par_un_sommet(
         g,
         c.p_détour,
-        correction_max,
+        #correction_max,
         [],
         dist,
         étapes,
@@ -314,7 +309,7 @@ def iti_qui_passe_par_un_sommet(g, c, bavard=0):
 
 def vers_une_étape_par_un_sommet(g,
                                  p_détour: float,
-                                 correction_max: float,
+                                 #correction_max: float,
                                  précs_préds: list,
                                  dist: dict,
                                  étapes_restantes: list,
@@ -370,7 +365,7 @@ def vers_une_étape_par_un_sommet(g,
                     return vers_une_étape_par_un_sommet(
                         g,
                         p_détour,
-                        correction_max,
+                        #correction_max,
                         précs_préds,
                         {t: dist[t] for t in but_actuel.nœuds},  # Réinitialiser dist
                         étapes_restantes,
@@ -395,7 +390,7 @@ def vers_une_étape_par_un_sommet(g,
         return vers_une_étape_par_un_sommet(
             g,
             p_détour,
-            correction_max,
+            #correction_max,
             précs_préds,
             {t: dist[t] for t in atteints},  # Réinitialiser dist
             étapes_restantes,

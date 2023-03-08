@@ -134,6 +134,7 @@ RUES_À_TESTER = {
     "Pau_agglo": ["ρ veroniques", "ρ dou barthouil", "ρ castetnau", "passage louis sallenave"]
 }
 
+# id_osm de sommets
 SOMMETS_À_TESTER = {
     "Pau_agglo": [286807996,    # Sallenave
                   459812763,    # Véroniques
@@ -143,10 +144,6 @@ SOMMETS_À_TESTER = {
 }
 
 def chronoDijkstra(g: Graphe, bavard=1):
-    #sh.chargeToutesLesZones(sh.v.g)
-    # sommets = [g.sommetOfId_osm(io) for io in SOMMETS_OSM]
-
-    
     print("Chrono des iti_étapes_ensembles")
     tic0 = perf_counter()
     for z_t, rues_t in RUES_À_TESTER.items():
@@ -173,6 +170,10 @@ def chronoDijkstra(g: Graphe, bavard=1):
             dijkstra.itinéraire(g, s, t, .2, bavard=bavard-1)
             print(f"\n{s}->{t}: {perf_counter()-tic}\n")
     print(f"Temps total : {perf_counter()-tic0}")
+
+
+
+
 
 
 
