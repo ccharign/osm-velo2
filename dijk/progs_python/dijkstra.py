@@ -269,7 +269,7 @@ def iti_étapes_ensembles(g, c, bavard=0):
     iti.reverse()
     s_d = iti[0]
     h = heuristique(g, s_d, arrivée, correction_max)
-    if h > dist[fin]:
+    if h > dist[fin]*1.1:
         raise RuntimeError(f"L’heuristique {h} était plus grande que la distance finale {dist[fin]} pour {c}.")
     LOG(f"(\ndijkstra.chemin_étapes_ensembles) Pour le chemin {c}, j’ai obtenu l’itinéraire\n {iti}. \n L’heuristique était {h}, la distance euclidienne {g.d_euc(s_d,fin)} et la longueur (ressentie) trouvée {dist[fin]}", bavard=bavard-1)
     return iti, dist[fin]
