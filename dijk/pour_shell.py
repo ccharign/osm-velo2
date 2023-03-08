@@ -14,6 +14,8 @@ from dijk.progs_python.initialisation.initialisation import charge_fichier_cycla
 from dijk.progs_python.initialisation.communes import charge_villes
 import dijk.progs_python.utils as utils
 import dijk.progs_python.recup_donnees as rd
+import dijk.progs_python.chemins as ch
+from dijk.progs_python.graphe_base import Graphe
 import dijk.progs_python.initialisation.amenities as amen
 from dijk.progs_python.utils import lecture_tous_les_chemins
 
@@ -22,16 +24,19 @@ osmnx.settings.log_console = True
 
 
 
+def chargeToutesLesZones(g: Graphe):
+    close_old_connections()
+    for z_d in mo.Zone.objects.all():
+        g.charge_zone(z_d.nom)
+    
+
 
 def entraine_tout(bavard: int = 2):
     """
     Lance la lecture de tous les chemins de la base.
     """
     assert isinstance(bavard, int)
-    close_old_connections()
-    for z_d in mo.Zone.objects.all():
-        v.g.charge_zone(z_d.nom)
-        assert v.g.arbre_arêtes[z_d.nom] is not None, f"{z_d} n’a pas d’arbreArête"
+    chargeToutesLesZones(v.g)
     lecture_tous_les_chemins(v.g, bavard=bavard)
 
 

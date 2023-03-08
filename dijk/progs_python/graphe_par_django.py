@@ -15,21 +15,21 @@ from dijk.progs_python import dijkstra
 from dijk.progs_python.lecture_adresse.arbresLex import ArbreLex
 import dijk.progs_python.lecture_adresse.normalisation as no
 
-from graphe_base import Graphe
-#from quadrarbres import QuadrArbreArête
+from dijk.progs_python.graphe_base import Graphe
+
 
 
 class VillePasTrouvée(Exception):
     pass
 
 
-    
+
 class Graphe_django(Graphe):
     """
     Cette classe sert d'interface avec la base Django.
     Attribut:
         dico_voisins (dico int -> (int, Arête) list) associe à un id_osm la liste de ses (voisins, arête)
-        dico_Sommet (dico int->Sommet) associe le sommet à chaque id_osm
+        dico_Sommet (dico int-> Sommet) associe le sommet à chaque id_osm
         arbre_villes : arbre lex des villes (toutes les villes de la base pour l’instant). Noms normalisée.
         cycla__min
         cycla__max
@@ -102,15 +102,10 @@ class Graphe_django(Graphe):
 
         ## Arêtes
         d_arête_of_pk = {}  # Pour le chargement de l’arbre quad.
-        # cyclaMin = float("inf")
-        # cyclaMax = 0.
         for a in z_d.arêtes():
-            # cyclaMax = max(cyclaMax, a.cyclabilité())
-            # cyclaMin = min(cyclaMin, a.cyclabilité())
             s = a.départ.id_osm
             t = a.arrivée.id_osm
             d_arête_of_pk[a.pk] = a
-            #if a.cyclabilité() > 0:  # ceci supprime les autoroutes actuellement
             self.dico_voisins[s].append((t, a))
         tic = chrono(tic, "Chargement des arêtes.")
 
@@ -157,20 +152,11 @@ class Graphe_django(Graphe):
     def coords_of_id_osm(self, s):
         return self.dico_Sommet[s].coords()
 
+    
+    def sommetOfId_osm(self, s: int) -> mo.Sommet:
+        return self.dico_Sommet[s]
 
-    def supprime_sommets_isolés(self):
-        """
-        Supprime de la base les sommets desquels aucune arête ne part.
-        """
-        à_supprimer = []
-        for s_d in self.dico_Sommet.values():
-            if len(s_d.voisins_nus()) == 0:
-                à_supprimer.append(s_d)
-        print(f"Sommets à supprimer : {à_supprimer}")
-        with transaction.atomic():
-            for s_d in à_supprimer:
-                s_d.delete()
-                
+
 
     def ville_la_plus_proche(self, nom, tol=2):
         """

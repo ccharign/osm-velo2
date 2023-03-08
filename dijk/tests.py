@@ -1,15 +1,18 @@
 from functools import reduce
 from pprint import pprint
+from time import perf_counter
 
 
 from django.test import TestCase
 from django.test import Client
 
-from dijk.pour_shell import *
+import dijk.pour_shell as sh
+import dijk.progs_python.dijkstra as dijkstra
 
 import dijk.models as mo
 import dijk.progs_python.recup_donnees as rd
-
+from dijk.progs_python.graphe_base import Graphe
+import dijk.progs_python.petites_fonctions as pf
 
 gre = mo.Ville.objects.get(nom_complet="Grenoble")
 pau = mo.Ville.objects.get(nom_complet="Pau")
@@ -18,7 +21,10 @@ pag = mo.Zone.objects.get(nom="Pau_agglo")
 ousse = mo.Ville.objects.get(nom_complet="Ousse")
 
 
-# Create your tests here.
+
+print("Chargement des zones")
+
+
 
 
 def test_data_gouv(nb=5):
@@ -106,7 +112,8 @@ def structureArbreArête():
         if a not in vus:
             vérifUnArbre(a.ancètre())
 
-            
+
+
 def testChemins():
     """
     Vérifie que la lecture de chaque chemin de la base fonctionne.
@@ -115,6 +122,39 @@ def testChemins():
 
 
 
+
+##############################
+##### Profiling #####
+##############################
+
+
+# dico nom_zone -> liste des nom_norm des rues à tester
+# Attention : ne mettre que des rues de nom_norm unique
+RUES_À_TESTER = {
+    "Pau_agglo": ["ρ veroniques", "ρ dou barthouil", "ρ castetnau", "passage louis sallenave"]
+}
+SOMMETS_À_TESTER = []
+
+def chronoDijkstra(g: Graphe, bavard=1):
+    #sh.chargeToutesLesZones(sh.v.g)
+    # sommets = [g.sommetOfId_osm(io) for io in SOMMETS_OSM]
+    tic0 = perf_counter()
+    for z_t, rues_t in RUES_À_TESTER.items():
+        z_d = g.charge_zone(z_t)
+        rues = [mo.Rue.objects.get(nom_norm=nom) for nom in rues_t]
+        étapes_rues = [sh.ch.ÉtapeAdresse.of_rue(r) for r in rues]
+
+
+        for (s, t) in pf.paires(étapes_rues):
+            c = sh.ch.Chemin(z_d, [s, t], [], 0.2, "black", False, interdites={}, texte_interdites="")
+            tic = perf_counter()
+            dijkstra.iti_étapes_ensembles(g, c, bavard=bavard-1)
+            print(f"\n{s}->{t}: {perf_counter()-tic}\n")
+    print(f"Temps total : {perf_counter()-tic0}")
+
+
+
+# Les tests ci-dessous sont automatiquement lancés avec python manage.py test
 class TestVues(TestCase):
     def test_statut_réponses(self):
         c = Client()
@@ -131,5 +171,4 @@ class TestVues(TestCase):
 
         ## carte cycla de Pau
         réponse = c.get('/cycla/', {"zone": 72, "force_calcul": "on"})
-        #pprint(réponse.context)
         self.assertEqual(réponse.status_code, 200)

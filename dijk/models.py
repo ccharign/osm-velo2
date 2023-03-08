@@ -73,7 +73,7 @@ def objet_of_dico(
     return cls(**d_nettoyé)
 
 
-def découpe_chaîne_de_nœuds(c):
+def découpe_chaîne_de_nœuds(c: str) -> tuple[int]:
     return tuple(map(int, c.split(",")))
 
 
@@ -203,9 +203,20 @@ class Rue(models.Model):
     def __str__(self):
         return f"{self.nom_complet}"
     
-    def nœuds(self):
+    def nœuds(self) -> tuple[int]:
+        """
+        Sortie : tuple des id_osm des nœuds de la rue.
+        """
         return découpe_chaîne_de_nœuds(self.nœuds_à_découper)
 
+    
+    def sommets(self):
+        """
+        Renvoie le queryset des Sommets de self.
+        """
+        return Sommet.objects.filter(id_osm__in=self.nœuds())
+
+    
     def pour_autocomplète(self, num, bis_ter):
         à_afficher = ""
         if num:

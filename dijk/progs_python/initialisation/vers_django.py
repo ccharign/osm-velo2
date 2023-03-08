@@ -500,17 +500,24 @@ def met_en_clique(g, nœuds, nom, cycla_défaut=1.1, bavard=0):
                     cpt += 1
     print(f"{cpt} nouvelles arêtes créées.")
     
+
+
+
     
-# def place_en_clique(g, v_d):
-#     """
-#     Effet : Transforme en clique toutes les places.
-#     """
-#     for r in Rue.objects.filter(
-#             Q(nom_complet__icontains="place") | Q(nom_complet__icontains="square"),
-#             ville=v_d):
-#         print(f"Mise en clique : {r}")
-#         met_en_clique(g, r.nœuds(), r.nom_complet)
-    
+def supprime_sommets_isolés():
+    """
+    Supprime de la base les sommets desquels aucune arête ne part.
+    FIXME
+    """
+    à_supprimer = []
+    for s_d in self.dico_Sommet.values():
+        if len(s_d.voisins_nus()) == 0:
+            à_supprimer.append(s_d)
+    print(f"Sommets à supprimer : {à_supprimer}")
+    with transaction.atomic():
+        for s_d in à_supprimer:
+            s_d.delete()
+
 
 
 

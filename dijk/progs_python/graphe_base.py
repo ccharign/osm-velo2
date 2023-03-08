@@ -3,6 +3,7 @@
 import abc
 
 from dijk.progs_python.petites_fonctions import distance_euc
+import dijk.models as mo
 
 
 class Graphe(abc.ABC):
@@ -35,5 +36,11 @@ class Graphe(abc.ABC):
     def voisins_nus(self, s: int):
         """
         Sortie : liste des voisins de s.
+        """
+
+    @abc.abstractmethod
+    def sommetOfId_osm(self, s: int) -> mo.Sommet:
+        """
+        Sortie : Sommet d’id_osm s
         """
 

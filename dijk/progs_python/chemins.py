@@ -176,7 +176,7 @@ class ÉtapeAdresse(Étape):
     """
     
     def __init__(self):
-        self.adresse = None
+        self.adresse = Adresse()
         self.nœuds = set()
         self.nom = ""
 
@@ -217,6 +217,15 @@ class ÉtapeAdresse(Étape):
         res.nœuds = set(n)
         res.nom = texte
         return res
+
+    
+    @classmethod
+    def of_rue(cls, rue: mo.Rue):
+        rés = cls()
+        rés.nom = rue.nom_complet
+        rés.nœuds = set(rue.nœuds())
+        rés.adresse.rue_osm = rue
+        return rés
 
         
     def infos(self):
