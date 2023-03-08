@@ -89,11 +89,22 @@ def lieuxSansArête():
 
 def structureArbreArête():
 
+    vus = set()                 # sommets déjà vus
+    
     def vérifUnArbre(r: mo.ArbreArête):
         """
         Vérifie que toutes les feuilles sont attachées à un unique segment.
         """
-        
+        vus.add(r)
+        if not r.fils:
+            print(f"{r} ne semble pas être une feuille valide! Voici ses segments : {r.segment()}")
+            breakpoint()
+        for f in r.fils:
+            vérifUnArbre(f)
+
+    for a in mo.ArbreArête.objects.all():
+        if a not in vus:
+            vérifUnArbre(a)
 
 
 class TestVues(TestCase):

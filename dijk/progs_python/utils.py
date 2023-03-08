@@ -259,7 +259,6 @@ def lecture_tous_les_chemins(g: Graphe, z_t=None, n_lectures_max=20, bavard=1):
     Lance l’apprentissage sur chaque chemin de la zone. Si None, parcourt toutes les zones de g.
     On lit n_lectures_max fois la liste de tous les chemins, ceux qui n’ont pas été modifiés étant retirés de la liste.
     """
-    assert isinstance(g, Graphe)
     assert isinstance(bavard, int)
     close_old_connections()
     

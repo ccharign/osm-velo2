@@ -21,6 +21,8 @@ osmnx.settings.use_cache = True
 osmnx.settings.log_console = True
 
 
+
+
 def entraine_tout(bavard: int = 2):
     """
     Lance la lecture de tous les chemins de la base.
@@ -31,7 +33,7 @@ def entraine_tout(bavard: int = 2):
         v.g.charge_zone(z_d.nom)
         assert v.g.arbre_arêtes[z_d.nom] is not None, f"{z_d} n’a pas d’arbreArête"
     close_old_connections()
-    lecture_tous_les_chemins(v.g, bavard=bavard)
+    lecture_tous_les_chemins(bavard=bavard)
 
 
 def mise_à_jour():
