@@ -1,9 +1,11 @@
 from django.urls import path
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from .api import api
 
 from . import views
 
 urlpatterns = [
+    path("api/", api.urls),
     path("resultat", views.recherche, name="résultat"),
     path("relance_rapide", views.relance_rapide, name="relance_rapide"),
     path("retour", views.trajet_retour, name="retour"),
@@ -15,7 +17,6 @@ urlpatterns = [
     path("rapport_de_bug", views.rapport_de_bug, name="bug"),
     path("autourDeMoi", views.autourDeMoi, name="autour de moi"),
     
-    #path("visu_nv_chemin", views.visualisation_nv_chemin, name="visu nv chemin"),
     path("confirme_nv_chemin", views.confirme_nv_chemin, name="confirme nv chemin"),
 
     path("pourcentages/", views.recherche_pourcentages, name="recherche pourcentages"),

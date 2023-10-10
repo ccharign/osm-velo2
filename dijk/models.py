@@ -142,6 +142,7 @@ class Ville_Ville(models.Model):
     """ table d’association pour indiquer les villes voisines."""
     ville1 = models.ForeignKey(Ville, related_name="ville1", on_delete=models.CASCADE)
     ville2 = models.ForeignKey(Ville, related_name="ville2", on_delete=models.CASCADE)
+    
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["ville1", "ville2"], name="Pas de relation ville_ville en double."),
@@ -1069,7 +1070,7 @@ class TypeLieu(models.Model):
             return tls.first()
         else:
             if créer_type:
-                nom_français = input(f"Traduction de {nom_osm} ({catégorie}) ? C’est pour {d['nom']}. ")
+                nom_français = input(f"Traduction de {nom_osm} ({catégorie}) ? C’est pour {d['nom']}. Ne rien rentrer pour ignorer ce type de lieux.")
                 close_old_connections()
                 tl = cls(nom_français=nom_français, nom_osm=nom_osm, catégorie=catégorie)
                 tl.save()

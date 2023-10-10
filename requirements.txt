@@ -9,6 +9,6 @@ osmnx
 overpy
 requests
 scikit-learn
-
+django-cors-headers
 
 

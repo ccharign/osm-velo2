@@ -1,4 +1,4 @@
-import * as Pll from "./pour_leaflet.js";
+import * as Pll from "./pour_leaflet.js~";
 
 // Fonctions diverses, qui ne requièrent pas de bib externe.
 
