@@ -69,7 +69,7 @@ def itinéraire_of_étapes(étapes,
                          z_d,
                          rajouter_iti_direct=True,
                          étapes_interdites={},
-                         bavard=0):
+                         bavard=0) -> dict:
     """
     Entrées:
         ps_détour (float list)

@@ -3,8 +3,8 @@
 from heapq import heappush, heappop  # pour faire du type List une structure de tas-min
 import copy
 from dijk.progs_python.params import LOG_PB, LOG
-from dijk.models import formule_pour_correction_longueur
-from dijk.progs_python.petites_fonctions import deuxConséc
+#from dijk.models import formule_pour_correction_longueur
+#from dijk.progs_python.petites_fonctions import deuxConséc
 
 
 class PasDeChemin(Exception):
@@ -53,11 +53,14 @@ class Itinéraire():
     def vers_js(self):
         """
         Sortie : dico sérialisable. Clefs : points, couleur, marqueurs
+        Points au format (lon, lat) d’osm.
+        
         """
-        return {"points": [[lat, lon] for lon, lat in self.liste_coords()],
+        return {"points": self.liste_coords(),  # [[lat, lon] for lon, lat in self.liste_coords()],
                 "couleur": self.couleur,
                 "marqueurs": self.marqueurs,
-                "pourcentage_détour": self.pourcentage_détour
+                "pourcentage_détour": self.pourcentage_détour,
+                "longueur": int(self.longueur_vraie()),
                 }
 
     def bbox(self, g):

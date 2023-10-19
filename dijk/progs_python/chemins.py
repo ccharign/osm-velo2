@@ -115,17 +115,17 @@ class Étape(abc.ABC):
 
 
     @classmethod
-    def of_dico(cls, d, g, z_d, bavard=0):
+    def of_dico(cls, d: dict, g: Graphe_django, z_d: mo.Zone, bavard=0):
         """
         Entrée :
            d, dico contenant a priori le résultat d’un get.
            champ, nom du champ dans lequel chercher le texte de l’étape.
 
         Sortie :
-                 - si d["type"]=="lieu", renvoie l’objet ÉtapeLieu correspondant au lieu de pk dans ["pk"]
-                 - si d["type"]=="rue", renvoie l’objet ÉtapeAdresse obtenue en utilisant la rue de pk dans ["pk"]
-                 - si d["type"]=="gtl", renvoie l’objet ÉtapeEnsLieux obtenue en utilisant la rue de pk dans ["pk"]
-                 - si d["arête"]=="arête", renvoie l’objet ÉtapeArête obtenu en utilisant les coords (lon, lat) trouvées dans d["coords"].
+                 - si d["type_étape"]=="lieu", renvoie l’objet ÉtapeLieu correspondant au lieu de pk dans ["pk"]
+                 - si d["type_étape"]=="rue", renvoie l’objet ÉtapeAdresse obtenue en utilisant la rue de pk dans ["pk"]
+                 - si d["type_étape"]=="gtl", renvoie l’objet ÉtapeEnsLieux obtenue en utilisant la rue de pk dans ["pk"]
+                 - si d["arête_étape"]=="arête", renvoie l’objet ÉtapeArête obtenu en utilisant les coords trouvées dans d["lon"] et d["lat"].
 
             - S’il existe un champ nommé 'coords_'+champ et qu’il est rempli, sera utilisé pour obtenir directement les sommets via arête_la_plus_proche. L’objet renvoyé sera alors une ÉtapeArête
 
@@ -136,36 +136,38 @@ class Étape(abc.ABC):
         """
         assert isinstance(d, dict)
 
-        if "type" in d:
-            if d["type"] == "lieu":
-                # ÉtapeLieu
-                return ÉtapeLieu(Lieu.objects.get(pk=int(d["pk"])))
+        type_étape = d.get("type_étape")
+        if type_étape == "lieu":
+            # ÉtapeLieu
+            return ÉtapeLieu(Lieu.objects.get(pk=int(d["pk"])))
 
-            elif d["type"] == "rue":
-                # Adresse venant d’une autocomplétion
-                ad = Adresse.of_pk_rue(d)
+        elif type_étape == "rue":
+            # Adresse venant d’une autocomplétion
+            # extrait la rue de la pk, le num, bis_ter et coords de d
+            ad = Adresse.of_pk_rue(d)
 
-                res = ÉtapeAdresse.of_adresse(g, ad, bavard=bavard)
-                # ad.coords a pu être rempli par la ligne ci-dessus
-                if ad.coords and not d["coords"]:
-                    print("Coordonnées trouvées dans ad. Je les enregistre dans d.")
-                    d["coords"] = ad.coords
-                return res
+            res = ÉtapeAdresse.of_adresse(g, ad, bavard=bavard)
+            # ad.coords a pu être rempli par la ligne ci-dessus
+            if ad.coords and not d["coords"]:
+                print("Coordonnées trouvées dans ad. Je les enregistre dans d.")
+                d["coords"] = ad.coords
+            return res
 
-            elif d["type"] == "gtl":
-                return ÉtapeEnsLieux.of_gtl_pk(d["pk"], z_d)
-            
-            
-            elif d["type"] == "arête":
-                # ÉtapeArête
-                coords = d["coords"]
-                return ÉtapeArête.of_coords(coords, g, z_d)
+        elif type_étape == "gtl":
+            # Groupe de types de lieux
+            return ÉtapeEnsLieux.of_gtl_pk(d["pk"], z_d)
 
-            else:
-                # ÉtapeAdresse
-                LOG("Type non détecté : je renvoie une ÉtapeAdresse")
-                return ÉtapeAdresse.of_texte(d["adresse"], g, z_d)
+        elif type_étape == "arête":
+            # ÉtapeArête
+            coords = d["lon"], d["lat"]
+            return ÉtapeArête.of_coords(coords, g, z_d)
 
+        elif type_étape == "adresse_texte":
+            # ÉtapeAdresse
+            return ÉtapeAdresse.of_texte(d["adresse"], g, z_d)
+
+        else:
+            raise ValueError(f"Type d’étape non reconnu: {d.get('type')}")
     
     
 class ÉtapeAdresse(Étape):
@@ -192,6 +194,8 @@ class ÉtapeAdresse(Étape):
         """
         Entrée:
              ad (Adresse) dont l’attribut ad.rue_osm est déjà un objet mo.Rue.
+        Sortie:
+            Objet ÉtapeAdresse avec un seul nœud si num présent, tous les nœuds de la rue sinon.
         """
         res = cls()
         res.adresse = ad
@@ -282,7 +286,10 @@ class ÉtapeArête(Étape):
         
     
     @classmethod
-    def of_coords(cls, coords, g, z_d, d_max=50, ad=None):
+    def of_coords(cls, coords: tuple[float], g, z_d: mo.Zone, d_max=50, ad=None):
+        """
+        coords au format (lon, lat)
+        """
         # longitude = méridiens, latitude = parallèles
         assert coords[0] < coords[1], f"J’ai reçu lon,lat={coords}. Êtes-vous sûr de ne pas avoir échangé lon et lat ?"
         a, d = g.arête_la_plus_proche(coords, z_d)

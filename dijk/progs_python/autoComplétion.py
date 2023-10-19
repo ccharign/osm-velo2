@@ -38,18 +38,18 @@ class Résultat():
     def ajoute(self, réponse: dict):
         """
         Entrées:
-        réponse doit avoir au moins une clef « label » et optionnellement une clef « àCacher » à laquelle est associé un json.
+             réponse: le dico à mettre dans le rés
         """
         if self.nb < self.n_max:
-            àAfficher = réponse["label"]
-            if àAfficher not in self.déjà_présent:
-                self.déjà_présent.add(àAfficher)
+            #àAfficher = réponse["label"]
+            #if àAfficher not in self.déjà_présent:
+            #    self.déjà_présent.add(àAfficher)
                 self.res.append(réponse)
                 self.nb += 1
         else:
             self.trop_de_rés = True
 
-            
+    
     def ajoute_un_paquet(self, réponses):
         """
         Entrée: un iterable de dicos
@@ -74,10 +74,9 @@ class Résultat():
 
 
 def complétion(à_compléter: str, nbMax: int, z_d):
-    
     """
     Entrée : à_compléter, chaîne de car à compléter.
-    Sortie:  l’objet de la classe Résultat contenant les complétions possibles.
+    Sortie: l’objet de la classe Résultat contenant les complétions possibles.
     """
     
     # Découpage de la chaîne à chercher
@@ -132,15 +131,3 @@ def complétion(à_compléter: str, nbMax: int, z_d):
 
     return res
 
-    # Recherche dans les caches
-    # for truc in Cache_Adresse.objects.filter(adresse__icontains=rue, ville__in=req_villes).prefetch_related("ville"):
-    #     print(f"Trouvé dans Cache_Adresse : {truc}")
-    #     chaîne = chaîne_à_renvoyer(truc.adresse, truc.ville.nom_complet)
-    #     res.ajoute(chaîne)
-
-    # for chose in CacheNomRue.objects.filter(
-    #         Q(nom__icontains=rue) | Q(nom_osm__icontains=rue), ville__in=req_villes
-    # ).prefetch_related("ville"):
-    #     print(f"Trouvé dans CacheNomRue : {chose}")
-    #     chaîne = chaîne_à_renvoyer(chose.nom_osm, chose.ville.nom_complet)
-    #     res.ajoute(chaîne_à_renvoyer(chose.nom_osm, chose.ville.nom_complet))

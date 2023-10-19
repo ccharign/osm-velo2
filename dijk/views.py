@@ -453,7 +453,6 @@ def autreErreur(requête, e):
 ### Autocomplétion ###
 
 def pour_complétion(requête, nbMax=15):
-    
     """
     Renvoie la réponse nécessitée par autocomplete.
     Laisse tel quel la partie avant le dernier ;

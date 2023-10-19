@@ -11,6 +11,7 @@ from dijk.progs_python.lecture_adresse.normalisation0 import partie_commune
 import dijk.progs_python.quadrarbres as qa
 
 from dijk.progs_python.lecture_adresse.normalisation0 import prétraitement_rue
+from dijk.progs_python.petites_fonctions import deuxConséc
 
 
 def objet_of_dico(
@@ -196,19 +197,39 @@ class Rue(models.Model):
     ville = models.ForeignKey(Ville, on_delete=models.CASCADE)
     nœuds_à_découper = models.TextField()  # chaîne de caractères contenant les nœuds à splitter
 
+    
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["nom_norm", "ville"], name="une seule rue pour chaque nom_norm pour chaque ville.")
         ]
-    
+
+        
     def __str__(self):
         return f"{self.nom_complet}"
+    
     
     def nœuds(self) -> tuple[int]:
         """
         Sortie : tuple des id_osm des nœuds de la rue.
         """
         return découpe_chaîne_de_nœuds(self.nœuds_à_découper)
+
+    
+    def géométrie(self) -> list[tuple[float]]:
+        """
+        Sortie: géométrie de la rue. Liste de (lon,lat).
+        Dans le cas où plusieurs arêtes relient deux points, on prend la première...
+        """
+        res = []
+        for (s, t) in deuxConséc(self.nœuds()):
+            arête_aller = Arête.objects.filter(départ__id_osm=s, arrivée__id_osm=t)
+            if arête_aller:
+                res.extend(arête_aller.first().géométrie())
+            else:
+                arête_retour = Arête.objects.filter(départ__id_osm=t, arrivée__id_osm=s)
+                if arête_retour:
+                    res.extend(arête_retour.first().géométrie())
+        return res
 
     
     def sommets(self):
@@ -226,8 +247,11 @@ class Rue(models.Model):
             à_afficher += f"{bis_ter} "
         à_afficher += f"{self}, {self.ville}"
         return {
-            "label": à_afficher,
-            "àCacher": json.dumps({"type": "rue", "pk": self.pk, "num": num, "bis_ter": bis_ter, "coords": ""})
+            "type_étape": "adresse",
+            "pk": self.pk,
+            "nom": à_afficher,
+            "géom": self.géométrie(),
+            "avec_num": bool(num),
         }
 
 
@@ -1124,8 +1148,9 @@ class GroupeTypeLieu(models.Model):
         }
 
     def pour_autocomplète(self):
-        return {"label": self.déterminant() + " " + self.nom,
-                "àCacher": json.dumps(self.pour_js())
+        return {"nom": self.déterminant() + " " + self.nom,
+                "type_étape": "gtl",
+                "pk": self.pk,
                 }
 
 
@@ -1148,6 +1173,7 @@ class Lieu(models.Model):
     id_osm = models.BigIntegerField(unique=True)
     json_tout = models.TextField(blank=True, default=None, null=True)
     arête = models.ForeignKey(Arête, on_delete=models.CASCADE, blank=True, default=None, null=True)  # Arête la plus proche
+    num = models.IntegerField(blank=True, default=None, null=True)  # numéro de rue
     
 
     # Liste des champs à envoyer au constructeur
@@ -1167,7 +1193,7 @@ class Lieu(models.Model):
         return self.lon, self.lat
 
     def nœuds(self):
-        """
+        """a
         Renvoie les deux Sommets de l’arête la plus proche.
         """
         return set((self.arête.départ, self.arête.arrivée))
@@ -1177,13 +1203,11 @@ class Lieu(models.Model):
         """
         C’est juste le nom associé à l’arête associée à self suivi du nom de la ville actuellement...
         """
-        # res = self.arête.nom
-        # if res:
-        #     return f"{res}{self.ville_ou_pas()}"
-        # else:
-        #     return ""
-
-        return ", ".join(str(x) for x in (self.arête.nom, self.ville) if x)
+        if self.num:
+            res = f"{self.num} "
+        else:
+            res = ""
+        return res+", ".join(str(x) for x in (self.arête.nom, self.ville) if x)
 
         
     def toutes_les_infos(self):
@@ -1191,7 +1215,7 @@ class Lieu(models.Model):
         Renvoie le dico des données présentes sur osm.
         """
         res = json.loads(self.json_tout)
-        res["nom"] = str(self)
+        #res["nom"] = str(self)
         res["adresse"] = self.adresse()
         return res
 
@@ -1236,11 +1260,16 @@ class Lieu(models.Model):
     
     def pour_autocomplète(self):
         """
-        Renvoie le dico avec les champs « label » et « àCacher » attendu par la fonction d’autocomplétion.
+        Renvoie le dico
         """
-        return {"label": self.str_pour_formulaire(),
-                "àCacher": json.dumps(self.pour_js())
-                }
+        return {
+            "type_étape": "lieu",
+            "pk": self.pk,
+            "géom": [self.coords()],  # géom doit être une liste de coords
+            "nom": self.nom,
+            "type_lieu": str(self.type_lieu),
+            "infos": self.toutes_les_infos(),
+        }
 
     def pour_marqueur(self):
         """
@@ -1316,6 +1345,8 @@ class Lieu(models.Model):
         d_final = {c: d[c] for c in cls._champs if c in d}  # Le dico à envoyer au constructeur
         d_final["nom_norm"] = prétraitement_rue(d["nom"])
         d_final["json_tout"] = nv_json_tout
+        if "addr:housenumber" in d_final:
+            d_final["num"] = d_final.pop("addr:housenumber")
 
         # Création ou récup de l’ancien lieu
         if tous_les_id_osm and d["id_osm"] in tous_les_id_osm:

@@ -604,11 +604,11 @@ class CoordsPasTrouvées(Exception):
 def coords_of_adresse(adresse, bavard=0):
     """ Cherche les coordonnées de l’adresse fournie en interpolant parmi les adresses connues."""
 
-    LOG_PB(f"J’ai eu besoin de recup_donnees.coords_of_adresse")
+    LOG_PB("J’ai eu besoin de recup_donnees.coords_of_adresse")
     D_RUE_NUM_COORDS = charge_rue_num_coords()
-    num=adresse.num
-    ville=adresse.ville
-    rue=adresse.rue_norm
+    num = adresse.num
+    ville = adresse.ville
+    rue = adresse.rue_norm
     
     k = num % 2  # parité du numéro
     if rue not in D_RUE_NUM_COORDS[str(ville)]:
