@@ -74,7 +74,7 @@ def objet_of_dico(
     return cls(**d_nettoyé)
 
 
-def découpe_chaîne_de_nœuds(c: str) -> tuple[int]:
+def découpe_chaîne_de_nœuds(c: str) -> tuple:
     return tuple(map(int, c.split(",")))
 
 
