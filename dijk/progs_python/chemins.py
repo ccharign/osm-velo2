@@ -287,7 +287,7 @@ class ÉtapeArête(Étape):
         
     
     @classmethod
-    def of_coords(cls, coords: tuple[float], g, z_d: mo.Zone, d_max=50, ad=None):
+    def of_coords(cls, coords: tuple, g, z_d: mo.Zone, d_max=50, ad=None):
         """
         coords au format (lon, lat)
         """
