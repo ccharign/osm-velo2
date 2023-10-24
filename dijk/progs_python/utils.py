@@ -64,7 +64,7 @@ def légende_et_aide(p_détour):
 
 def itinéraire_of_étapes(étapes,
                          étapes_sommets,
-                         ps_détour: list[float],
+                         ps_détour: list,
                          g,
                          z_d: mo.Zone,
                          rajouter_iti_direct=True,
