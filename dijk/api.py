@@ -76,7 +76,7 @@ class ÉtapeJson(Schema):
 
 
 @api.post("/contribuer/{nom_zone}")
-def enregistrerContribution(request: WSGIRequest, nom_zone: str, étapes_str: list[ÉtapeJson], pourcentages_détour: list[int], AR: bool = False):
+def enregistrerContribution(request: WSGIRequest, nom_zone: str, étapes_str: List[ÉtapeJson], pourcentages_détour: List[int], AR: bool = False):
     """
     Crée les objets Chemin dans la base, et lance l’apprentissage dessus.
     """
