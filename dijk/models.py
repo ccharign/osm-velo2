@@ -208,7 +208,7 @@ class Rue(models.Model):
         return f"{self.nom_complet}"
     
     
-    def nœuds(self) -> tuple[int]:
+    def nœuds(self) -> tuple:
         """
         Sortie : tuple des id_osm des nœuds de la rue.
         """
