@@ -135,7 +135,6 @@ class Étape(abc.ABC):
             dans le cas d["type"] == rue, et num présent, on complète d avec les coords de l’adresse.
         """
         assert isinstance(d, dict)
-
         type_étape = d.get("type_étape")
         if type_étape == "lieu":
             # ÉtapeLieu
@@ -144,6 +143,8 @@ class Étape(abc.ABC):
         elif type_étape == "rue":
             # Adresse venant d’une autocomplétion
             # extrait la rue de la pk, le num, bis_ter et coords de d
+            if "lon" in d:
+                d["coords"] = d["lon"], d["lat"]
             ad = Adresse.of_pk_rue(d)
 
             res = ÉtapeAdresse.of_adresse(g, ad, bavard=bavard)
@@ -593,7 +594,7 @@ class Chemin():
 
 
     @classmethod
-    def of_étapes(cls, z_d, étapes, pourcentage_détour, AR, g, étapes_interdites=[], nv_cache=1, bavard=0):
+    def of_étapes(cls, z_d, étapes, pourcentage_détour, AR, g, étapes_interdites=[], bavard=0):
         """
         Entrées : étapes (Étape list).
                   pourcentage_détour (int)

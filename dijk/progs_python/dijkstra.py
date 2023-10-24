@@ -22,6 +22,8 @@ class Itinéraire():
         longueur (float), longueur ressentie
         couleur (str)
         marqueurs (list[dict]), liste de marqueurs à afficher. Pour chaque marqueur est enregistré un dico sérialisable à jsonner.
+        pourcentage_détour (int): pourcentage détour qui a été appliqué pour le calcul de cet itinéraire.
+        longueur_ch_direct (int): longueur du chemin direct si disponible, sinon None.
     """
     
     def __init__(self, g, sommets: tuple, longueur: float, couleur: str, p_détour: float, marqueurs=None):
@@ -30,6 +32,7 @@ class Itinéraire():
         self.longueur = longueur
         self.couleur = couleur
         self.pourcentage_détour = int(p_détour*100)
+        self.longueur_ch_direct = None
         if marqueurs:
             self.marqueurs = marqueurs
         else:
@@ -56,12 +59,15 @@ class Itinéraire():
         Points au format (lon, lat) d’osm.
         
         """
-        return {"points": self.liste_coords(),  # [[lat, lon] for lon, lat in self.liste_coords()],
-                "couleur": self.couleur,
-                "marqueurs": self.marqueurs,
-                "pourcentage_détour": self.pourcentage_détour,
-                "longueur": int(self.longueur_vraie()),
-                }
+        longueur = int(self.longueur_vraie())
+        res = {"points": self.liste_coords(),  # [[lat, lon] for lon, lat in self.liste_coords()],
+               "couleur": self.couleur,
+               "marqueurs": self.marqueurs,
+               "longueur": longueur,
+               }
+        if self.longueur_ch_direct:
+            res["pourcentage_détour"] = int(100*(longueur-self.longueur_ch_direct)/self.longueur_ch_direct)
+        return res
 
     def bbox(self, g):
         cd = g.coords_of_id_osm(self.liste_sommets[0])

@@ -5,10 +5,10 @@
 from time import perf_counter
 from django.db import transaction, close_old_connections
 import gpxpy
-from branca.element import Element
+#from branca.element import Element
 
 
-from folium.plugins import Fullscreen, LocateControl
+#from folium.plugins import Fullscreen, LocateControl
 
 from dijk.progs_python.petites_fonctions import chrono, deuxConséc, LOG
 
@@ -17,13 +17,13 @@ from dijk.models import Chemin_d, Arête
 from dijk.progs_python.graphe_base import Graphe
 
 tic = perf_counter()
-from mon_folium import folium_of_chemin, ajoute_marqueur, folium_of_arêtes, couleur_of_cycla, color_dict, NB_COUL
+from mon_folium import folium_of_arêtes, couleur_of_cycla, color_dict, NB_COUL
 chrono(tic, "mon_folium", bavard=2)
 
 import dijkstra
 
 tic = perf_counter()
-import chemins
+from dijk.progs_python import chemins
 chrono(tic, "chemins", bavard=2)
 
 import apprentissage as ap
@@ -64,9 +64,9 @@ def légende_et_aide(p_détour):
 
 def itinéraire_of_étapes(étapes,
                          étapes_sommets,
-                         ps_détour,
+                         ps_détour: list[float],
                          g,
-                         z_d,
+                         z_d: mo.Zone,
                          rajouter_iti_direct=True,
                          étapes_interdites={},
                          bavard=0) -> dict:
@@ -90,6 +90,7 @@ def itinéraire_of_étapes(étapes,
     ps_détour.sort()  # Pour être sûr que l’éventuel 0 est en premier.
     stats = []
     itinéraires = []
+    longueur_ch_direct = None
     
     interdites = chemins.arêtes_interdites(g, z_d, étapes_interdites, bavard=bavard)
     
@@ -128,9 +129,11 @@ def itinéraire_of_étapes(étapes,
         longueur_ch_direct = stats[-1]["longueur"]
 
     # Calculer les pourcentages de détour effectifs
-    if (rajouter_iti_direct or ps_détour[0] == 0.) and longueur_ch_direct > 0:
-        for s in stats:
-            s["p_détour_effectif"] = int((s["longueur"]/longueur_ch_direct - 1.) * 100.)
+    if (rajouter_iti_direct or ps_détour[0] == 0.) and longueur_ch_direct:
+        # for s in stats:
+        #    s["p_détour_effectif"] = int((s["longueur"]/longueur_ch_direct - 1.) * 100.)
+        for iti in itinéraires:
+            iti.longueur_ch_direct = longueur_ch_direct
 
     return {"stats": stats,
             "chemin": c,

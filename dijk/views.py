@@ -302,7 +302,7 @@ def confirme_nv_chemin(requête):
     AR = bool_of_checkbox(requête.POST, "AR")
 
     def traite_un_chemin(pourcentage_détour: int):
-        c = Chemin.of_étapes(z_d, étapes, pourcentage_détour, AR, g, étapes_interdites=étapes_interdites, nv_cache=2, bavard=2)
+        c = Chemin.of_étapes(z_d, étapes, pourcentage_détour, AR, g, étapes_interdites=étapes_interdites, bavard=2)
         chemins.append(c)
         prop_modif = n_lectures(nb_lectures, g, [c], bavard=1)
         c_d = c.vers_django(bavard=1)
@@ -322,6 +322,7 @@ def confirme_nv_chemin(requête):
     z_d.calculeCyclaMinEtMax()
 
     return render(requête, "dijk/merci.html", {"chemin": chemins, "zone_t": z_d.nom})
+
 
 
 ### traces gpx ###
