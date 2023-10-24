@@ -215,7 +215,7 @@ class Rue(models.Model):
         return découpe_chaîne_de_nœuds(self.nœuds_à_découper)
 
     
-    def géométrie(self) -> list[tuple[float]]:
+    def géométrie(self) -> list:
         """
         Sortie: géométrie de la rue. Liste de (lon,lat).
         Dans le cas où plusieurs arêtes relient deux points, on prend la première...
