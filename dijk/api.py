@@ -59,7 +59,14 @@ def complétion(request, zone: str, term: str):
 def itinéraire(_request: WSGIRequest, nom_zone: str, étapes_str: str):
     z_d = g.charge_zone(nom_zone)
     étapes = [Étape.of_dico(é, g, z_d) for é in json.loads(étapes_str)]
-    return [iti.vers_js() for iti in itinéraire_of_étapes(étapes, [], [.15, .30], g, z_d)["itinéraires"]]
+    res = [
+        iti.vers_js()
+        for iti in itinéraire_of_étapes(étapes, [], [0, .15, .30], g, z_d, rajouter_iti_direct=False)["itinéraires"]
+    ]
+    res[0]["nom"] = "Trajet direct"
+    res[1]["nom"] = "Intermédiaire"
+    res[2]["nom"] = "Priorité confort"
+    return res
 
 
 

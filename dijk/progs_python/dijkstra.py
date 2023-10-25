@@ -40,7 +40,7 @@ class Itinéraire():
 
     def longueur_vraie(self):
         """
-        Renvoie la longeur physique de l’itinéraire.
+        Renvoie la longeur physique de l’itinéraire. En mètres.
         """
         return sum(a.longueur for a in self.liste_arêtes)
 
@@ -53,22 +53,24 @@ class Itinéraire():
             res.extend(a.géométrie())
         return res
 
+    
     def vers_js(self):
         """
         Sortie : dico sérialisable. Clefs : points, couleur, marqueurs
         Points au format (lon, lat) d’osm.
         
         """
-        longueur = int(self.longueur_vraie())
+        longueur = self.longueur_vraie()
         res = {"points": self.liste_coords(),  # [[lat, lon] for lon, lat in self.liste_coords()],
                "couleur": self.couleur,
                "marqueurs": self.marqueurs,
-               "longueur": longueur,
+               "longueur": round(longueur/1000, 1),
                }
         if self.longueur_ch_direct:
             res["pourcentage_détour"] = int(100*(longueur-self.longueur_ch_direct)/self.longueur_ch_direct)
         return res
 
+    
     def bbox(self, g):
         cd = g.coords_of_id_osm(self.liste_sommets[0])
         ca = g.coords_of_id_osm(self.liste_sommets[-1])

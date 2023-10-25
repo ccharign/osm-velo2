@@ -445,13 +445,19 @@ class Chemin():
                     - AR (bool), indique si le retour est valable aussi.
                     - texte (None ou str), texte d'où vient le chemin (pour déboguage)
                     - zone (models.Zone)
+
+    NB: si p_détour est nul, on supprime des étapes intermédaires.
     """
     def __init__(
             self, z_d: mo.Zone, étapes: list, étapes_sommets, p_détour: float, couleur: str, AR: bool, interdites={}, texte_interdites=""
     ):
         assert isinstance(étapes_sommets, list)
         assert 0 <= p_détour <= 2, "Y aurait-il confusion entre la proportion et le pourcentage de détour?"
-        self.étapes = étapes
+        if p_détour:
+            self.étapes = étapes
+        else:
+            # Pour p_détour==0, on veut le trajet direct, donc on ne prend pas en compte les étapes
+            self.étapes = [étapes[0], étapes[-1]]
         self.étapes_sommets = étapes_sommets
         self.p_détour = p_détour
         self.couleur = couleur
