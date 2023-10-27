@@ -24,15 +24,22 @@ api = NinjaAPI()
 
 
 
-@api.get("/zones")
-def getZones(request):
+@api.get("/init")
+def getZonesEtGtls(request):
     """
-    Renvoie la liste des zones existantes. Format {"value": ..., "label": ...}
+    Renvoie la liste des zones et des groupes de types de lieu pour « passer par un(e) ».
+ Format {"value": ..., "label": ...}
     """
-    return [
-        {"value": str(z), "label": str(z)}
-        for z in mo.Zone.objects.all()
-    ]
+    return {
+        "zones": [
+            {"value": str(z), "label": str(z)}
+            for z in mo.Zone.objects.all()
+        ],
+        "gtls": [
+            gtl.pour_js()
+            for gtl in mo.GroupeTypeLieu.objects.all()
+        ]
+    }
 
 
 @api.get("/charge-zone/{nom_zone}")
@@ -61,7 +68,7 @@ def itinéraire(_request: WSGIRequest, nom_zone: str, étapes_str: str):
     étapes = [Étape.of_dico(é, g, z_d) for é in json.loads(étapes_str)]
     res = [
         iti.vers_js()
-        for iti in itinéraire_of_étapes(étapes, [], [0, .15, .30], g, z_d, rajouter_iti_direct=False)["itinéraires"]
+        for iti in itinéraire_of_étapes(étapes, [0, .15, .3], g, z_d, rajouter_iti_direct=False)["itinéraires"]
     ]
     res[0]["nom"] = "Trajet direct"
     res[1]["nom"] = "Intermédiaire"

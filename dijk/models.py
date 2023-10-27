@@ -1130,24 +1130,24 @@ class GroupeTypeLieu(models.Model):
     def lieux(self, z_d: Zone):
         return Lieu.objects.filter(type_lieu__in=self.type_lieu.all(), ville__in=z_d.villes())
 
-    def déterminant(self):
+    def déterminant(self) -> str:
         if self.féminin:
             return "une"
         else:
             return "un"
 
-    def pour_js(self):
-        """
-        Sortie : dico sérialisable contenant les données nécessaires à la partie client. À savoir
-            - pour construire l’objet ÉtapeLieu dans Django après retour via le formulaire.
-        """
-        return {
-            "type": "gtl",
-            "pk": self.pk,
-            "nom": self.nom,
-        }
+    # def pour_js(self):
+    #     """
+    #     Sortie : dico sérialisable contenant les données nécessaires à la partie client. À savoir
+    #         - pour construire l’objet ÉtapeLieu dans Django après retour via le formulaire.
+    #     """
+    #     return {
+    #         "type_étape": "gtl",
+    #         "pk": self.pk,
+    #         "nom": self.nom,
+    #     }
 
-    def pour_autocomplète(self):
+    def pour_js(self):
         return {"nom": self.déterminant() + " " + self.nom,
                 "type_étape": "gtl",
                 "pk": self.pk,
@@ -1244,21 +1244,21 @@ class Lieu(models.Model):
         return f"{self.nom}, {self.adresse()}"
 
 
-    def pour_js(self):
-        """
-        Sortie : dico sérialisable contenant les données nécessaires pour construire l’objet ÉtapeLieu dans Django après retour via le formulaire.
-        En particulier, envoyé pour toutes les propositions d’autocomplétion. -> Doit rester relativement léger.
-        """
-        lon, lat = self.coords()
-        return {
-            "type": "lieu",
-            "pk": self.pk,
-            "lon": lon,
-            "lat": lat,
-            #"nom": self.nom,
-        }
+    # def pour_js(self):
+    #     """
+    #     Sortie : dico sérialisable contenant les données nécessaires pour construire l’objet ÉtapeLieu dans Django après retour via le formulaire.
+    #     En particulier, envoyé pour toutes les propositions d’autocomplétion. -> Doit rester relativement léger.
+    #     """
+    #     lon, lat = self.coords()
+    #     return {
+    #         "type": "lieu",
+    #         "pk": self.pk,
+    #         "lon": lon,
+    #         "lat": lat,
+    #         #"nom": self.nom,
+    #     }
     
-    def pour_autocomplète(self):
+    def pour_js(self):
         """
         Renvoie le dico
         """

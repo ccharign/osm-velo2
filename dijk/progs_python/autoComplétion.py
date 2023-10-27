@@ -108,7 +108,7 @@ def complétion(à_compléter: str, nbMax: int, z_d):
     if len(essais) == 1:
         déterminant, texte = essais[0]
         gtls = mo.GroupeTypeLieu.objects.filter(nom__istartswith=texte, féminin=déterminant=="une")
-        res.ajoute_un_paquet([gtl.pour_autocomplète() for gtl in gtls])
+        res.ajoute_un_paquet([gtl.pour_js() for gtl in gtls])
 
 
     # Recherche dans les lieux
@@ -119,7 +119,7 @@ def complétion(à_compléter: str, nbMax: int, z_d):
 
     print(f"{len(lieux)} lieux trouvées")
     
-    res.ajoute_un_paquet([l.pour_autocomplète() for l in lieux])
+    res.ajoute_un_paquet([l.pour_js() for l in lieux])
 
 
     # Recherche dans les rues

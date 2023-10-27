@@ -63,7 +63,7 @@ def légende_et_aide(p_détour):
 
 
 def itinéraire_of_étapes(étapes,
-                         étapes_sommets,
+                         #étapes_sommets,
                          ps_détour: list,
                          g,
                          z_d: mo.Zone,
@@ -99,21 +99,22 @@ def itinéraire_of_étapes(étapes,
         itinéraires.append(iti)
         longueur = int(iti.longueur_vraie())
         
-        stats.append({"légende": légende,
-                      "aide": aide,
-                      "p_détour": int(100*c.p_détour),
-                      "id": f"ps{int(100*c.p_détour)}",
-                      "longueur": longueur,
-                      "temps": int(longueur/15000*60),  # Moyenne de 15km/h disons
-                      "longueur_ressentie": int(iti.longueur),
-                      "couleur": c.couleur,
-                      "gpx": gpx_of_iti(iti, bavard=bavard-1)}
-                     )
+        stats.append({
+            "légende": légende,
+            "aide": aide,
+            "p_détour": int(100*c.p_détour),
+            "id": f"ps{int(100*c.p_détour)}",
+            "longueur": longueur,
+            "temps": int(longueur/250),  # Moyenne de 15km/h disons
+            "longueur_ressentie": int(iti.longueur),
+            "couleur": c.couleur,
+            "gpx": gpx_of_iti(iti, bavard=bavard-1)
+        })
 
     tic = perf_counter()
     for i, p in enumerate(ps_détour):
         coul = color_dict[(i*NB_COUL)//np]
-        c = chemins.Chemin(z_d, étapes, étapes_sommets, p, coul, False, interdites=interdites)
+        c = chemins.Chemin(z_d, étapes, p, coul, False, interdites=interdites)
         
         traite_un_chemin(c, *légende_et_aide(p))
         tic = chrono(tic, f"dijkstra {c} et sa longueur")

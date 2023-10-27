@@ -10,23 +10,28 @@ rema : Les fonctions de dijkstra.py prennent des Chemins et renvoient des « Iti
 NB: ce sont les chemins qui sont enregistrés dans la base.
 """
 
+from __future__ import annotations
+from typing import TYPE_CHECKING, List
 
 import re
 import json
 from pprint import pprint
 import abc
 
+
+
 from dijk.models import Chemin_d, Arête, Lieu, Sommet, GroupeTypeLieu
 import dijk.models as mo
 
 from dijk.progs_python.petites_fonctions import milieu
-from params import LOG
+from dijk.progs_python.params import LOG
 from dijk.progs_python.apprentissage import lecture_meilleur_chemin  # Uniquement pour la conversion à la nouvelle manière d’enregistrer les chemins.
 
 # from lecture_adresse.normalisation0 import découpe_adresse
-from lecture_adresse.normalisation import Adresse
-from lecture_adresse.recup_noeuds import nœuds_of_étape, un_seul_nœud
-from dijk.progs_python.graphe_par_django import Graphe_django
+from dijk.progs_python.lecture_adresse.normalisation import Adresse
+from dijk.progs_python.lecture_adresse.recup_noeuds import nœuds_of_étape, un_seul_nœud
+if TYPE_CHECKING:
+    from dijk.progs_python.graphe_par_django import Graphe_django
 
 
 def sans_guillemets(c):
@@ -36,7 +41,7 @@ def sans_guillemets(c):
     else:
         return c
 
-    
+
 class ÉchecChemin(Exception):
     pass
 
@@ -82,11 +87,13 @@ class Étape(abc.ABC):
     def pour_marqueur_of_sommet_osm(self, s: int):
         """
         Renvoie le dico pour marqueur, avec en plus les coords fixées à celles du sommet dont l’id osm est passé en arg.
+        Sera écrasé dans les sous-classes.
         """
-        lon, lat = Sommet.objects.get(id_osm=s).coords()
-        rés = self.pour_marqueur()
-        rés["coords"] = {"lat": lat, "lng": lon}
-        return rés
+        # lon, lat = Sommet.objects.get(id_osm=s).coords()
+        # rés = self.pour_marqueur()
+        # rés["coords"] = {"lat": lat, "lng": lon}
+        # return rés
+        return None
 
 
     @classmethod
@@ -118,7 +125,7 @@ class Étape(abc.ABC):
     def of_dico(cls, d: dict, g: Graphe_django, z_d: mo.Zone, bavard=0):
         """
         Entrée :
-           d, dico contenant a priori le résultat d’un get.
+           d, dico contenant a priori les params d’un get.
            champ, nom du champ dans lequel chercher le texte de l’étape.
 
         Sortie :
@@ -136,6 +143,7 @@ class Étape(abc.ABC):
         """
         assert isinstance(d, dict)
         type_étape = d.get("type_étape")
+        
         if type_étape == "lieu":
             # ÉtapeLieu
             return ÉtapeLieu(Lieu.objects.get(pk=int(d["pk"])))
@@ -213,7 +221,7 @@ class ÉtapeAdresse(Étape):
 
     
     @classmethod
-    def of_texte(cls, texte, g, z_d, bavard=0):
+    def of_texte(cls, texte, g: Graphe_django, z_d, bavard=0):
         """
         texte est une adresse postale, de la forme « [num] [bis|ter] rue, ville [, pays]
         """
@@ -351,13 +359,13 @@ class ÉtapeLieu(Étape):
     def pour_marqueur(self):
         return self.lieu.pour_marqueur()
 
-    def pour_marqueur_of_sommet_osm(self, s: int):
-        """
-        Rema : comme ce type d’étape n’a qu’un seul lieu, le paramètre s est ici inutile.
-        Il est là pour compatibilité avec la méthode éponyme des autres sous-classes d’Étape.
-        Du coup, le marqueur sera placé sur le lieu, et non sur le sommet atteint.
-        """
-        return self.lieu.pour_marqueur()
+    # def pour_marqueur_of_sommet_osm(self, s: int):
+    #     """
+    #     Rema : comme ce type d’étape n’a qu’un seul lieu, le paramètre s est ici inutile.
+    #     Il est là pour compatibilité avec la méthode éponyme des autres sous-classes d’Étape.
+    #     Du coup, le marqueur sera placé sur le lieu, et non sur le sommet atteint.
+    #     """
+    #     return self.lieu.pour_marqueur()
 
 
 
@@ -372,9 +380,10 @@ class ÉtapeEnsLieux(Étape):
         marqueur_leaflet_of_sommet qui place le marqueur sur le lieu correspondant au sommet indiqué.
     """
 
-    def __init__(self, gtl, z_d):
+    def __init__(self, gtl: mo.GroupeTypeLieu, z_d: mo.Zone):
         super().__init__()
         self.dico_lieux = {l.arête.départ.id_osm: l for l in gtl.lieux(z_d)}
+        self.dico_lieux.update({l.arête.arrivée.id_osm: l for l in gtl.lieux(z_d)})
         self.nœuds = self.dico_lieux  # Pas un set, mais l’appartenance et l’itération fonctionneront pareil...
         self.nom = str(gtl)
         self.gtl = gtl
@@ -385,7 +394,7 @@ class ÉtapeEnsLieux(Étape):
         """
         Renvoie le marqueur du lieu correspondant à s.
         """
-        return self.nœuds[s].pour_marqueur()
+        return self.nœuds[s]
 
 
     @classmethod
@@ -445,20 +454,22 @@ class Chemin():
                     - AR (bool), indique si le retour est valable aussi.
                     - texte (None ou str), texte d'où vient le chemin (pour déboguage)
                     - zone (models.Zone)
+                    - étapes_sommets (bool) : indique si au moins une étapes est de type « passer par un sommet »
 
     NB: si p_détour est nul, on supprime des étapes intermédaires.
     """
     def __init__(
-            self, z_d: mo.Zone, étapes: list, étapes_sommets, p_détour: float, couleur: str, AR: bool, interdites={}, texte_interdites=""
+            self, z_d: mo.Zone, étapes: List[Étape], p_détour: float, couleur: str, AR: bool, interdites={}, texte_interdites=""
     ):
-        assert isinstance(étapes_sommets, list)
         assert 0 <= p_détour <= 2, "Y aurait-il confusion entre la proportion et le pourcentage de détour?"
         if p_détour:
             self.étapes = étapes
         else:
-            # Pour p_détour==0, on veut le trajet direct, donc on ne prend pas en compte les étapes
+            # Pour p_détour==0, on veut le trajet direct, donc on ne prend pas en compte les étapes intermédiaires
             self.étapes = [étapes[0], étapes[-1]]
-        self.étapes_sommets = étapes_sommets
+            
+        self.étapes_sommets = any(isinstance(é, ÉtapeEnsLieux) for é in étapes)
+        
         self.p_détour = p_détour
         self.couleur = couleur
         self.AR = AR

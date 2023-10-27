@@ -1,11 +1,12 @@
 # -*- coding:utf-8 -*-
-
+from typing import List
 from heapq import heappush, heappop  # pour faire du type List une structure de tas-min
 import copy
+
 from dijk.progs_python.params import LOG_PB, LOG
 #from dijk.models import formule_pour_correction_longueur
 #from dijk.progs_python.petites_fonctions import deuxConséc
-
+from dijk.progs_python.chemins import Étape, ÉtapeEnsLieux
 
 class PasDeChemin(Exception):
     pass
@@ -24,19 +25,21 @@ class Itinéraire():
         marqueurs (list[dict]), liste de marqueurs à afficher. Pour chaque marqueur est enregistré un dico sérialisable à jsonner.
         pourcentage_détour (int): pourcentage détour qui a été appliqué pour le calcul de cet itinéraire.
         longueur_ch_direct (int): longueur du chemin direct si disponible, sinon None.
+        lieux (List[Lieu]): lieux à afficher le long de l’iti (utile pour iti avec étape gtl)
     """
     
-    def __init__(self, g, sommets: tuple, longueur: float, couleur: str, p_détour: float, marqueurs=None):
+    def __init__(self, g, sommets: tuple, longueur: float, couleur: str, p_détour: float, lieux=None):
         self.liste_sommets = sommets
         self.liste_arêtes = g.liste_Arête_of_iti(sommets, p_détour)
         self.longueur = longueur
         self.couleur = couleur
         self.pourcentage_détour = int(p_détour*100)
         self.longueur_ch_direct = None
-        if marqueurs:
-            self.marqueurs = marqueurs
+        if lieux:
+            self.lieux = lieux
         else:
-            self.marqueurs = []
+            self.lieux = []
+            
 
     def longueur_vraie(self):
         """
@@ -44,6 +47,7 @@ class Itinéraire():
         """
         return sum(a.longueur for a in self.liste_arêtes)
 
+    
     def liste_coords(self):
         """
         Sortie  ((float×float) list) : liste des (lon,lat) décrivant l’itinéraire.
@@ -63,7 +67,7 @@ class Itinéraire():
         longueur = self.longueur_vraie()
         res = {"points": self.liste_coords(),  # [[lat, lon] for lon, lat in self.liste_coords()],
                "couleur": self.couleur,
-               "marqueurs": self.marqueurs,
+               "lieux": [l.pour_js() for l in self.lieux],
                "longueur": round(longueur/1000, 1),
                }
         if self.longueur_ch_direct:
@@ -300,22 +304,23 @@ def iti_qui_passe_par_un_sommet(g, c, bavard=0):
     Pour l’instant, les étapes intermédaires classiques sont ignorées : seules sont prises en compte le départ, l’arrivée, et les étapes_sommets.
     """
     #correction_max = 1. / formule_pour_correction_longueur(1., c.zone.cycla_max, c.p_détour)
-    étapes = [c.arrivée()] + list(reversed(c.étapes_sommets))  # La fonction vers_une_étape_par_un_sommet prend les étapes à atteindre avec la première à droite et la dernière à gauche.
+    #étapes = [c.arrivée()] + list(reversed(c.étapes_sommets))  # La fonction vers_une_étape_par_un_sommet prend les étapes à atteindre avec la première à droite et la dernière à gauche.
+    étapes = list(reversed(c.étapes[1:]))
     dist = {s: 0. for s in c.départ().nœuds}
-    (sommets, marqueurs), longueur = vers_une_étape_par_un_sommet(
+    (sommets, lieux), longueur = vers_une_étape_par_un_sommet(
         g,
         c.p_détour,
         #correction_max,
         [],
         dist,
         étapes,
-        étapes + [c.départ()],  # toutes_les_étapes, sert à la reconstruction de l’iti, et à l’ajout des marqueurs
+        c.étapes.copy(),  # toutes_les_étapes, sert à la reconstruction de l’iti, et à l’ajout des marqueurs. Attention: sera vidée.
         interdites=c.interdites,
         bavard=bavard
     )
     #assert all(t in g.dico_voisins for (s, t) in deuxConséc(sommets)), "Itinéraire pas valide"
 
-    return Itinéraire(g, tuple(reversed(sommets)), longueur, c.couleur, c.p_détour, marqueurs=marqueurs)
+    return Itinéraire(g, tuple(reversed(sommets)), longueur, c.couleur, c.p_détour, lieux=lieux)
     
 
 def vers_une_étape_par_un_sommet(g,
@@ -335,11 +340,11 @@ def vers_une_étape_par_un_sommet(g,
         précs_préds, liste des dicos de prédécesseurs pour les étapes précédentes
         dist : dico sommet->distance au départ du chemin initial. Contient initialement les distance entre le départ du chemin et la dernière étape atteinte.
         étapes_restantes, liste des prochaines étapes à atteindre. On commence par la fin (par des pop)
-        toutes_les_étapes, liste des étapes du chemin (utile juste pour mettre les marqueurs à la fin)
+        toutes_les_étapes, liste des étapes du chemin (utile juste pour mettre les marqueurs à la fin). Dans l’ordre.
         interdites, dico s-> voisins interdits depuis s
 
     Sortie:
-        ((liste des sommets, marqueurs), longeur) de l’itinéraire
+        ((liste des sommets, lieux), longueur) de l’itinéraire
 
     Effet de bord: étapes_restantes et toutes_les_étapes sont vidées.
 
@@ -366,9 +371,8 @@ def vers_une_étape_par_un_sommet(g,
         if s in but_actuel:
             if len(étapes_restantes) == 0:
                 # On est arrivé au bout du chemin!
-                iti, marqueurs = chemin_reconstruit_par_un_sommet(g, s, toutes_les_étapes, précs_préds)
-                marqueurs.pop()  # On enlève le marqueur d’arrivée
-                return (iti, marqueurs), d
+                iti, lieux = chemin_reconstruit_par_un_sommet(g, s, toutes_les_étapes, précs_préds)
+                return (iti, lieux), d
             else:
                 atteints.add(s)
                 if len(atteints) == len(but_actuel):
@@ -412,7 +416,7 @@ def vers_une_étape_par_un_sommet(g,
 
 
 
-def chemin_reconstruit_par_un_sommet(g, sa: int, étapes: list, précs_préds: list):
+def chemin_reconstruit_par_un_sommet(g, sa: int, étapes: List[Étape], précs_préds: list):
     """
     Entrées:
         sa, sommet d’arrivée
@@ -425,11 +429,11 @@ def chemin_reconstruit_par_un_sommet(g, sa: int, étapes: list, précs_préds: l
 
     Effet de bord : étapes et précs_préds sont vidées.
     """
-    
-    assert len(étapes) == len(précs_préds)+1
+    assert len(étapes) == len(précs_préds) + 1
     étape = étapes.pop()
     marqueur = étape.pour_marqueur_of_sommet_osm(sa)
-    
+    marqueurs = [marqueur] if marqueur else []
+            
     if len(précs_préds) == 0:
         return [sa], []  # [marqueur]  # marqueur de début ignoré.
     
@@ -443,7 +447,8 @@ def chemin_reconstruit_par_un_sommet(g, sa: int, étapes: list, précs_préds: l
         # res contient maintenant le trajet depuis l’étape préc (exclus) jusqu’à sa (inclus)
         # s est le sommet de l’étape préc par lequel on est passé.
 
-        avant, marqueurs = chemin_reconstruit_par_un_sommet(g, s, étapes, précs_préds)
+        avant, marqueurs_préc = chemin_reconstruit_par_un_sommet(g, s, étapes, précs_préds)
         res.extend(avant)
-        marqueurs.append(marqueur)
+        marqueurs.extend(marqueurs_préc)
+        
         return res, marqueurs
