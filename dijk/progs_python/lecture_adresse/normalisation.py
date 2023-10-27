@@ -258,17 +258,17 @@ class Adresse():
               "pk", id de la rue dans base.
               'bis_ter' (facultatif)
               'num' (facultatif)
-              'coords'
+              'coords' (facultatif)
         """
         res = cls()
         res.pk_rue = d["pk"]
         res.rue_osm = Rue.objects.get(pk=d["pk"])
-        res.num = d.get("num", None)
+        res.num = d.get("num")
         res.bis_ter = d.get("bis_ter", "")
         if res.bis_ter:
             res.nom += " " + res.bis_ter.strip()
         res.ville = res.rue_osm.ville
-        res.coords = d["coords"]
+        res.coords = d.get("coords")
         return res
 
         
