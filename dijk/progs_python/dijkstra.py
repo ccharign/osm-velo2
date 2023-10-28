@@ -1,12 +1,14 @@
 # -*- coding:utf-8 -*-
-from typing import List
+from __future__ import annotations
+from typing import List, TYPE_CHECKING
 from heapq import heappush, heappop  # pour faire du type List une structure de tas-min
 import copy
 
 from dijk.progs_python.params import LOG_PB, LOG
 #from dijk.models import formule_pour_correction_longueur
 #from dijk.progs_python.petites_fonctions import deuxConséc
-from dijk.progs_python.chemins import Étape, ÉtapeEnsLieux
+if TYPE_CHECKING:
+    from dijk.progs_python.chemins import Étape, ÉtapeEnsLieux
 
 class PasDeChemin(Exception):
     pass
