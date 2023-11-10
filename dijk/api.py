@@ -27,12 +27,12 @@ api = NinjaAPI()
 @api.get("/init")
 def getZonesEtGtls(request):
     """
-    Renvoie la liste des zones et des groupes de types de lieu pour « passer par un(e) ».
- Format {"value": ..., "label": ...}
+    Renvoie la liste des zones (List[str]) et des groupes de types de lieu pour « passer par un(e) »,
+ format {"value": ..., "label": ...}
     """
     return {
         "zones": [
-            {"value": str(z), "label": str(z)}
+            str(z)
             for z in mo.Zone.objects.all()
         ],
         "gtls": [
