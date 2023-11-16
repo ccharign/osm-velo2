@@ -76,7 +76,7 @@ def charge_lieux_of_zone(z_d: Zone, force=False, réinit=False):
 
     #arbre_a = QuadrArbreArête.of_list_darêtes_d(z_d.arêtes())
     for ville in z_d.villes():
-        if force or ville.lieux_calculés < datetime.date.today():
+        if force or not ville.lieux_calculés or ville.lieux_calculés < datetime.date.today():
             charge_lieux_of_ville(ville, z_d.arbre_arêtes, force=force, réinit=réinit)
             print("Pause de 10s pour overpass")
             time.sleep(10)
