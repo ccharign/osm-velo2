@@ -1,9 +1,3 @@
 [flake8]
 # lignes trop longues
-ignore=E501, non-ascii-name, line-too-long,E226,W293,E302,E303,E266,
-# espaces autour d’opérateur arith
-E226,
-non-ascii-name,
-# espaces dans parenthèses
-E202,
-no-else-return,
+ignore=E501, non-ascii-name, line-too-long,E226,W293,E302,E303,E266,E226,E741,D200

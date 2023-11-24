@@ -1,27 +1,26 @@
+"""Gère les demandes d’auto-complétion de champs de formulaire de recherche."""
+
 # -*- coding:utf-8 -*-
 
 import json
 import re
 
-from django.db.models import Subquery, Q
+from django.db.models import Subquery
 
 from .lecture_adresse.normalisation0 import prétraitement_rue
 from .lecture_adresse.normalisation0 import découpe_adresse
 import dijk.models as mo
 
 
-"""
-Gère les demandes d’auto-complétion de champs de formulaire de recherche.
-"""
 
 
 
 ### Auto complétion ###
 
 class Résultat():
-    
     """
     Pour enregistrer le résultat à renvoyer.
+
     Un nouvel élément d n’est ajouté que si son label n’est pas déjà présent et si le nb de résultats est < self.n_max
     """
     
@@ -37,6 +36,8 @@ class Résultat():
 
     def ajoute(self, réponse: dict):
         """
+        Ajoute un élément aux résultats.
+
         Entrées:
              réponse: le dico à mettre dans le rés
         """
@@ -52,6 +53,8 @@ class Résultat():
     
     def ajoute_un_paquet(self, réponses):
         """
+        Ajoute plusieurs éléments aux résultats.
+
         Entrée: un iterable de dicos
         Effet: ajoute les élément de réponses s’il y a assez de place. Dans le cas contraire, n’ajoute rien, et passe self.trop_de_rés à True.
 
@@ -64,10 +67,8 @@ class Résultat():
                 self.ajoute(r)
         
 
-    def vers_json(self):
-        """
-        Sortie (str): le json de la liste de dicos à renvoyer.
-        """
+    def vers_json(self) -> str:
+        """Renvoie le json de la liste de dicos à renvoyer."""
         return json.dumps(self.res)
 
 
@@ -75,10 +76,11 @@ class Résultat():
 
 def complétion(à_compléter: str, nbMax: int, z_d):
     """
+    Fonction principale pour la complétion.
+
     Entrée : à_compléter, chaîne de car à compléter.
     Sortie: l’objet de la classe Résultat contenant les complétions possibles.
     """
-    
     # Découpage de la chaîne à chercher
     # tout = à_compléter.split(";")
     à_chercher_non_normalisé = à_compléter

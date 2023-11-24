@@ -1,0 +1,59 @@
+<testsuite name="features.test_api.test API" tests="4" errors="0" failures="0" skipped="3" time="3.945189" timestamp="2023-11-24T13:05:46.291161" hostname="nordi"><testcase classname="features.test_api.test API" name="test charge_zone" status="skipped" time="0"><skipped /><system-out>
+<![CDATA[
+@scenario.begin
+  Scenario: test charge_zone
+    When je charge la zone Pau ... skipped in 0.000s
+    Then je reçois la réponse Pau ... skipped in 0.000s
+
+@scenario.end
+--------------------------------------------------------------------------------
+]]>
+</system-out></testcase><testcase classname="features.test_api.test API" name="test itinéraire -- @1.1 " status="passed" time="3.945189"><system-out>
+<![CDATA[
+@scenario.begin
+
+  @en-cours
+  Scenario Outline: test itinéraire -- @1.1 
+    When je recherche un itinéraire entre red lion et le w ... passed in 0.051s
+    Then j’ai trois résultats ... passed in 3.894s
+
+@scenario.end
+--------------------------------------------------------------------------------
+
+Captured stdout:
+Recherche de red lion
+1 lieux trouvées
+{'type_étape': 'lieu', 'pk': 88, 'nom': 'New Red Lion'}
+Recherche de le w
+3 lieux trouvées
+{'type_étape': 'lieu', 'pk': 505, 'nom': 'Le W'}
+Zone pas en mémoire : Pau. Voici les zones que j’ai chargées : []
+Chargement des arbres lex pour villes et rues...
+Chargement du cache
+                   0.35s pour Chargement des sommets
+
+                   3.41s pour Chargement des arêtes.
+
+
+]]>
+</system-out></testcase><testcase classname="features.test_api.test API" name="test autocomplète -- @1.1 " status="skipped" time="0"><skipped /><system-out>
+<![CDATA[
+@scenario.begin
+  Scenario Outline: test autocomplète -- @1.1 
+    When je recherche les complétions rue des Vé ... skipped in 0.000s
+    Then le résultat contient Rue des Véroniques ... skipped in 0.000s
+
+@scenario.end
+--------------------------------------------------------------------------------
+]]>
+</system-out></testcase><testcase classname="features.test_api.test API" name="test autocomplète -- @1.2 " status="skipped" time="0"><skipped /><system-out>
+<![CDATA[
+@scenario.begin
+  Scenario Outline: test autocomplète -- @1.2 
+    When je recherche les complétions red li ... skipped in 0.000s
+    Then le résultat contient New Red Lion ... skipped in 0.000s
+
+@scenario.end
+--------------------------------------------------------------------------------
+]]>
+</system-out></testcase></testsuite>

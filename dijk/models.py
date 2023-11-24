@@ -699,13 +699,12 @@ class Zone(models.Model):
         ordering = ["nom"]
     
     def villes(self) -> tuple:
+        """Renvoie les villes de la zone."""
         return tuple(rel.ville for rel in Ville_Zone.objects.filter(zone=self).prefetch_related("ville"))
 
     def sousZones(self):
-        """
-        Renvoie les sous-zones de self.
-        """
-        filles = self.related_manager_sous_zones
+        """Renvoie les sous-zones de self."""
+        return self.related_manager_sous_zones
 
     def plusGrandeZoneContenant(self) -> Self:
         """
@@ -718,9 +717,7 @@ class Zone(models.Model):
 
         
     def estInclueDans(self, autre) -> bool:
-        """
-        Indique si autre figure parmi les zones contenant self.
-        """
+        """Indique si autre figure parmi les zones contenant self."""
         if self == autre:
             return True
         if not self.inclue_dans:
@@ -840,7 +837,7 @@ class Zone(models.Model):
         """
 
         raise NotImplementedError()
-        TODO
+        #TODO
 
 
 class Ville_Zone(models.Model):

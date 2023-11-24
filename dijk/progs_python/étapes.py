@@ -37,6 +37,8 @@ class Étape(abc.ABC):
 
     def infos(self):
         """
+        Infos disponibles sur l’étape.
+
         Renvoie un dico avec les infos connues. Sera utilisé notamment pour les marqueurs leaflet.
         A pour vocation à être écrasée dans les sous-classes.
         """
@@ -92,6 +94,8 @@ class Étape(abc.ABC):
     @classmethod
     def of_dico(cls, d: dict, g: Graphe_django, z_d: mo.Zone, bavard=0):
         """
+        Crée une étape à partir d’un dictionnaire.
+
         Entrée :
            d, dico contenant a priori les params d’un get.
            champ, nom du champ dans lequel chercher le texte de l’étape.

@@ -1,6 +1,4 @@
-"""
-Définit l’API
-"""
+"""Définit l’API."""
 
 from typing import List
 import json
@@ -23,64 +21,33 @@ g = Graphe_django()
 api = NinjaAPI()
 
 
-
 @api.get("/init")
 def getZonesEtGtls(request):
     """
-    Renvoie la liste des zones (List[str]) et des groupes de types de lieu pour « passer par un(e) »,
- format {"value": ..., "label": ...}
+       Renvoie la liste des zones (List[str]) et des groupes de types de lieu pour « passer par un(e) ».
+
+    format {"value": ..., "label": ...}
     """
     return {
-        "zones": [
-            str(z)
-            for z in mo.Zone.objects.all()
-        ],
-        "gtls": [
-            gtl.pour_js()
-            for gtl in mo.GroupeTypeLieu.objects.all()
-        ]
+        "zones": [str(z) for z in mo.Zone.objects.all()],
+        "gtls": [gtl.pour_js() for gtl in mo.GroupeTypeLieu.objects.all()],
     }
 
 
 @api.get("/charge-zone/{nom_zone}")
-def loadZone(request, nom_zone: str):
+def loadZone(request, nom_zone: str) -> str:
     """
     Charge en mémoire la zone indiquée, afin de gagner du temps par la suite.
+
+    Sortie: le nom de la zone
     """
     g.charge_zone(nom_zone)
     return nom_zone
 
 
-@api.get("/completion")
-def complétion(request, zone: str, term: str):
-    """
-    Renvoie les lieux de la base pour la zone indiquée et dont le nom contient term.
-    """
-    z_d = mo.Zone.objects.get(nom=zone)
-    return ac.complétion(term, 20, z_d).res
+class ÉtapeJsonEntrée(Schema):
+    """Un objet pour représenter une étape tel que reçu par le serveur."""
 
-
-
-
-@api.get("/itineraire/{nom_zone}")
-def itinéraire(_request: WSGIRequest, nom_zone: str, étapes_str: str):
-    z_d = g.charge_zone(nom_zone)
-    étapes = [Étape.of_dico(é, g, z_d) for é in json.loads(étapes_str)]
-    res = [
-        iti.vers_js()
-        for iti in itinéraire_of_étapes(étapes, [0, .15, .3], g, z_d, rajouter_iti_direct=False)["itinéraires"]
-    ]
-    res[0]["nom"] = "Trajet direct"
-    res[1]["nom"] = "Intermédiaire"
-    res[2]["nom"] = "Priorité confort"
-    return res
-
-
-
-class ÉtapeJson(Schema):
-    """
-    Un objet pour représenter une étape.
-    """
     type_étape: str
     pk: int = None
     num: bool = None
@@ -89,8 +56,56 @@ class ÉtapeJson(Schema):
     adresse: str = None
 
 
+class ÉtapeJsonSortie(Schema):
+    """Représente un dico renvoyé par le serveur lors d’une autocomplétion."""
+
+    type_étape: str
+    pk: int = None
+    géom: List[List[float]]  # liste de [lon, lat]
+    nom: str
+
+    def vers_entrée(self) -> ÉtapeJsonEntrée:
+        """Convertit le dico dans vers le format utilisé en entrée."""
+        dico = dict(self)
+        lon, lat = dico.pop("géom")[0]
+        print(dico)
+        return ÉtapeJsonEntrée(**(dico | {"lon": lon, "lat": lat}))
+
+
+@api.get("/completion")
+def complétion(request, zone: str, term: str) -> List[ÉtapeJsonSortie]:
+    """
+    Renvoie les lieux de la base pour la zone indiquée et dont le nom contient term.
+
+    """
+    z_d = mo.Zone.objects.get(nom=zone)
+    return ac.complétion(term, 20, z_d).res
+
+
+@api.get("/itineraire/{nom_zone}")
+def itinéraire(_request: WSGIRequest, nom_zone: str, étapes_str: str) -> List:
+    z_d = g.charge_zone(nom_zone)
+    étapes = [Étape.of_dico(é, g, z_d) for é in json.loads(étapes_str)]
+    res = [
+        iti.vers_js()
+        for iti in itinéraire_of_étapes(
+            étapes, [0, 0.15, 0.3], g, z_d, rajouter_iti_direct=False
+        )["itinéraires"]
+    ]
+    res[0]["nom"] = "Trajet direct"
+    res[1]["nom"] = "Intermédiaire"
+    res[2]["nom"] = "Priorité confort"
+    return res
+
+
 @api.post("/contribuer/{nom_zone}")
-def enregistrerContribution(request: WSGIRequest, nom_zone: str, étapes_str: List[ÉtapeJson], pourcentages_détour: List[int], AR: bool = False):
+def enregistrerContribution(
+    request: WSGIRequest,
+    nom_zone: str,
+    étapes_str: List[ÉtapeJsonEntrée],
+    pourcentages_détour: List[int],
+    AR: bool = False,
+):
     """
     Crée les objets Chemin dans la base, et lance l’apprentissage dessus.
     """
@@ -106,4 +121,4 @@ def enregistrerContribution(request: WSGIRequest, nom_zone: str, étapes_str: Li
 
     LOG("Calcul des nouveaux cycla_min et cycla_max", bavard=1)
     z_d.calculeCyclaMinEtMax()
-    return("Fini")
+    return "Fini"
