@@ -135,7 +135,7 @@ def supprime_arêtes_en_double():
 
     
 
-def charge_graphe_de_ville(ville_d: Ville, pays="France", bavard=0, rapide=0):
+def charge_graphe_de_ville(ville_d: Ville, pays="France", bavard=0, rapide=0) -> None:
     """
     Récupère le graphe grâce à osmnx et le charge dans la base.
 
@@ -192,15 +192,9 @@ def charge_graphe_de_ville(ville_d: Ville, pays="France", bavard=0, rapide=0):
 
     ## Transfert du graphe
     close_old_connections()
-    sommets, créées, màj = vd.transfert_graphe(g, ville_d, bavard=bavard-1, rapide=rapide)
+    vd.transfert_graphe(g, ville_d, bavard=bavard-1, rapide=rapide)
     
-    vd.ajoute_ville_à_sommets_et_arêtes(
-        ville_d,
-        sommets,
-        créées+màj,
-        bavard=bavard-1
-    )
-    return créées, màj
+
 
 
 def remplaceArête(g: Graphe_nx, s, t, nom: str):
@@ -291,7 +285,7 @@ def charge_ville(ville_d, zone_d,
     
     if not ville_d.données_présentes or force:
         # création et enregistrement du graphe de la ville
-        arêtes_créées, arêtes_màj = charge_graphe_de_ville(ville_d, pays=pays, bavard=bavard-1, rapide=rapide)
+        charge_graphe_de_ville(ville_d, pays=pays, bavard=bavard-1, rapide=rapide)
         modif = True
 
     ## Lieux

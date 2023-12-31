@@ -12,6 +12,7 @@ import shutil
 import os
 import datetime
 import re
+from typing import Iterable
 
 from django.db import transaction
 # import geopy
@@ -138,6 +139,27 @@ def intersection(t1, t2):
             yield x
 
 
+def paquets(tout: Iterable, taille_paquets: int):
+    """
+    Renvoie un itérateur d’itérateurs.
+
+    tout: collection sur laquelle itérer. Doit disposer d’une longueur.
+    taille_paquets: nb d’éléments de tout que chaque itérateur va renvoyer.
+    """
+    it = tout.__iter__()
+    nb_paquets, reste = divmod(len(tout), taille_paquets)
+    
+    for _ in range(nb_paquets-1):
+        def itérateur():
+            for i in range(taille_paquets):
+                yield it.__next__()
+        yield itérateur()
+        
+    def dernier_itérateur():
+        for _ in range(reste):
+            yield it.__next__()
+    yield dernier_itérateur()
+    
 
             
 
@@ -259,20 +281,6 @@ def get_full_class_name(obj):
         return obj.__class__.__name__
     return module + '.' + obj.__class__.__name__
 
-
-
-def sauv_fichier(chemin):
-    """
-    Crée une copie du fichier dans le sous-répertoire « sauv » du répertoire contenant le fichier. Le sous-répertoire « sauv » doit exister au préalable.
-    """
-    dossier, nom = os.path.split(chemin)
-    dossier_sauv = os.path.join(dossier,"sauv")
-    os.makedirs(dossier_sauv, exist_ok=True)
-    nom_sauv = nom+str(datetime.datetime.now())
-    shutil.copyfile(
-        chemin,
-        os.path.join(dossier_sauv, nom_sauv)
-    )
 
 def sauv_fichier(chemin):
     """

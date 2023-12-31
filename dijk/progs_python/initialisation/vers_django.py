@@ -18,7 +18,7 @@ from dijk.progs_python.graphe_par_networkx import Graphe_nx
 from dijk.models import Ville, Rue, Sommet, Arête, Chemin_d, Zone, Lieu
 from dijk.progs_python.lecture_adresse.normalisation import prétraitement_rue, partie_commune
 from params import LOG
-from petites_fonctions import intersection, sauv_objets_par_lots
+from petites_fonctions import intersection, sauv_objets_par_lots, paquets
 from lecture_adresse.arbresLex import ArbreLex
 
 
@@ -171,7 +171,8 @@ def supprime_tout(à_supprimer: Iterable):
     
 def transfert_graphe(g, ville_d,
                      bavard=0, rapide=1,
-                     champs_arêtes_à_màj=[]
+                     champs_arêtes_à_màj=[],
+                     taille_paquets=10000
                      ):
     """
     Entrée : g (Graphe_nx)
@@ -223,8 +224,10 @@ def transfert_graphe(g, ville_d,
     LOG(f"Mise à jour des {len(à_màj)} sommets modifiés")
     Sommet.objects.bulk_update(à_màj, ["lon", "lat"], batch_size=5000)
 
-    sommets_venant_du_graphe = à_créer+à_màj
+    # Il faut indiquer la ville sur ces sommets
+    ajoute_ville_à_sommets_et_arêtes(ville_d, à_créer+à_màj, [])
 
+    
     ### Arêtes ###
 
     # pour profiling
@@ -241,9 +244,46 @@ def transfert_graphe(g, ville_d,
             dico_voisins[s] = []
         dico_voisins[s].append((t, a))
 
-    #@mesure_temps("correspondance", temps, nb_appels)
-    def correspondance(s_d, t_d, gx):
+    
+    
+
+    LOG("Chargement des arêtes depuis le graphe osmnx", bavard)
+    nb = 0
+    for paquet in paquets(gx.nodes, taille_paquets):
+        transfertUnPaquetDarêtes(paquet, tous_les_sommets, gx, ville_d, rapide, champs_arêtes_à_màj, dico_voisins, bavard=bavard)
+        nb += taille_paquets
+        print(f"    {nb} arêtes traitées\n ")
+
+
+        
+def màj_arêtes(arêtes_vn, champs_arêtes_à_màj):
+    """
+    Met à jour les arêtes  déjà existante avec les données des arêtes du nouveau graphe.
+    
+        Entrées:
+            - arêtes_vn (Arête×Arête list) : liste de couples (arête de la base, nouvelle arête)
+        Effet:
+            Met à jour les champs indiquées dans champs_arêtes_à_màj de l’arête de la base.
+        Sortie : (les arêtes modifiées, arêtes pas modifiées). Il faudra encore un Arête.bulk_update sur la première liste.
+    """
+    à_màj, à_garder = [], []
+    for va, na in arêtes_vn:
+        modif = False
+        for champ in champs_arêtes_à_màj:
+            if va.__getattribute__(champ) != na.__getattribute__(champ):
+                modif = True
+                va.__setattribute__(champ, na.__getattribute__(champ))
+        if modif:
+            à_màj.append(va)
+        else:
+            à_garder.append(va)
+    return à_màj, à_garder
+    
+    
+def correspondance(s_d, t_d, gx, champs_arêtes_à_màj, dico_voisins: dict):
         """
+        Compare les arêtes déjà ans la base avec celles dans gx.
+
         Entrées:
             - s_d, t_d (Sommet)
             - gx (multidigraph)
@@ -285,49 +325,32 @@ def transfert_graphe(g, ville_d,
                 récup_arête(va)
                 
             à_créer = nouvelles_arêtes
-            à_màj, à_garder = màj_arêtes(à_màj)
+            à_màj, à_garder = màj_arêtes(à_màj, champs_arêtes_à_màj)
 
             return (à_supprimer, à_créer, à_màj, à_garder)
+        
 
-    
-    #@mesure_temps("màj_arêtes", temps, nb_appels)
-    def màj_arêtes(arêtes_vn):
-        """
-        Entrées:
-            - arêtes_vn (Arête×Arête list) : liste de couples (arête de la base, nouvelle arête)
-        Effet:
-            Met à jour les champs indiquées dans champs_arêtes_à_màj de l’arête de la base.
-        Sortie : (les arêtes modifiées, arêtes pas modifiées). Il faudra encore un Arête.bulk_update sur la première liste.
-        """
-        à_màj, à_garder = [], []
-        for va, na in arêtes_vn:
-            modif = False
-            for champ in champs_arêtes_à_màj:
-                if va.__getattribute__(champ) != na.__getattribute__(champ):
-                    modif = True
-                    va.__setattribute__(champ, na.__getattribute__(champ))
-            if modif:
-                à_màj.append(va)
-            else:
-                à_garder.append(va)
-        return à_màj, à_garder
-    
 
-    LOG("Chargement des arêtes depuis le graphe osmnx", bavard)
-    nb = 0
+        
+def transfertUnPaquetDarêtes(
+        sommets_à_traiter, tous_les_sommets, gx: MultiDiGraph(), ville_d: Ville, rapide: int, champs_arêtes_à_màj, dico_voisins,
+        bavard=0
+):
+    """
+    Transfert un paquet d’arêtes dans la base
+    """
+        
     à_créer = []
     à_màj = []
     à_supprimer = []
     à_garder = []
-    for s in gx.nodes:
+    for s in sommets_à_traiter:
         s_d = tous_les_sommets.get(id_osm=s)
         for t, _ in gx[s].items():
             if t != s:  # Suppression des boucles
-                nb += 1
-                if nb%500==0: print(f"    {nb} arêtes traitées\n ")  #{temps}\n{nb_appels}\n")
                 t_d = tous_les_sommets.get(id_osm=t)
                 if rapide < 2:
-                    à_s, à_c, à_m, à_g = correspondance(s_d, t_d, gx)
+                    à_s, à_c, à_m, à_g = correspondance(s_d, t_d, gx, champs_arêtes_à_màj, dico_voisins)
                     à_supprimer.extend(à_s)
                     à_créer.extend(à_c)
                     à_màj.extend(à_m)
@@ -341,13 +364,20 @@ def transfert_graphe(g, ville_d,
     
     if à_màj:
         LOG(f"Mise à jour des {len(à_màj)} anciennes arêtes", bavard=bavard)
-        Arête.objects.bulk_update(à_màj, champs_arêtes_à_màj, batch_size=5000)
+        Arête.objects.bulk_update(à_màj, champs_arêtes_à_màj)
     else:
         LOG("Pas d’arête à mettre à jour", bavard=bavard)
         
     LOG(f"{len(à_garder)} arêtes conservées")
+
+    LOG("Ajoute la ville aux nouvelles arêtes.")
+    ajoute_ville_à_sommets_et_arêtes(
+        ville_d,
+        [],
+        à_créer + à_màj + à_garder,
+        bavard=bavard-1
+    )
     
-    return sommets_venant_du_graphe, à_créer, à_màj+à_garder
 
 
 
