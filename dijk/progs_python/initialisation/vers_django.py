@@ -248,11 +248,8 @@ def transfert_graphe(g, ville_d,
     
 
     LOG("Chargement des arêtes depuis le graphe osmnx", bavard)
-    nb = 0
-    for paquet in paquets(gx.nodes, taille_paquets):
+    for paquet in paquets(gx.nodes, taille_paquets, affiche_tous_les=500):
         transfertUnPaquetDarêtes(paquet, tous_les_sommets, gx, ville_d, rapide, champs_arêtes_à_màj, dico_voisins, bavard=bavard)
-        nb += taille_paquets
-        print(f"    {nb} arêtes traitées\n ")
 
 
         
@@ -281,9 +278,9 @@ def màj_arêtes(arêtes_vn, champs_arêtes_à_màj):
     
     
 def correspondance(s_d, t_d, gx, champs_arêtes_à_màj, dico_voisins: dict):
-        """
-        Compare les arêtes déjà ans la base avec celles dans gx.
-
+    """
+    Compare les arêtes déjà ans la base avec celles dans gx.
+    
         Entrées:
             - s_d, t_d (Sommet)
             - gx (multidigraph)
@@ -293,42 +290,42 @@ def correspondance(s_d, t_d, gx, champs_arêtes_à_màj, dico_voisins: dict):
 
         Ne prend en compte que les arêtes de s_d vers t_d.
         Deux arêtes sont considérées égales quand elles ont même géom.
-        """
+    """
         
         s, t = s_d.id_osm, t_d.id_osm
         vieilles_arêtes = [a_d for (v, a_d) in dico_voisins.get(s_d, []) if v==t_d]
-                    
+
         if t not in gx[s]:
             return vieilles_arêtes, [], [], []
-        
+
         else:
-            nouvelles_arêtes = [Arête.of_arête_nx(s_d, t_d, ax) for ax in gx[s][t].values()]
-            à_màj = []
-            à_supprimer = []
+                nouvelles_arêtes = [Arête.of_arête_nx(s_d, t_d, ax) for ax in gx[s][t].values()]
+                à_màj = []
+                à_supprimer = []
 
-            def récup_arête(va):
-                """
-                Entrée : une vieille arête
-                Effet :
-                    Si elle est dans les nouvelles, elle est mise dans à_màj avec sa binôme, qui est supprimée de nouvelles_arêtes.
-                    Sinon elle est mise dans à_supprimer
-                """
-                for (i, na) in enumerate(nouvelles_arêtes):
-                    if na == va:  # NB: le __eq__ se base sur la géom.
-                        à_màj.append((va, na))
-                        nouvelles_arêtes.pop(i)
-                        return None
-                à_supprimer.append(va)
+                def récup_arête(va):
+                    """
+                    Entrée : une vieille arête
+                    Effet :
+                        Si elle est dans les nouvelles, elle est mise dans à_màj avec sa binôme, qui est supprimée de nouvelles_arêtes.
+                        Sinon elle est mise dans à_supprimer
+                    """
+                    for (i, na) in enumerate(nouvelles_arêtes):
+                        if na == va:  # NB: le __eq__ se base sur la géom.
+                            à_màj.append((va, na))
+                            nouvelles_arêtes.pop(i)
+                            return None
+                    à_supprimer.append(va)
 
-                
-            for va in vieilles_arêtes:
-                récup_arête(va)
-                
-            à_créer = nouvelles_arêtes
-            à_màj, à_garder = màj_arêtes(à_màj, champs_arêtes_à_màj)
 
-            return (à_supprimer, à_créer, à_màj, à_garder)
-        
+                for va in vieilles_arêtes:
+                    récup_arête(va)
+
+                à_créer = nouvelles_arêtes
+                à_màj, à_garder = màj_arêtes(à_màj, champs_arêtes_à_màj)
+
+                return (à_supprimer, à_créer, à_màj, à_garder)
+
 
 
         

@@ -139,25 +139,33 @@ def intersection(t1, t2):
             yield x
 
 
-def paquets(tout: Iterable, taille_paquets: int):
+def paquets(tout: Iterable, taille_paquets: int, affiche_tous_les: int=None):
     """
     Renvoie un itérateur d’itérateurs.
 
     tout: collection sur laquelle itérer. Doit disposer d’une longueur.
     taille_paquets: nb d’éléments de tout que chaque itérateur va renvoyer.
+    affiche_tous_les: si non None, affiche un message tous les <affiche_tous_les> éléments lus.
     """
     it = tout.__iter__()
     nb_paquets, reste = divmod(len(tout), taille_paquets)
+    n_lus = [0]
     
     for _ in range(nb_paquets-1):
         def itérateur():
             for i in range(taille_paquets):
                 yield it.__next__()
+                n_lus[0] += 1
+                if affiche_tous_les and n_lus[0] % affiche_tous_les == 0:
+                    print(f"{n_lus[0]} objets lus")
         yield itérateur()
         
     def dernier_itérateur():
         for _ in range(reste):
             yield it.__next__()
+            n_lus[0] += 1
+                if affiche_tous_les and n_lus[0] % affiche_tous_les == 0:
+                    print(f"{n_lus[0]} objets lus")
     yield dernier_itérateur()
     
 
