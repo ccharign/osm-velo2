@@ -164,8 +164,8 @@ def paquets(tout: Iterable, taille_paquets: int, affiche_tous_les: int=None):
         for _ in range(reste):
             yield it.__next__()
             n_lus[0] += 1
-                if affiche_tous_les and n_lus[0] % affiche_tous_les == 0:
-                    print(f"{n_lus[0]} objets lus")
+            if affiche_tous_les and n_lus[0] % affiche_tous_les == 0:
+                print(f"{n_lus[0]} objets lus")
     yield dernier_itérateur()
     
 
