@@ -9,10 +9,12 @@ Ces fonctions seront cachées dans la console.
 
 import re
 from pprint import pformat, pprint
+from typing import Iterable
 
 from django.db import transaction, close_old_connections
 from django.db.models import Q
-
+from networkx import MultiDiGraph
+from dijk.progs_python.graphe_par_networkx import Graphe_nx
 from dijk.models import Ville, Rue, Sommet, Arête, Chemin_d, Zone, Lieu
 from dijk.progs_python.lecture_adresse.normalisation import prétraitement_rue, partie_commune
 from params import LOG
@@ -23,10 +25,7 @@ from lecture_adresse.arbresLex import ArbreLex
 
 
 def normalise_noms_lieux():
-    """
-    Remplit le champ norm_norm des éléments de la table des lieux.
-    """
-
+    """Remplit le champ norm_norm des éléments de la table des lieux."""
     à_màj = []
     for lieu in Lieu.objects.all():
         nom_norm = prétraitement_rue(lieu.nom)
@@ -40,6 +39,7 @@ def normalise_noms_lieux():
 
 # L’arbre contient les f"{nom_norm}|{code}"
 def à_mettre_dans_arbre(nom_n, code):
+    """Renvoie la chaîne décrivant une ville à mettre dans l’arbre lex des villes."""
     return f"{nom_n}|{code}"
 
 
@@ -47,6 +47,7 @@ def à_mettre_dans_arbre(nom_n, code):
 def arbre_des_villes(zone_d=None):
     """
     Renvoie l’arbre lexicographique des villes de la base.
+
     Si zone_d est précisé, seulement les villes de cette zone.
     """
     print("Création de l’arbre des villes")
@@ -63,8 +64,10 @@ def arbre_des_villes(zone_d=None):
 
 
     
-def liste_attributs(g):
+def liste_attributs(g: MultiDiGraph):
     """
+    Renvoie un dico contenant les attributs et les valeurs associées trouvées dans g.
+
     Entrée : g (multidigraph)
     Sortie : dico (attribut -> liste des valeurs) des arêtes qui apparaissent dans g
     Fonction utile pour régler les paramètres de cycla_défaut.
@@ -83,9 +86,7 @@ def liste_attributs(g):
 
 
 def tuple_valeurs(a, att):
-    """
-    Renvoie le tuple des valeurs de l’attribut att dans l’arête a.
-    """
+    """Renvoie le tuple des valeurs de l’attribut att dans l’arête a."""
     if att in a:
         if isinstance(a[att], list):
             return tuple(a[att])
@@ -95,8 +96,10 @@ def tuple_valeurs(a, att):
         return ()
 
     
-def désoriente(g, bavard=0):
+def désoriente(g: Graphe_nx, bavard=0):
     """
+    Désoriente le graphe g.
+
     Entrée : g (Graphe_nx)
     Effet : rajoute les arêtes inverses si elles ne sont pas présentes, avec un attribut 'sens_interdit' en plus.
     """
@@ -104,18 +107,14 @@ def désoriente(g, bavard=0):
     gx = g.multidigraphe
 
     def géom_of_arête_nx(a):
-        """
-        Sortie : sorted(a["geometry"].coords) si existe, None sinon.
-        """
+        """Sortie : sorted(a["geometry"].coords) si existe, None sinon."""
         if "geometry" in a:
             return sorted(a["geometry"].coords)
         else:
             return None
     
     def existe_inverse(s, t, a):
-        """
-        Indique si l’arête inverse de (s, t, a) est présente dans gx.
-        """
+        """Indique si l’arête inverse de (s, t, a) est présente dans gx."""
         if s not in gx[t]:
             return False
         else:
@@ -161,7 +160,7 @@ def désoriente(g, bavard=0):
 
 
 @transaction.atomic
-def supprime_tout(à_supprimer):
+def supprime_tout(à_supprimer: Iterable):
     """
     Entrée : à_supprimer (iterable d’objets ayant une méthode delete)
     Effet : supprime de la base tous ces objets en une seule requête.

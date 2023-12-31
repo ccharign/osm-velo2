@@ -2,19 +2,19 @@
 # -*- coding:utf-8 -*-
 
 ### À terme devrait être le seul fichier à utiliser osmnx, afin d’éviter de le charger dans les utilisations courantes.
+import sys
 
 import osmnx as ox
 ox.config(use_cache=True, log_console=True)
-import sys
 
 
-def crée_graphe_bbox(nom_fichier, bbox, option={"network_type":"all"}, bavard=1):
+def crée_graphe_bbox(nom_fichier, bbox, option={"network_type": "all"}, bavard=1):
     """ 
     nom_fichier : nom du fichier où enregistrer le fichier xml du graphe.
     Effet : création du fichier graphml
     Sortie : le graphe, au format networkx non dirigé
     """
-    s,o,n,e = bbox
+    s, o, n, e = bbox
     g = ox.graph_from_bbox(n, s, e, o, **option)
     
     print("conversion en graphe non orienté")

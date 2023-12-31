@@ -3,7 +3,7 @@
 
 import os
 import osmnx
-
+from typing import Iterable
 from time import perf_counter
 from pprint import pprint, pformat
 
@@ -16,7 +16,7 @@ from dijk.progs_python.params import RACINE_PROJET
 from initialisation.noeuds_des_rues import extrait_nœuds_des_rues
 from lecture_adresse.normalisation import arbre_rue_dune_ville, partie_commune, prétraitement_rue, normalise_rue
 from graphe_par_networkx import Graphe_nx
-from petites_fonctions import chrono, LOG, supprime_objets_par_lots, paires, supprimeQuerySetParLots
+from petites_fonctions import chrono, LOG, supprime_objets_par_lots, paires
 import dijk.progs_python.recup_donnees as rd
 
 import initialisation.vers_django as vd
@@ -34,9 +34,7 @@ from initialisation.amenities import charge_lieux_of_ville
 
 
 def supprimeTousArbresArêtesDeLaBase():
-    """
-    Efface tous les arbres arêtes de la base.
-    """
+    """Efface tous les arbres arêtes de la base."""
     if mo.ArbreArête.objects.all().count() > 0:
         a = mo.ArbreArête.uneRacine()
         print(f"Suppression de l’arbre de {a.getZones().all()}")
@@ -46,10 +44,7 @@ def supprimeTousArbresArêtesDeLaBase():
     
 
 def quadArbresArêtesDeLaBase():
-    """
-    Crée les arbres de toutes les zones non inclues dans une autre et les enregistre dans la base.
-    """
-    
+    """Crée les arbres de toutes les zones non inclues dans une autre et les enregistre dans la base."""
     print("Suppression des anciens arbres")
     supprimeTousArbresArêtesDeLaBase()
 
@@ -71,9 +66,9 @@ def quadArbresArêtesDeLaBase():
 def créeQuadArbreArêtesDeZone(z_d: mo.Zone, bavard=0) -> ArbreArête:
     """
     Effet : Crée le quadArbre de la plus grande zone contenant z_d, l’enregistre dans la base, et l’associe à z_d ainsi qu’à toutes les zones contenant z_d.
+
     Sortie : l’arbre créé.
     """
-    
     print(f"(Arbre des arêtes de la zone {z_d})")
     
     # Cas récursif
@@ -93,7 +88,7 @@ def créeQuadArbreArêtesDeZone(z_d: mo.Zone, bavard=0) -> ArbreArête:
 
     
     
-def quadarbre_of_arêtes(arêtes):
+def quadarbre_of_arêtes(arêtes: Iterable[Arête]) -> ArbreArête:
     """
     Entrée : itérable d’Arêtes
     Sortie (mo.ArbreArête) : le plus petit sous-arbre contenant les arêtes passées en arg.
@@ -107,9 +102,7 @@ def quadarbre_of_arêtes(arêtes):
 
 
 def quadArbreArêtesDeVille(v_d: mo.Ville):
-    """
-    Renvoie le plus petit sous-arbre de la base contenant les arêtes de v_d.
-    """
+    """Renvoie le plus petit sous-arbre de la base contenant les arêtes de v_d."""
     return QuadrArbreArête.of_list_darêtes_d(v_d.arêtes())
 
 
@@ -126,9 +119,7 @@ def quadArbreArêtesDeVille(v_d: mo.Ville):
 
 
 def supprime_arêtes_en_double():
-    """
-    Inutile normalement. Supprime les arêtes ayant même géom qu’une autre.
-    """
+    """Inutile normalement. Supprime les arêtes ayant même géom qu’une autre."""
     déjà_vue = set()  # geom des arêtes déjà vues
     à_supprimer = []
     n = 0
@@ -144,12 +135,12 @@ def supprime_arêtes_en_double():
 
     
 
-def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
+def charge_graphe_de_ville(ville_d: Ville, pays="France", bavard=0, rapide=0):
     """
     Récupère le graphe grâce à osmnx et le charge dans la base.
+
     Une marge de 500m est prise. En particulier les sommets et arêtes à moins de 500m d’une frontière entre deux villes seront au final associés à ces deux villes.
     """
-
     ## Récup des graphe via osmnx
     print(f"\nRécupération du graphe pour « {ville_d.code} {ville_d.nom_complet}, {pays} » avec une marge :\n")
     gr_avec_marge = osmnx.graph_from_place(
@@ -201,15 +192,15 @@ def charge_graphe_de_ville(ville_d, pays="France", bavard=0, rapide=0):
 
     ## Transfert du graphe
     close_old_connections()
-    sommets, crées, màj = vd.transfert_graphe(g, ville_d, bavard=bavard-1, rapide=rapide)
+    sommets, créées, màj = vd.transfert_graphe(g, ville_d, bavard=bavard-1, rapide=rapide)
     
     vd.ajoute_ville_à_sommets_et_arêtes(
         ville_d,
         sommets,
-        crées+màj,
+        créées+màj,
         bavard=bavard-1
     )
-    return crées, màj
+    return créées, màj
 
 
 def remplaceArête(g: Graphe_nx, s, t, nom: str):
@@ -259,7 +250,7 @@ def ajoute_ville(nom: str, code: int, nom_zone: str, force=False, pays="France",
     ville_d = ville_of_nom_et_code_postal(nom, code)
     charge_ville(ville_d, zone_d, force=force, pays=pays, bavard=bavard)
     print("Recréation de l’arbre des arêtes")
-    quadArbreArêtesDeLaBase()
+    quadArbresArêtesDeLaBase()
 
 
 def charge_ville(ville_d, zone_d,
