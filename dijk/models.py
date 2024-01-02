@@ -1061,14 +1061,14 @@ class TypeLieu(models.Model):
     
     
     def pour_overpass(self):
-        """
-        Renvoie la chaîne de caractère [catégorie~nom_osm]
-        """
+        """Renvoie la chaîne de caractère [catégorie~nom_osm]."""
         return f"[{self.catégorie}~{self.nom_osm}]"
 
     @classmethod
     def of_dico(cls, d: dict, créer_type: bool):
         """
+        Crée un type de lieu à partir d’un dico de données récupérées sur overpass.
+
         Entrées:
            d, dico issu d’une recherche overpass
            créer_type : Pour un lieu pas présent dans la base, il sera rajouté si créer_type est vrai, et la fonction renverra None dans le cas contraire.
@@ -1076,7 +1076,6 @@ class TypeLieu(models.Model):
         Sortie:
            le TypeLieu correspondant à d
         """
-
         # Recherche d’une éventuelle catégorie connue
         catégorie, nom_osm = "autre", "autre"
         for cat in cls._cat_à_afficher:
@@ -1091,7 +1090,7 @@ class TypeLieu(models.Model):
             return tls.first()
         else:
             if créer_type:
-                nom_français = input(f"Traduction de {nom_osm} ({catégorie}) ? C’est pour {d['nom']}. Ne rien rentrer pour ignorer ce type de lieux.")
+                nom_français = input(f"Traduction de {nom_osm} ({catégorie}) ? C’est pour {d['nom']}. Ne rien rentrer pour ignorer ce type de lieux à l’avenir. ")
                 close_old_connections()
                 tl = cls(nom_français=nom_français, nom_osm=nom_osm, catégorie=catégorie)
                 tl.save()
@@ -1103,9 +1102,7 @@ class TypeLieu(models.Model):
 
     @classmethod
     def supprimerLesInutiles(cls):
-        """
-        Supprime toutes les entrées d’un des types de lieu indiqué dans cls._types_à_ignorer
-        """
+        """Supprime toutes les entrées d’un des types de lieu indiqué dans cls._types_à_ignorer."""
         print("Suppression des types de lieux marqués comme inutiles.")
         for (cat, tls) in cls._types_à_ignorer.items():
             print(cat, tls)
@@ -1113,9 +1110,8 @@ class TypeLieu(models.Model):
 
 
 class GroupeTypeLieu(models.Model):
-    """
-    Pour enregistrer un rassemblement de types de lieux, pour usage dans un formulaire.
-    """
+    """Pour enregistrer un rassemblement de types de lieux, pour usage dans un formulaire."""
+    
     nom = models.CharField(max_length=50, unique=True)
     description = models.TextField(blank=True, null=True, default=None)
     type_lieu = models.ManyToManyField(TypeLieu)
@@ -1125,9 +1121,11 @@ class GroupeTypeLieu(models.Model):
         return self.nom
 
     def lieux(self, z_d: Zone):
+        """Renvoie la liste des lieux d’un des types de lieux de ce groupe et de la zone indiquée."""
         return Lieu.objects.filter(type_lieu__in=self.type_lieu.all(), ville__in=z_d.villes())
 
     def déterminant(self) -> str:
+        """Renvoie le déterminant à employer pour ce groupe de type de lieux."""
         if self.féminin:
             return "une"
         else:
@@ -1145,6 +1143,7 @@ class GroupeTypeLieu(models.Model):
     #     }
 
     def pour_js(self):
+        """Renvoie un dico sérialisable décrivant l’objet."""
         return {"nom": self.déterminant() + " " + self.nom,
                 "type_étape": "gtl",
                 "pk": self.pk,
@@ -1153,7 +1152,8 @@ class GroupeTypeLieu(models.Model):
 
 class Lieu(models.Model):
     """
-    Pour enregistrer un lieu public, bar, magasin, etc
+    Pour enregistrer un lieu public, bar, magasin, etc.
+
     nb : __eq__ consiste à comparer les id_osm. Sachant que l’attribut id_osm a la contrainte « unique ».
     json_tout (str) : contient toutes les données connues du lieu, en json.
     """
@@ -1184,22 +1184,16 @@ class Lieu(models.Model):
         return self.id_osm == autre.id_osm
     
     def coords(self):
-        """
-        Renvoie le couple (lon, lat)
-        """
+        """Renvoie le couple (lon, lat)"""
         return self.lon, self.lat
 
     def nœuds(self):
-        """a
-        Renvoie les deux Sommets de l’arête la plus proche.
-        """
+        """Renvoie les deux Sommets de l’arête la plus proche."""
         return set((self.arête.départ, self.arête.arrivée))
 
     
     def adresse(self):
-        """
-        C’est juste le nom associé à l’arête associée à self suivi du nom de la ville actuellement...
-        """
+        """C’est juste le nom associé à l’arête associée à self suivi du nom de la ville actuellement..."""
         if self.num:
             res = f"{self.num} "
         else:
@@ -1208,11 +1202,8 @@ class Lieu(models.Model):
 
         
     def toutes_les_infos(self):
-        """
-        Renvoie le dico des données présentes sur osm.
-        """
+        """Renvoie le dico des données présentes sur osm."""
         res = json.loads(self.json_tout)
-        #res["nom"] = str(self)
         res["adresse"] = self.adresse()
         return res
 
@@ -1221,9 +1212,7 @@ class Lieu(models.Model):
 
         
     def ville_ou_pas(self):
-        """
-        Renvoie 'nom_de_la_ville' si connue, et '' sinon
-        """
+        """Renvoie 'nom_de_la_ville' si connue, et '' sinon"""
         if self.ville:
             return f"{self.ville}"
         else:
@@ -1236,6 +1225,7 @@ class Lieu(models.Model):
     def str_pour_formulaire(self):
         """
         Renvoie la chaîne  « nom, adresse »
+
         Pour afficher dans les propositions d’autocomplétion.
         """
         return f"{self.nom}, {self.adresse()}"
@@ -1271,6 +1261,7 @@ class Lieu(models.Model):
     def pour_marqueur(self):
         """
         Renvoie un dico sérialisable contenant les données pour créer un marqueur leaflet.
+
         Envoyé pour l’affichage du résultat. Contient plus d’infos que pour_js qui est utilisé dans l’autocomplétion.
         """
         res = self.toutes_les_infos()
@@ -1285,6 +1276,8 @@ class Lieu(models.Model):
 
     def ajoute_arête_la_plus_proche(self, arbre_arêtes: ArbreArête, dmax=30.):
         """
+        Ajoute à l’objet son arête la plus proche.
+
         Entrée :
             arbre_arêtes un Q arbre d’arêtes
 
@@ -1305,6 +1298,8 @@ class Lieu(models.Model):
             
     def rassemble(self, autre):
         """
+        Fusionne deux instance qui représentent le même lieu.
+
         Précondition : self et autre ont même arête.
         Effet: autre est supprimé de la base, et ses infos sont fusionnées avec celles de self.
         """
@@ -1315,6 +1310,8 @@ class Lieu(models.Model):
     @classmethod
     def of_dico(cls, d: dict, arbre_a: ArbreArête, tous_les_id_osm=None, créer_type=False, force=False):
         """
+        Crée un lieu à partir d’un dico.
+
         Entrée:
             d (str-> T dico), dico contenant les données à utiliser. Au minimum lon et lat. Tous les champs qui ne servent pas à remplir un attribut de l’objet seront jsonisés dans json_autres_données.
             arbre_a, R-arbre d’arêtes dans lequel chercher l’arête la plus proche.

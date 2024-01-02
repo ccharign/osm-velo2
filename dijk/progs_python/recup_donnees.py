@@ -390,6 +390,8 @@ def coords_of_objet_overpy(o, type_objet_osm: str):
 
 def traitement_req_récup_lieux(requête: str, arbre_a: mo.ArbreArête, tous_les_id_osm=None, force=False, bavard=0):
     """
+    Traite la requête overpass chargée de récupérer des lieux.
+
     Entrées:
         req : une requête overpass
         arbre_a : R-arbre d’arête dans lequel chercher l’arête la plus proche de chaque lieu.
@@ -400,7 +402,6 @@ def traitement_req_récup_lieux(requête: str, arbre_a: mo.ArbreArête, tous_les
         force, si True on mets à jour même les lieux déjà présents dans la base et avec le même json_nettoyé
         tous_les_id_osm, si True les lieux dont l’id y figurent seront mis dans à_màj si des différences avec celui de la base sont détectér, et ignorés sinon. Si tous_les_id_osm est faux, tous les lieux seront mis dans les nouveaux lieux.
     """
-
     à_créer, à_màj = [], []
     dicos = dicos_of_requête(requête, bavard=bavard)
     for d in dicos:

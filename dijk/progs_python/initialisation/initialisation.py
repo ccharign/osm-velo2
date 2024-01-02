@@ -21,7 +21,7 @@ import dijk.progs_python.recup_donnees as rd
 
 import initialisation.vers_django as vd
 from quadrarbres import QuadrArbreArête
-from initialisation.amenities import charge_lieux_of_ville
+from dijk.progs_python.initialisation.amenities import charge_lieux_of_ville
 
 
 
