@@ -14,10 +14,13 @@ from dijk.progs_python.lecture_adresse.normalisation import Adresse
 from dijk.progs_python.lecture_adresse.recup_noeuds import nœuds_of_étape, un_seul_nœud
 
 
+class HorsZone(ValueError):
+    """Exception pour des coordonnées hors de la zone chargée."""
+
+
+
 class Étape(abc.ABC):
-    """
-    Classe mère pour des étapes utilisables dans les variantes de Dijkstra.
-    """
+    """Classe mère pour des étapes utilisables dans les variantes de Dijkstra."""
 
     def __init__(self):
         self.nœuds = set()
@@ -48,15 +51,14 @@ class Étape(abc.ABC):
     
     @abc.abstractmethod
     def pour_marqueur(self):
-        """
-        Renvoie le dico sérialisable pour envoyer à js.
-        """
+        """Renvoie le dico sérialisable pour envoyer à js."""
         raise RuntimeError(f"Étape.marqueur_leaflet est une méthode abstraite. Le type de self est {type(self)}")
 
         
     def pour_marqueur_of_sommet_osm(self, s: int):
         """
         Renvoie le dico pour marqueur, avec en plus les coords fixées à celles du sommet dont l’id osm est passé en arg.
+
         Sera écrasé dans les sous-classes.
         """
         # lon, lat = Sommet.objects.get(id_osm=s).coords()
@@ -69,10 +71,11 @@ class Étape(abc.ABC):
     @classmethod
     def of_texte(cls, texte, g, z_d, nv_cache=1, bavard=0):
         """
+        Crée une étape à partir d’un texte. A priori lors de la lecture d’un trajet enregistré en base.
+
         Si de la forme 'Arêtelon;lat', renvoie l’objet de type ÉtapeArête correspondant à ces coords.
         Sinon lit l’adresse et renvoie l’objet de type Étape classique.
         """
-
         # 1) Voyons si le texte venait d’un ÉtapeArête.__str__
         essai = re.match("^Arête(.*),(.*)", texte)
         if essai:
@@ -154,6 +157,7 @@ class Étape(abc.ABC):
 class ÉtapeAdresse(Étape):
     """
     Étape venant d’une adresse postale.
+
     Attributs :
         adresse (instance de Adresse)
     """
@@ -171,8 +175,10 @@ class ÉtapeAdresse(Étape):
         
 
     @classmethod
-    def of_adresse(cls, g, ad, bavard=0):
+    def of_adresse(cls, g, ad: Adresse, bavard=0):
         """
+        Crée une étape à partir d’une adresse.
+
         Entrée:
              ad (Adresse) dont l’attribut ad.rue_osm est déjà un objet mo.Rue.
         Sortie:
@@ -194,9 +200,7 @@ class ÉtapeAdresse(Étape):
     
     @classmethod
     def of_texte(cls, texte, g: Graphe_django, z_d, bavard=0):
-        """
-        texte est une adresse postale, de la forme « [num] [bis|ter] rue, ville [, pays]
-        """
+        """texte est une adresse postale, de la forme « [num] [bis|ter] rue, ville [, pays]"""
         res = cls()
         n, res.adresse = nœuds_of_étape(texte, g, z_d, bavard=bavard)
         res.nœuds = set(n)
@@ -206,6 +210,7 @@ class ÉtapeAdresse(Étape):
     
     @classmethod
     def of_rue(cls, rue: mo.Rue):
+        """Crée une étape à partir d’une rue."""
         rés = cls()
         rés.nom = rue.nom_complet
         rés.nœuds = set(rue.nœuds())
@@ -242,6 +247,7 @@ class ÉtapeArête(Étape):
         
     @classmethod
     def of_arête(cls, a, coords, ad=None):
+        """Crée une ÉtapeArête à partir d’une arête."""
         res = cls()
         res.coords = coords
         res.nœuds = set((a.départ.id_osm, a.arrivée.id_osm))
@@ -258,6 +264,8 @@ class ÉtapeArête(Étape):
     @classmethod
     def of_pk(cls, pk):
         """
+        Crée une ÉtapeArête à partir de la pk d’une arête en base.
+
         Je prend ici le milieu du premier segment de l’arête pour le champ coords.
         """
         a = mo.Arête.objects.get(pk=pk)
@@ -269,13 +277,15 @@ class ÉtapeArête(Étape):
     @classmethod
     def of_coords(cls, coords: tuple, g, z_d: mo.Zone, d_max=50, ad=None):
         """
+        Crée une ÉtapeArête à partir de coordonnées.
+
         coords au format (lon, lat)
         """
         # longitude = méridiens, latitude = parallèles
         assert coords[0] < coords[1], f"J’ai reçu lon,lat={coords}. Êtes-vous sûr de ne pas avoir échangé lon et lat ?"
         a, d = g.arête_la_plus_proche(coords, z_d)
         if d > d_max:
-            raise RuntimeError(f"Les coords {coords} sont trop loin de la zone {z_d} : {int(d)}m.")
+            raise HorsZone(f"Les coords {coords} sont trop loin de la zone {z_d} : {int(d)}m.")
         return cls.of_arête(a, coords, ad=ad)
     
     
@@ -295,6 +305,8 @@ class ÉtapeArête(Étape):
 
     def pour_marqueur(self):
         """
+        Renvoie le dico de données nécessaire au front pour créer le marqueur.
+
         NB: pas de méthode pour_marqueur dans la classe Arête, car je veux disposer de coords_ini. Ce dernier a été créé par js lors du clic sur la carte.
         """
         lon, lat = self.coords
@@ -307,9 +319,7 @@ class ÉtapeArête(Étape):
 
         
 class ÉtapeLieu(Étape):
-    """
-    Étape venant d’un Lieu de la base.
-    """
+    """Étape venant d’un Lieu de la base."""
 
     def __init__(self, l: mo.Lieu):
         self.lieu = l
@@ -363,24 +373,16 @@ class ÉtapeEnsLieux(Étape):
     
  
     def pour_marqueur_of_sommet_osm(self, s: int):
-        """
-        Renvoie le marqueur du lieu correspondant à s.
-        """
+        """Renvoie le marqueur du lieu correspondant à s."""
         return self.nœuds[s]
 
 
     @classmethod
     def of_gtl_pk(cls, pk, z_d):
-        """
-        Renvoie l’objet ÉtapeEnsLieux correspondant aux lieux d’un type dans le gtl de pk pk et dans la zone z_d.
-        """
+        """Renvoie l’objet ÉtapeEnsLieux correspondant aux lieux d’un type dans le gtl de pk pk et dans la zone z_d."""
         return cls(mo.GroupeTypeLieu.objects.get(pk=pk), z_d)
 
     def pour_marqueur(self):
+        """Fonction qui renvoie une erreur, pour remplir la méthode abtraite de la classe mère."""
         raise ValueError("Pas de marqueur possible pour une ÉtapeEnsLieux!")
-    
-    # def pour_js(self):
-    #     assert False, "Pas supposé être utilisé actuellement"
-    #     return self.gtl.pour_js()
-    
 

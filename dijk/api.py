@@ -14,11 +14,19 @@ from dijk.progs_python.utils import itinéraire_of_étapes
 from .progs_python.apprentissage import n_lectures
 from dijk.progs_python.chemins import Chemin
 from dijk.progs_python.params import LOG
+from dijk.progs_python.étapes import HorsZone
 
 g = Graphe_django()
 
 
 api = NinjaAPI()
+
+
+
+class Erreur(Schema):
+    """Schema pour les messages d’erreur."""
+    
+    message: str
 
 
 @api.get("/init")
@@ -74,28 +82,31 @@ class ÉtapeJsonSortie(Schema):
 
 @api.get("/completion")
 def complétion(request, zone: str, term: str) -> List[ÉtapeJsonSortie]:
-    """
-    Renvoie les lieux de la base pour la zone indiquée et dont le nom contient term.
-
-    """
+    """Renvoie les lieux de la base pour la zone indiquée et dont le nom contient term."""
     z_d = mo.Zone.objects.get(nom=zone)
     return ac.complétion(term, 20, z_d).res
 
 
-@api.get("/itineraire/{nom_zone}")
+@api.get("/itineraire/{nom_zone}", response={200: List, 500: Erreur})
 def itinéraire(_request: WSGIRequest, nom_zone: str, étapes_str: str) -> List:
-    z_d = g.charge_zone(nom_zone)
-    étapes = [Étape.of_dico(é, g, z_d) for é in json.loads(étapes_str)]
-    res = [
-        iti.vers_js()
-        for iti in itinéraire_of_étapes(
-            étapes, [0, 0.15, 0.3], g, z_d, rajouter_iti_direct=False
-        )["itinéraires"]
-    ]
-    res[0]["nom"] = "Trajet direct"
-    res[1]["nom"] = "Intermédiaire"
-    res[2]["nom"] = "Priorité confort"
-    return res
+    """Renvoie l’itinéraire entre les étapes indiquées en params."""
+    try:
+        z_d = g.charge_zone(nom_zone)
+        étapes = [Étape.of_dico(é, g, z_d) for é in json.loads(étapes_str)]
+        res = [
+            iti.vers_js()
+            for iti in itinéraire_of_étapes(
+                étapes, [0, 0.15, 0.3], g, z_d, rajouter_iti_direct=False
+            )["itinéraires"]
+        ]
+        res[0]["nom"] = "Trajet direct"
+        res[1]["nom"] = "Intermédiaire"
+        res[2]["nom"] = "Priorité confort"
+        return res
+    except HorsZone:
+        return 500, {"message": f"Étape en dehors de la zone chargée ({nom_zone})"}
+    except Exception as e:
+        return 500, {"message": f"Erreur: {e}"}
 
 
 @api.post("/contribuer/{nom_zone}")
@@ -106,9 +117,7 @@ def enregistrerContribution(
     pourcentages_détour: List[int],
     AR: bool = False,
 ):
-    """
-    Crée les objets Chemin dans la base, et lance l’apprentissage dessus.
-    """
+    """Crée les objets Chemin dans la base, et lance l’apprentissage dessus."""
     nb_lectures = 20
     z_d = g.charge_zone(nom_zone)
     étapes = [Étape.of_dico(dict(é), g, z_d) for é in étapes_str]

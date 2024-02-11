@@ -2,11 +2,9 @@
 import os
 import traceback
 import json
-from pprint import pprint
 
 from django.shortcuts import render
 from django.http import HttpResponse
-from django.db.models import Subquery, Q
 
 from dijk import forms
 
@@ -19,7 +17,7 @@ from .progs_python.lecture_adresse.recup_noeuds import PasTrouvé
 
 from .progs_python import recup_donnees
 from .progs_python.apprentissage import n_lectures
-from .progs_python.bib_vues import bool_of_checkbox, énumération_texte, récup_données, z_é_i_d
+from .progs_python.bib_vues import bool_of_checkbox, récup_données, z_é_i_d
 
 from .progs_python.utils import dessine_cycla, itinéraire_of_étapes
 
@@ -37,9 +35,7 @@ g = Graphe_django()
 
 
 def renvoieSurPageDErreur(vue):
-    """
-    Décorateur sur une vue pour renvoyer sur la page d’erreur en cas d’erreur non rattrapée avant.
-    """
+    """Décorateur sur une vue pour renvoyer sur la page d’erreur en cas d’erreur non rattrapée avant."""
     def nv_vue(requête, *args, **kwargs):
         try:
             return vue(requête, *args, **kwargs)
@@ -54,9 +50,7 @@ def renvoieSurPageDErreur(vue):
 
 
 def choix_zone(requête):
-    """
-    Page d’entrée du site. Formulaire de choix de zone.
-    """
+    """Page d’entrée du site. Formulaire de choix de zone."""
     if requête.method == "GET" and requête.GET:
         form = forms.ChoixZone(requête.GET)
         if form.is_valid():
@@ -96,9 +90,7 @@ def sous_le_capot(requête):
 
 @renvoieSurPageDErreur
 def recherche(requête, zone_t, bavard=1):
-    """
-    Vue pour une recherche de base.
-    """
+    """Vue pour une recherche de base."""
     
     données = récup_données(requête.GET, forms.ChoixZone, validation_obligatoire=False)
     if "zone" in données and données["zone"]:
