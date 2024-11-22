@@ -4,7 +4,6 @@ django-cors-headers
 folium
 geopy
 gpxpy
-mysqlclient
 networkx
 osmnx
 overpy
@@ -12,4 +11,4 @@ requests
 scikit-learn
 django-cors-headers
 django-ninja
-
+psycopg2
