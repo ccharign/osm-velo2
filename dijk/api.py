@@ -22,10 +22,8 @@ g = Graphe_django()
 api = NinjaAPI()
 
 
-
 class Erreur(Schema):
     """Schema pour les messages d’erreur."""
-    
     message: str
 
 
@@ -57,18 +55,18 @@ class ÉtapeJsonEntrée(Schema):
     """Un objet pour représenter une étape tel que reçu par le serveur."""
 
     type_étape: str
-    pk: int = None
-    num: bool = None
-    lon: float = None
-    lat: float = None
-    adresse: str = None
+    pk: int | None = None
+    num: bool | None = None
+    lon: float | None = None
+    lat: float | None = None
+    adresse: str | None = None
 
 
 class ÉtapeJsonSortie(Schema):
     """Représente un dico renvoyé par le serveur lors d’une autocomplétion."""
 
     type_étape: str
-    pk: int = None
+    pk: int | None = None
     géom: List[List[float]]  # liste de [lon, lat]
     nom: str
 
@@ -87,8 +85,8 @@ def complétion(request, zone: str, term: str) -> List[ÉtapeJsonSortie]:
     return ac.complétion(term, 20, z_d).res
 
 
-@api.get("/itineraire/{nom_zone}", response={200: List, 500: Erreur})
-def itinéraire(_request: WSGIRequest, nom_zone: str, étapes_str: str) -> List:
+@api.get("/itineraire/{nom_zone}", response={200: list, 500: Erreur})
+def itinéraire(request: WSGIRequest, nom_zone: str, étapes_str: str) -> list | tuple[int, dict]:
     """Renvoie l’itinéraire entre les étapes indiquées en params."""
     try:
         z_d = g.charge_zone(nom_zone)

@@ -2,7 +2,6 @@
 
 import os
 import json
-from pprint import pformat
 
 from django.db import transaction, close_old_connections
 
@@ -212,17 +211,17 @@ def renormalise_noms_villes():
         v.save()
         
 
-def charge_géom_villes(chemin=os.path.join(RACINE_PROJET, "progs_python/stats/docs/géom_villes.json")):
-    """
-    Rajoute la géométrie des villes à partir du json INSEE.
-    """
+# def charge_géom_villes(chemin=os.path.join(RACINE_PROJET, "progs_python/stats/docs/géom_villes.json")):
+#     """
+#     Rajoute la géométrie des villes à partir du json INSEE.
+#     """
     
 
         
-    with open(chemin) as entrée:
-        à_maj=[]
+#     with open(chemin) as entrée:
+#         à_maj=[]
         
-    Ville.objects.bulk_update(à_maj, ["géom_texte"])
+#     Ville.objects.bulk_update(à_maj, ["géom_texte"])
 
 
 def ajoute_villes_voisines():

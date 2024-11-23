@@ -292,39 +292,39 @@ def correspondance(s_d, t_d, gx, champs_arêtes_à_màj, dico_voisins: dict):
         Deux arêtes sont considérées égales quand elles ont même géom.
     """
         
-        s, t = s_d.id_osm, t_d.id_osm
-        vieilles_arêtes = [a_d for (v, a_d) in dico_voisins.get(s_d, []) if v==t_d]
+    s, t = s_d.id_osm, t_d.id_osm
+    vieilles_arêtes = [a_d for (v, a_d) in dico_voisins.get(s_d, []) if v==t_d]
 
-        if t not in gx[s]:
-            return vieilles_arêtes, [], [], []
+    if t not in gx[s]:
+        return vieilles_arêtes, [], [], []
 
-        else:
-                nouvelles_arêtes = [Arête.of_arête_nx(s_d, t_d, ax) for ax in gx[s][t].values()]
-                à_màj = []
-                à_supprimer = []
+    else:
+            nouvelles_arêtes = [Arête.of_arête_nx(s_d, t_d, ax) for ax in gx[s][t].values()]
+            à_màj = []
+            à_supprimer = []
 
-                def récup_arête(va):
-                    """
-                    Entrée : une vieille arête
-                    Effet :
-                        Si elle est dans les nouvelles, elle est mise dans à_màj avec sa binôme, qui est supprimée de nouvelles_arêtes.
-                        Sinon elle est mise dans à_supprimer
-                    """
-                    for (i, na) in enumerate(nouvelles_arêtes):
-                        if na == va:  # NB: le __eq__ se base sur la géom.
-                            à_màj.append((va, na))
-                            nouvelles_arêtes.pop(i)
-                            return None
-                    à_supprimer.append(va)
+            def récup_arête(va):
+                """
+                Entrée : une vieille arête
+                Effet :
+                    Si elle est dans les nouvelles, elle est mise dans à_màj avec sa binôme, qui est supprimée de nouvelles_arêtes.
+                    Sinon elle est mise dans à_supprimer
+                """
+                for (i, na) in enumerate(nouvelles_arêtes):
+                    if na == va:  # NB: le __eq__ se base sur la géom.
+                        à_màj.append((va, na))
+                        nouvelles_arêtes.pop(i)
+                        return None
+                à_supprimer.append(va)
 
 
-                for va in vieilles_arêtes:
-                    récup_arête(va)
+            for va in vieilles_arêtes:
+                récup_arête(va)
 
-                à_créer = nouvelles_arêtes
-                à_màj, à_garder = màj_arêtes(à_màj, champs_arêtes_à_màj)
+            à_créer = nouvelles_arêtes
+            à_màj, à_garder = màj_arêtes(à_màj, champs_arêtes_à_màj)
 
-                return (à_supprimer, à_créer, à_màj, à_garder)
+            return (à_supprimer, à_créer, à_màj, à_garder)
 
 
 
@@ -643,7 +643,7 @@ def conversion_étape(texte, bavard=0):
     Sortie : texte d’une étape avec la ville séparée par une virgule.
     """
     # Lecture de la regexp
-    e = re.compile("(^[0-9]*) *([^()]+)(\((.*)\))?")
+    e = re.compile(r"(^[0-9]*) *([^()]+)(\((.*)\))?")
     essai = re.findall(e, texte)
     if bavard > 1: print(f"Résultat de la regexp : {essai}")
     if len(essai) == 1:

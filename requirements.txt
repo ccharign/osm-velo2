@@ -11,4 +11,4 @@ requests
 scikit-learn
 django-cors-headers
 django-ninja
-psycopg2
+psycopg2-binary

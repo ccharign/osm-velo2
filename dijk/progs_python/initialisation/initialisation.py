@@ -5,7 +5,7 @@ import os
 import osmnx
 from typing import Iterable
 from time import perf_counter
-from pprint import pprint, pformat
+from pprint import pprint
 
 from django.db import close_old_connections, transaction
 from dijk.models import Ville, Zone, Cache_Adresse, Ville_Zone, Sommet, Rue, Arête, Lieu, ArbreArête, SegmentArête
@@ -19,8 +19,8 @@ from graphe_par_networkx import Graphe_nx
 from petites_fonctions import chrono, LOG, supprime_objets_par_lots, paires
 import dijk.progs_python.recup_donnees as rd
 
-import initialisation.vers_django as vd
-from quadrarbres import QuadrArbreArête
+import dijk.progs_python.initialisation.vers_django as vd
+from dijk.progs_python.quadrarbres import QuadrArbreArête
 from dijk.progs_python.initialisation.amenities import charge_lieux_of_ville
 
 
