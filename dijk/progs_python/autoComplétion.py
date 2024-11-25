@@ -105,7 +105,9 @@ def complétion(à_compléter: str, nbMax: int, z_d: mo.Zone) -> Résultat:
 
     # Recherche dans les lieux
     mots = à_chercher.split(" ")
-    lieux = mo.Lieu.objects.filter(ville__in=req_villes).prefetch_related(
+    lieux = mo.Lieu.objects.filter(
+        ville__in=req_villes,
+    ).prefetch_related(
         "ville", "type_lieu"
     )
     for mot in mots:

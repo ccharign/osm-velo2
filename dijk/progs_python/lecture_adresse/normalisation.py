@@ -248,7 +248,7 @@ class Adresse():
         self.rés_nominatim = None
         self.amen = False
         self.pk_rue = None
-
+        self.nom: str | None = None
         
     @classmethod
     def of_pk_rue(cls, d: dict):
