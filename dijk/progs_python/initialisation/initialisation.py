@@ -2,29 +2,27 @@
 # -*- coding:utf-8 -*-
 
 import os
-import osmnx
-from typing import Iterable
-from time import perf_counter
 from pprint import pprint
+from time import perf_counter
+from typing import Iterable
 
-from django.db import close_old_connections, transaction
-from dijk.models import Ville, Zone, Cache_Adresse, Ville_Zone, Sommet, Rue, Arête, Lieu, ArbreArête, SegmentArête
 import dijk.models as mo
-from django.db.models import Count
-
-from dijk.progs_python.params import RACINE_PROJET
-from initialisation.noeuds_des_rues import extrait_nœuds_des_rues
-from lecture_adresse.normalisation import arbre_rue_dune_ville, partie_commune, prétraitement_rue, normalise_rue
-from graphe_par_networkx import Graphe_nx
-from petites_fonctions import chrono, LOG, supprime_objets_par_lots, paires
-import dijk.progs_python.recup_donnees as rd
-
 import dijk.progs_python.initialisation.vers_django as vd
-from dijk.progs_python.quadrarbres import QuadrArbreArête
+import dijk.progs_python.recup_donnees as rd
+import osmnx
+from dijk.models import (ArbreArête, Arête, Cache_Adresse, Lieu, Rue,
+                         SegmentArête, Sommet, Ville, Ville_Zone, Zone)
 from dijk.progs_python.initialisation.amenities import charge_lieux_of_ville
+from dijk.progs_python.params import RACINE_PROJET
+from dijk.progs_python.quadrarbres import QuadrArbreArête
+from django.db import close_old_connections, transaction
+from django.db.models import Count
+from graphe_par_networkx import Graphe_nx
+from lecture_adresse.normalisation import (arbre_rue_dune_ville, normalise_rue,
+                                           partie_commune, prétraitement_rue)
+from petites_fonctions import LOG, chrono, paires, supprime_objets_par_lots
 
-
-
+from initialisation.noeuds_des_rues import extrait_nœuds_des_rues
 
 #############################################################################
 ### Fonctions pour (ré)initialiser ou ajouter une nouvelle ville ou zone. ###
@@ -371,21 +369,21 @@ def ville_of_nom_et_code_postal(nom: str, code: int):
         return Ville.objects.get(nom_norm=partie_commune(nom), code=code)
 
     
-def crée_les_arbres_darêtes(villes_modifiées, bavard=0):
-    """
-    Crée et sauvegarde les arbres d’arêtes des zones contenant au moins une des ville de villes_modifiées.
-    Sortie : dictionnaire zone->arbre
-    """
-    raise DeprecationWarning
-    LOG("\nCréation des R-arbres des arêtes", bavard=bavard)
-    zones_modifiées = set()
-    res = {}
-    for v in villes_modifiées:
-        zones_modifiées.update(v.zones())
-    for z in zones_modifiées:
-        print(f"Je recalcule l’arbre des arêtes de {z}")
-        res[z] = quadArbreAretesDeZone(z, sauv=True)
-    return res
+# def crée_les_arbres_darêtes(villes_modifiées, bavard=0):
+#     """
+#     Crée et sauvegarde les arbres d’arêtes des zones contenant au moins une des ville de villes_modifiées.
+#     Sortie : dictionnaire zone->arbre
+#     """
+#     raise DeprecationWarning
+#     LOG("\nCréation des R-arbres des arêtes", bavard=bavard)
+#     zones_modifiées = set()
+#     res = {}
+#     for v in villes_modifiées:
+#         zones_modifiées.update(v.zones())
+#     for z in zones_modifiées:
+#         print(f"Je recalcule l’arbre des arêtes de {z}")
+#         res[z] = quadArbreAretesDeZone(z, sauv=True)
+#     return res
  
 
 

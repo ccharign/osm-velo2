@@ -10,7 +10,7 @@ class AdresseMalFormée(Exception):
     pass
 
 
-def int_of_code_insee(c):
+def int_of_code_insee(c: str) -> int:
     """
     Entrée : (str) code INSEE
     Sortie (int) : entier obtenu en remplaçant A par 00 et B par 01 (à cause de la Corse) et en convertissant le résultat en int.
@@ -18,11 +18,12 @@ def int_of_code_insee(c):
     return int(c.replace("A", "00").replace("B", "01"))
 
 
-def partie_commune(c):
+def partie_commune(c: str) -> str:
     """ Appliquée à tout : nom de ville, de rue, et adresse complète
     Met en minuscules
     Supprime les tirets
-    Enlève les accents sur les e et les à"""
+    Remplace les appostrophes utf8 par des single quote
+    Enlève les accents sur les e et les a"""
     remplacements = [("-", " "), ("é|è|ê|ë", "e"), ("à|ä", "a"), ("’", "'")]
     res = c.strip().lower()
     for e, r in remplacements:
@@ -32,12 +33,14 @@ def partie_commune(c):
     
 
 def normalise_adresse(c):
-    """ Utilisé pour normaliser les adresses complètes, pour améliorer le cache.
-    Actuellement c’est partie_commune(c)"""
+    """
+    Utilisé pour normaliser les adresses complètes, pour améliorer le cache.
+    Actuellement c’est partie_commune(c)
+    """
     return partie_commune(c)
 
 
-def découpe_adresse(texte, bavard=0):
+def découpe_adresse(texte: str, bavard=0) -> tuple[str, str, str, str]:
     """
     Entrée : texte (str)
     Sortie (str*str*str*str) : num, bis_ter, rue, ville
