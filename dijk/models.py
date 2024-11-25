@@ -100,7 +100,7 @@ class Ville(models.Model):
         ]
     
     def __str__(self):
-        return self.nom_complet
+        return self.nom_complet.capitalize()
 
     def __gt__(self, autre):
         return self.population > autre.population
@@ -1231,20 +1231,6 @@ class Lieu(models.Model):
         return f"{self.nom}, {self.adresse()}"
 
 
-    # def pour_js(self):
-    #     """
-    #     Sortie : dico sérialisable contenant les données nécessaires pour construire l’objet ÉtapeLieu dans Django après retour via le formulaire.
-    #     En particulier, envoyé pour toutes les propositions d’autocomplétion. -> Doit rester relativement léger.
-    #     """
-    #     lon, lat = self.coords()
-    #     return {
-    #         "type": "lieu",
-    #         "pk": self.pk,
-    #         "lon": lon,
-    #         "lat": lat,
-    #         #"nom": self.nom,
-    #     }
-    
     def pour_js(self):
         """
         Renvoie le dico
