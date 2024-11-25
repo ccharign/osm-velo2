@@ -12,3 +12,4 @@ scikit-learn
 django-cors-headers
 django-ninja
 psycopg2-binary
+python-dotenv

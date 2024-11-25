@@ -10,11 +10,9 @@ tmp**
 log
 dijk/tmp/**
 dijk/templates/dijk/cycla**
-site_velo/settings.py
 **iti_folium.html
 **.log
 **/iti_folium.html
-**/settings.py
 **passenger*
 **.db
 **.sqlite3
@@ -25,3 +23,4 @@ db.sqlite*
 **flycheck**
 **.png
 .venv
+.env
