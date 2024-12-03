@@ -9,7 +9,7 @@ osmnx
 overpy
 requests
 scikit-learn
-django-cors-headers
+daphne
 django-ninja
 psycopg2-binary
 python-dotenv
