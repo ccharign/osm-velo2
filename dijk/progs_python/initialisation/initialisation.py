@@ -5,11 +5,15 @@ import os
 from pprint import pprint
 from time import perf_counter
 from typing import Iterable
+import logging
+
+import osmnx
+from geopandas import GeoSeries, GeoDataFrame
 
 import dijk.models as mo
 import dijk.progs_python.initialisation.vers_django as vd
 import dijk.progs_python.recup_donnees as rd
-import osmnx
+
 from dijk.models import (ArbreArête, Arête, Cache_Adresse, Lieu, Rue,
                          SegmentArête, Sommet, Ville, Ville_Zone, Zone)
 from dijk.progs_python.initialisation.amenities import charge_lieux_of_ville
@@ -23,6 +27,8 @@ from lecture_adresse.normalisation import (arbre_rue_dune_ville, normalise_rue,
 from petites_fonctions import LOG, chrono, paires, supprime_objets_par_lots
 
 from initialisation.noeuds_des_rues import extrait_nœuds_des_rues
+from dijk.progs_python.initialisation.geom_utils import union_de_géoms
+
 
 #############################################################################
 ### Fonctions pour (ré)initialiser ou ajouter une nouvelle ville ou zone. ###
@@ -131,8 +137,58 @@ def supprime_arêtes_en_double():
     print(f"Suppression de {len(à_supprimer)} arêtes")
     supprime_objets_par_lots(à_supprimer)
 
-    
 
+def graphe_de_villes(villes: list[Ville], marge=500, pays="France"):
+    """
+    Renvoie le graphe de l’enveloppe convexe de l’union des villes passées an arg, avec la marge indiquée.
+
+    Args:
+       - villes: liste des villes à inclure
+       - marge: en mètres
+    """
+    logging.info("Calcul de la géométrie de l’enveloppe convexe de %s", [v.nom_complet for v in villes])
+    géoms = osmnx.geocode_to_gdf([ville.avec_code() for ville in villes])
+
+    enveloppe = géoms.unary_union.convex_hull  # Ceci est une geometry
+    # Il faut en refaire un gpd
+    enveloppe_gdf = GeoDataFrame(geometry=[enveloppe], crs=géoms.crs)
+    # On projette dans la projection classique de la France EPSG:2154
+    # Afin d’avoir le buffer en mètres qui fonctionne
+    # Puis remettre en lon lat (EPSG:4326) pour graph_of_polygon
+    enveloppe_avec_marge = enveloppe_gdf.to_crs("EPSG:2154").buffer(marge).to_crs("EPSG:4326")
+
+    logging.info("Récupération du graphe")
+    g = osmnx.graph_from_polygon(
+        enveloppe_avec_marge[0],
+        simplify=False,
+        network_type="bike",
+        truncate_by_edge=True,
+    )
+
+    logging.info("Transformation des places piétonnes en clique")
+    # On transforme les place piétonnes en cliques
+    o, s, e, n = enveloppe_gdf.bounds.values[0]
+    places_en_cliques(g, (s,o,n,e))
+
+    logging.info("Simplification du graphe")
+    osmnx.simplify_graph(g)
+
+    logging.info("Ajout du nom des villes sur les sommets")
+    # GeoDataFrame des sommets
+    nœuds = osmnx.graph_to_gdfs(g, edges=False)
+
+    # On indique la ou les villes de chaque nœud
+    for ville, géom in zip(villes, géoms["geometry"]):
+        nœuds_de_la_ville = nœuds[nœuds.within(géom)]
+        for s in nœuds_de_la_ville.index:
+            if "ville" not in g.nodes[s]:
+                g.nodes[s]["ville"] = [ville.nom_complet]
+            else:
+                g.nodes[s]["ville"].append(ville.nom_complet)
+
+    return g
+    
+#ei1c1722589
 def charge_graphe_de_ville(ville_d: Ville, pays="France", bavard=0, rapide=0) -> None:
     """
     Récupère le graphe grâce à osmnx et le charge dans la base.
@@ -158,7 +214,7 @@ def charge_graphe_de_ville(ville_d: Ville, pays="France", bavard=0, rapide=0) ->
     )
 
     g = Graphe_nx(gr_avec_marge)
-    places_en_cliques(g, ville_d)
+    places_en_cliques(g, ville_d.bbox())
     osmnx.simplify_graph(g.multidigraphe)
 
     ## Noms des villes ajouté dans g
@@ -211,13 +267,13 @@ def remplaceArête(g: Graphe_nx, s, t, nom: str):
     gn.add_edge(t, s, length=d, name=nom, highway="pedestrian")
     
 
-    
-def places_en_cliques(g: Graphe_nx, ville):
+
+def places_en_cliques(g: Graphe_nx, bbox: tuple[float, float, float, float]):
     """
     Récupère les zones piétonnes de la ville et ajoute les cliques correspondantes au graphe g.
     """
 
-    places = rd.zones_piétonnes(ville.bbox(), g)
+    places = rd.zones_piétonnes(bbox, g)
     
     # Création des nouvelles arêtes
     nb = 0
@@ -329,7 +385,7 @@ ZONE_PAU = {
     "Lons": 64140,
     "Bizanos": 64320,
     "Artigueloutan": 64420,
-    "Mazères-Lezons": 64110
+    "Mazères-Lezons": 64110,
 }.items()
 
 
@@ -350,7 +406,7 @@ ZONE_GRENOBLE = [
     ("Voreppe", 38340),
     ("Échirolles", 38130),
     ("Fontaine", 38600),
-    ("Gières", 38610)
+    ("Gières", 38610),
 ]
 
 
@@ -364,27 +420,10 @@ def ville_of_nom_et_code_postal(nom: str, code: int):
     if len(essai1) == 1:
         return essai1.first()
     elif len(essai1) == 0:
-        raise RuntimeError("Ville pas trouvée : {nom}. Avez-vous chargé la liste des villes avec communes.charge_villes() ?")
+        raise RuntimeError(f"Ville pas trouvée : {nom}. Avez-vous chargé la liste des villes avec communes.charge_villes() ?")
     else:
         return Ville.objects.get(nom_norm=partie_commune(nom), code=code)
 
-    
-# def crée_les_arbres_darêtes(villes_modifiées, bavard=0):
-#     """
-#     Crée et sauvegarde les arbres d’arêtes des zones contenant au moins une des ville de villes_modifiées.
-#     Sortie : dictionnaire zone->arbre
-#     """
-#     raise DeprecationWarning
-#     LOG("\nCréation des R-arbres des arêtes", bavard=bavard)
-#     zones_modifiées = set()
-#     res = {}
-#     for v in villes_modifiées:
-#         zones_modifiées.update(v.zones())
-#     for z in zones_modifiées:
-#         print(f"Je recalcule l’arbre des arêtes de {z}")
-#         res[z] = quadArbreAretesDeZone(z, sauv=True)
-#     return res
- 
 
 
 def crée_zone(liste_villes_str, zone: str,
@@ -392,8 +431,8 @@ def crée_zone(liste_villes_str, zone: str,
               réinit_zone=False,
               effacer_cache=False, bavard=2, rapide=0,
               force_lieux=False,
-              inclue_dans: str = None,
-              contient: str = None
+              inclue_dans: str|None = None,
+              contient: str|None = None
               ):
     """
     Entrée : liste_villes, itérable de (nom de ville, code postal). La ville par défaut sera la première de cette liste.
@@ -466,6 +505,9 @@ def crée_zone(liste_villes_str, zone: str,
         Cache_Adresse.objects.all().delete()
 
     # Vidage du cache d’osmnx ?
+
+    # Graphe total
+    graphe_total = graphe_de_villes(liste_villes_d)
     
     ## Chargement des villes :
     villes_modifiées = []

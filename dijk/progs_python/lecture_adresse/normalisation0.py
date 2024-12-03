@@ -24,7 +24,7 @@ def partie_commune(c: str) -> str:
     Supprime les tirets
     Remplace les appostrophes utf8 par des single quote
     Enlève les accents sur les e et les a"""
-    remplacements = [("-", " "), ("é|è|ê|ë", "e"), ("à|ä", "a"), ("’", "'")]
+    remplacements = [("-", " "), ("é|è|ê|ë", "e"), ("à|ä", "a"), ("’", "'"), ("ç", "c")]
     res = c.strip().lower()
     for e, r in remplacements:
         res = re.sub(e, r, res)

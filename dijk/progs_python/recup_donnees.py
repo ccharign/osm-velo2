@@ -297,7 +297,7 @@ def nœudsOfIdsway(ids_ways, api, bavard=0):
 
 
     
-def zones_piétonnes(bbox, g, bavard=0) -> list:
+def zones_piétonnes(bbox: tuple[float, float, float, float], g, bavard=0) -> list:
     """
     Sortie :  les zones piétonnes (area=yes, highway=pedestrian ou footway) de la zone indiquée.
     liste de couples (nom, liste de nœuds).

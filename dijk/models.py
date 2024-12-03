@@ -252,11 +252,12 @@ class Rue(models.Model):
             "nom": à_afficher,
             "géom": self.géométrie(),
             "avec_num": bool(num),
+            "infos": {},
         }
 
 
 
-def formule_pour_correction_longueur(l, cy, p_détour):
+def formule_pour_correction_longueur(l: float, cy: float, p_détour: float) -> float:
     """
     Ceci peut être changé. Actuellement : l / cy**( p_détour*1.5)
     Rappel : cy>1 == bien
@@ -1131,23 +1132,14 @@ class GroupeTypeLieu(models.Model):
         else:
             return "un"
 
-    # def pour_js(self):
-    #     """
-    #     Sortie : dico sérialisable contenant les données nécessaires à la partie client. À savoir
-    #         - pour construire l’objet ÉtapeLieu dans Django après retour via le formulaire.
-    #     """
-    #     return {
-    #         "type_étape": "gtl",
-    #         "pk": self.pk,
-    #         "nom": self.nom,
-    #     }
-
     def pour_js(self):
         """Renvoie un dico sérialisable décrivant l’objet."""
-        return {"nom": self.déterminant() + " " + self.nom,
-                "type_étape": "gtl",
-                "pk": self.pk,
-                }
+        return {
+            "nom": self.déterminant() + " " + self.nom,
+            "type_étape": "gtl",
+            "pk": self.pk,
+            "infos": {},
+        }
 
 
 class Lieu(models.Model):
