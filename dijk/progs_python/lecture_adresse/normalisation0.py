@@ -30,7 +30,10 @@ def partie_commune(c: str) -> str:
         res = re.sub(e, r, res)
     
     return res
-    
+
+def pour_nom_complet_ville(c: str) -> str:
+    """ Pour le nom complet d’une ville, celui qui sera affiché."""
+    return c.title()
 
 def normalise_adresse(c):
     """

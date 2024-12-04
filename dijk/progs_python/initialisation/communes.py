@@ -8,7 +8,10 @@ from django.db import transaction, close_old_connections
 from dijk.models import Ville, objet_of_dico
 
 from dijk.progs_python.lecture_adresse.normalisation import partie_commune
-from dijk.progs_python.lecture_adresse.normalisation0 import int_of_code_insee
+from dijk.progs_python.lecture_adresse.normalisation0 import (
+    int_of_code_insee,
+    pour_nom_complet_ville,
+)
 
 from params import RACINE_PROJET
 
@@ -16,10 +19,12 @@ from params import RACINE_PROJET
 ### Données INSEE ###
 
 
-
-
-
-def charge_villes(chemin=os.path.join(RACINE_PROJET, "progs_python/initialisation/données_à_charger/code-postalnettoyé.json")):
+def charge_villes(
+    chemin=os.path.join(
+        RACINE_PROJET,
+        "progs_python/initialisation/données_à_charger/code-postalnettoyé.json",
+    ),
+):
     """
     Remplit la table des villes au moyen du fichier json trouvé sur https://public.opendatasoft.com/explore/dataset/code-postal-code-insee-2015/export/
     """
@@ -29,7 +34,7 @@ def charge_villes(chemin=os.path.join(RACINE_PROJET, "progs_python/initialisatio
 
     print("Récupération des villes déjà présentes")
     toutes_les_villes = Ville.objects.all()
-    déjà_présentes = set(x for x, in toutes_les_villes.values_list("code_insee"))
+    déjà_présentes = set(x for (x,) in toutes_les_villes.values_list("code_insee"))
     print(f"{len(déjà_présentes)} villes déjà présentes.\n")
 
     print("Lecture des données")
@@ -49,28 +54,43 @@ def charge_villes(chemin=os.path.join(RACINE_PROJET, "progs_python/initialisatio
         else:
             # création
             ville["nom_norm"] = partie_commune(ville["nom_com"])
+            ville["nom_complet"] = pour_nom_complet_ville(ville["nom_com"])
             ville["géom_texte"] = ville["geo_shape"]["coordinates"][0]
             v_d = objet_of_dico(
                 Ville,
                 ville,
-                champs_obligatoires=["nom_norm", "population", "superficie"],
-                dico_champs_obligatoires={"nom_com":"nom_complet", "insee_com":"code_insee"},
-                dico_autres_champs={"code_postal":"code"},
-                autres_valeurs={"données_présentes":False},
-                champs_à_traiter={"géom_texte": ("géom_texte", json.dumps)}
+                champs_obligatoires=[
+                    "nom_norm",
+                    "population",
+                    "superficie",
+                    "nom_complet",
+                ],
+                dico_champs_obligatoires={"insee_com": "code_insee"},
+                dico_autres_champs={"code_postal": "code"},
+                autres_valeurs={"données_présentes": False},
+                champs_à_traiter={"géom_texte": ("géom_texte", json.dumps)},
             )
             à_créer.append(v_d)
         nb += 1
-        if nb%500==0: print(f"{nb} villes traitées")
+        if nb % 500 == 0:
+            print(f"{nb} villes traitées")
     print(f"Enregistrement des {len(à_créer)} nouvelles villes")
     close_old_connections()
     Ville.objects.bulk_create(à_créer)
-    print(f"Màj des {len(à_màj)} autres villes (code postal, géométrie, superficie, population).")
+    print(
+        f"Màj des {len(à_màj)} autres villes (code postal, géométrie, superficie, population)."
+    )
     close_old_connections()
-    Ville.objects.bulk_update(à_màj, ["code", "géom_texte", "superficie", "population"], batch_size=2000)
+    Ville.objects.bulk_update(
+        à_màj, ["code", "géom_texte", "superficie", "population"], batch_size=2000
+    )
 
 
-def nettoie_json_communes(chemin=os.path.join(RACINE_PROJET, "progs_python/initialisation/données_à_charger/code-postal.json")):
+def nettoie_json_communes(
+    chemin=os.path.join(
+        RACINE_PROJET, "progs_python/initialisation/données_à_charger/code-postal.json"
+    ),
+):
     """
     Sert à nettoyé le fichier téléchargé à https://public.opendatasoft.com/explore/dataset/code-postal-code-insee-2015/export/.
     Ne devrait plus servir ensuite.
@@ -80,15 +100,22 @@ def nettoie_json_communes(chemin=os.path.join(RACINE_PROJET, "progs_python/initi
     - Mets des None pour les champs manquant (il semble que ma ne soit que des code postaux)
     - supprime les doublons de (code insee, nom). Prends dans ces cas les min des codes postaux (Normalement ces cas sont des différents arrondissements d’une grande ville)
     """
-    
+
     print("Chargement du fichier")
     with open(chemin) as entrée:
         données = json.load(entrée)
     print("Nettoyage des données")
     res = {}  # dico code_insee -> données de la ville
-    champs = ["insee_com", "geo_shape", "code_postal", "nom_com", "population", "superficie"]
+    champs = [
+        "insee_com",
+        "geo_shape",
+        "code_postal",
+        "nom_com",
+        "population",
+        "superficie",
+    ]
     supprimés = []
-    
+
     for ville in données:
         ville = ville["fields"]
         if "postal_code" in ville:
@@ -96,19 +123,19 @@ def nettoie_json_communes(chemin=os.path.join(RACINE_PROJET, "progs_python/initi
 
         if ville["insee_com"] in res:
             supprimés.append(ville)
-            res[ville["insee_com"]]["code_postal"] = min(res[ville["insee_com"]]["code_postal"], ville["code_postal"])
-            #print(res[ville["insee_com"]]["code_postal"])
+            res[ville["insee_com"]]["code_postal"] = min(
+                res[ville["insee_com"]]["code_postal"], ville["code_postal"]
+            )
+            # print(res[ville["insee_com"]]["code_postal"])
         else:
-            
-            res[ville["insee_com"]] = {c:ville.get(c,None) for c in champs}
-
+            res[ville["insee_com"]] = {c: ville.get(c, None) for c in champs}
 
     print("Sauvegarde du nouveau fichier")
-    nom_fichier = os.path.splitext(chemin)[0]+"nettoyé.json"
+    nom_fichier = os.path.splitext(chemin)[0] + "nettoyé.json"
     with open(nom_fichier, "w") as sortie:
         sortie.write(json.dumps(tuple(res.values())))
     print(f"{len(supprimés)} doublons de code insee")
-    #return supprimés
+    # return supprimés
 
 
 @transaction.atomic()
@@ -119,22 +146,22 @@ def renormalise_noms_villes():
     """
     n = 0
     for v in Ville.objects.all():
-        if n%500==0: print(f"{n} communes traitées")
+        if n % 500 == 0:
+            print(f"{n} communes traitées")
         n += 1
         v.nom_norm = partie_commune(v.nom_complet)
         v.save()
-        
+
 
 # def charge_géom_villes(chemin=os.path.join(RACINE_PROJET, "progs_python/stats/docs/géom_villes.json")):
 #     """
 #     Rajoute la géométrie des villes à partir du json INSEE.
 #     """
-    
 
-        
+
 #     with open(chemin) as entrée:
 #         à_maj=[]
-        
+
 #     Ville.objects.bulk_update(à_maj, ["géom_texte"])
 
 
@@ -142,8 +169,8 @@ def ajoute_villes_voisines():
     """
     Remplit les relations ville-ville dans la base.
     """
-    dico_coords = {} # dico coord -> liste de villes
-    à_ajouter=[]
+    dico_coords = {}  # dico coord -> liste de villes
+    à_ajouter = []
     print("Recherche des voisinages")
     for v in Ville.objects.all():
         for c in v.géom_texte.split(";"):
@@ -155,7 +182,7 @@ def ajoute_villes_voisines():
             else:
                 dico_coords[c] = [v]
     print("Élimination des relations déjà présente")
-    à_ajouter_vraiment=[]
+    à_ajouter_vraiment = []
     for r in à_ajouter:
         if not Ville_Ville.objects.filter(ville1=r.ville1, ville2=r.ville2).exists():
             à_ajouter_vraiment.append(r)
