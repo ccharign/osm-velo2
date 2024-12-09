@@ -5,6 +5,7 @@ import math
 from typing_extensions import Self
 
 from django.db import models, close_old_connections, transaction, connection
+from django.db.models import QuerySet
 
 from dijk.progs_python.params import LOG, DONNÉES
 from dijk.progs_python.lecture_adresse.normalisation0 import partie_commune
@@ -157,6 +158,7 @@ class Sommet(models.Model):
     lon = models.FloatField()
     lat = models.FloatField()
     villes = models.ManyToManyField(Ville)
+    zones = models.ManyToManyField("Zone")
     
     def __str__(self):
         return str(self.id_osm)
@@ -187,7 +189,6 @@ class Sommet(models.Model):
         return [a.départ for a in arêtes]
 
 
-# https://docs.djangoproject.com/en/3.2/topics/db/examples/many_to_many/
 class Rue(models.Model):
     """
     Une entrée pour chaque couple (rue, ville) : certaines rues peuvent apparaître en double.
@@ -223,7 +224,7 @@ class Rue(models.Model):
         res = []
         for (s, t) in deuxConséc(self.nœuds()):
             arête_aller = Arête.objects.filter(départ__id_osm=s, arrivée__id_osm=t)
-            if arête_aller:
+            if arête_aller is not None:
                 res.extend(arête_aller.first().géométrie())
             else:
                 arête_retour = Arête.objects.filter(départ__id_osm=t, arrivée__id_osm=s)
@@ -702,6 +703,10 @@ class Zone(models.Model):
     def villes(self) -> tuple:
         """Renvoie les villes de la zone."""
         return tuple(rel.ville for rel in Ville_Zone.objects.filter(zone=self).prefetch_related("ville"))
+
+    def sommets(self) -> QuerySet:
+        """Renvoie self.sommet_set.all(), cette méhode est surtout là pour rappeler la syntaxe..."""
+        return self.sommet_set.all()
 
     def sousZones(self):
         """Renvoie les sous-zones de self."""

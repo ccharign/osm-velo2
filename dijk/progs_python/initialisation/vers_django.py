@@ -171,6 +171,7 @@ def supprime_tout(à_supprimer: Iterable):
     
 def transfert_graphe(gx: MultiDiGraph,
                      #ville_d: Ville,
+                     z_d: Zone,
                      dico_ville: dict[str, Ville],
                      bavard=0, rapide=1,
                      champs_arêtes_à_màj=[],
@@ -193,8 +194,7 @@ def transfert_graphe(gx: MultiDiGraph,
                             2 -> si il y a quelque chose dans la base pour (s,t), ne rien faire.
         champs_arêtes_à_màj : la valeur de ces champs sera mise à jour pour les arêtes déjà présentes.
     """
-    #assert isinstance(ville_d, Ville), f"transfert_graphe attend une ville et a reçu {ville_d}"
-
+    close_old_connections()
     tous_les_sommets = Sommet.objects.all()
     print(f"{len(tous_les_sommets)} sommets dans la base")
 
@@ -212,13 +212,14 @@ def transfert_graphe(gx: MultiDiGraph,
         # Voyons si le sommet est déjà présent
         essai = Sommet.objects.filter(id_osm=s).first()
         if essai is None:
-            s_d = Sommet(id_osm=s, lon=lon, lat=lat)
+            s_d = Sommet(id_osm=s, lon=lon, lat=lat, zones=(z_d, ))
             à_créer.append(s_d)
         else:
             s_d = essai
             # màj des coords au cas où...
             s_d.lon = lon
             s_d.lat = lat
+            s_d.zones.add(z_d)
             à_màj.append(s_d)
         # Ajout du sommet dans le dico des sommets de chaque ville
         villes_str = gx.nodes[s].get("ville")

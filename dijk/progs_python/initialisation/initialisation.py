@@ -195,17 +195,17 @@ def enregistre_rues(g: nx.MultiDiGraph, bavard=0):
     dico_rues: dict[str, dict[str, tuple[str, set[int]]]] = {}
     for s in g:
         for t in g[s]:
-            # TODO g.nodes_[s]["ville"] est une *liste* de villes!
-            if "ville" in g.nodes[s] and g.nodes[t].get("ville") == g.nodes[s]["ville"]:
-                ville = g.nodes[s]["ville"]
-                if ville not in dico_rues:
-                    dico_rues[ville] = {}
-                for a in g[s][t]:
-                    if "name" in a:  # l’arête a un nom
-                        nom_norm = prétraitement_rue(a["name"])
-                        if nom_norm not in dico_rues[ville]:
-                            dico_rues[ville][nom_norm]=(a["name"], set())
-                        dico_rues[ville][nom_norm][1].update({s,t})
+            for ville in g.nodes[t].get("ville", ()):
+                if ville in g.nodes[s].get("ville", ()):
+                    if ville not in dico_rues:
+                        dico_rues[ville] = {}
+                    breakpoint()
+                    for a in g[s][t].values():
+                        if "name" in a:  # l’arête a un nom
+                            nom_norm = prétraitement_rue(a["name"])
+                            if nom_norm not in dico_rues[ville]:
+                                dico_rues[ville][nom_norm]=(a["name"], set())
+                            dico_rues[ville][nom_norm][1].update({s,t})
 
     # Enregistrement en base
     close_old_connections()
@@ -424,7 +424,31 @@ def vide_zone(zone: Zone):
        - les lieux
     liés à cette zone.
     """
-    
+    for v in zone.villes():
+        v.données_présentes = False
+        v.save()
+        print(f"J’ai mis données présentes à False pour {v}.")
+
+        print("Suppression des relations sommet-ville et arête-ville :")
+        rels_sommet_ville = Sommet.villes.through.objects.filter(ville_id=v.id)
+        # Le _raw_delete évite les vérif de clef étrangère.
+        print(rels_sommet_ville._raw_delete(rels_sommet_ville.db))
+        rels_arête_ville = Arête.villes.through.objects.filter(ville_id=v.id)
+        print(rels_arête_ville._raw_delete(rels_arête_ville.db))
+
+        sommets = zone.sommet_set.all()
+
+        arêtes_à_supprimer = Arête.objects.filter(Q(départ__in=sommets) | Q(arrivée__in=sommets))
+        print("Suppression des arêtes")
+        #print(arêtes_à_supprimer._raw_delete(arêtes_à_supprimer))
+        arêtes_à_supprimer.delete()
+        print(f"Suppression des {len(sommets)}sommets orphelins :")
+        #print(sommets._raw_delete(sommets))
+        sommets.delete()
+        # Ceci supprime au passage les arêtes liées aux sommets supprimés
+
+    Cache_Adresse.objects.all().delete()
+
 
 
 def crée_zone(
@@ -434,7 +458,8 @@ def crée_zone(
         effacer_cache=False, bavard=2, rapide=0,
         force_lieux=False,
         inclue_dans: str|None = None,
-        contient: str|None = None
+        contient: str|None = None,
+        log_level=logging.INFO,
 ):
     """
     Entrée : liste_villes, itérable de (nom de ville, code postal). La ville par défaut sera la première de cette liste.
@@ -454,7 +479,7 @@ def crée_zone(
 
     Sortie (Ville list) : liste des villes pour lesquelles on n’a pas pu récupérer les lieux.
     """
-    
+    logging.basicConfig(level=log_level)
     close_old_connections()
 
     ## Récup des villes :
@@ -485,38 +510,15 @@ def crée_zone(
         
     ## Réinitialisation de la zone :
     if réinit_données:
-        for v in liste_villes_d:
-            v.données_présentes = False
-            v.save()
-            print(f"J’ai mis données présentes à False pour {v}.")
-
-            print("Suppression des relations sommet-ville et arête-ville :")
-            rels_sommet_ville = Sommet.villes.through.objects.filter(ville_id=v.id)
-            # Le _raw_delete évite les vérif de clef étrangère.
-            print(rels_sommet_ville._raw_delete(rels_sommet_ville.db))
-            rels_arête_ville = Arête.villes.through.objects.filter(ville_id=v.id)
-            print(rels_arête_ville._raw_delete(rels_arête_ville.db))
-            
-            
-            sommets_sans_ville = Sommet.objects.all().alias(nbvilles=Count("villes")).filter(nbvilles=0)
-
-            arêtes_à_supprimer = Arête.objects.filter(Q(départ__in=sommets_sans_ville) | Q(arrivée__in=sommets_sans_ville))
-            print("Suppression des arêtes")
-            print(arêtes_à_supprimer._raw_delete(arêtes_à_supprimer))
-            print(f"Suppression des {len(sommets_sans_ville)}sommets orphelins :")
-            sommets_sans_ville._raw_delete(sommets_sans_ville)
-            # Ceci supprime au passage les arêtes liées aux sommets supprimés
-            
-        Cache_Adresse.objects.all().delete()
-
+        vide_zone(z_d)
+        
     # Vidage du cache d’osmnx ?
 
     # Graphe total
     graphe_total = graphe_de_villes(liste_villes_d)
 
     # Transférer le graphe dans la base
-    close_old_connections()
-    vd.transfert_graphe(graphe_total, dico_ville, bavard=bavard-1, rapide=rapide)
+    vd.transfert_graphe(graphe_total, z_d, dico_ville, bavard=bavard-1, rapide=rapide)
     
     # Rues
     enregistre_rues(graphe_total)
