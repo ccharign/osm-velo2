@@ -8,11 +8,11 @@ Ces fonctions seront cachées dans la console.
 
 
 import re
-from pprint import pformat, pprint
 from typing import Iterable
 
 from django.db import transaction, close_old_connections
-from django.db.models import Q
+from django.db.models import QuerySet
+
 from networkx import MultiDiGraph
 from dijk.progs_python.graphe_par_networkx import Graphe_nx
 from dijk.models import Ville, Rue, Sommet, Arête, Chemin_d, Zone, Lieu
@@ -169,16 +169,18 @@ def supprime_tout(à_supprimer: Iterable):
         x.delete()
     
     
-def transfert_graphe(g, ville_d,
+def transfert_graphe(gx: MultiDiGraph,
+                     #ville_d: Ville,
+                     dico_ville: dict[str, Ville],
                      bavard=0, rapide=1,
                      champs_arêtes_à_màj=[],
                      taille_paquets=10000
                      ):
     """
-    Entrée : g (Graphe_nx)
-             ville_d (instance de Zone)
+    Entrée : gx
+             dico_ville: dico nom de la ville utilisé dans gx -> l’instance de Ville correspondante
 
-    Effet : transfert le graphe dans la base Django.
+    Effet : transfert le graphe <gx> dans la base.
     La longueur des arêtes est mise à min(champ "length", d_euc de ses sommets).
     
     Sortie : sommets django correspondant aux sommets de g (créés ou pas), arêtes créées, arêtes mises à jour ou conservées
@@ -191,8 +193,7 @@ def transfert_graphe(g, ville_d,
                             2 -> si il y a quelque chose dans la base pour (s,t), ne rien faire.
         champs_arêtes_à_màj : la valeur de ces champs sera mise à jour pour les arêtes déjà présentes.
     """
-    assert isinstance(ville_d, Ville), f"transfert_graphe attend une ville et a reçu {ville_d}"
-    gx = g.multidigraphe
+    #assert isinstance(ville_d, Ville), f"transfert_graphe attend une ville et a reçu {ville_d}"
 
     tous_les_sommets = Sommet.objects.all()
     print(f"{len(tous_les_sommets)} sommets dans la base")
@@ -203,10 +204,12 @@ def transfert_graphe(g, ville_d,
     à_créer = []
     à_màj = []
     nb = 0
-    for s in g.multidigraphe.nodes:
+    sommets_de_chaque_ville: dict[str, set[Sommet]] = dict() # Associe à chaque ville ses sommets dans gx
+    for s in gx.nodes:
         if nb%500==0: print(f"    {nb} sommets vus")
         nb += 1
-        lon, lat = g.coords_of_nœud(s)
+        lon, lat = gx.nodes[s]["x"], gx.nodes[s]["y"]
+        # Voyons si le sommet est déjà présent
         essai = Sommet.objects.filter(id_osm=s).first()
         if essai is None:
             s_d = Sommet(id_osm=s, lon=lon, lat=lat)
@@ -217,7 +220,14 @@ def transfert_graphe(g, ville_d,
             s_d.lon = lon
             s_d.lat = lat
             à_màj.append(s_d)
-
+        # Ajout du sommet dans le dico des sommets de chaque ville
+        villes_str = gx.nodes[s].get("ville")
+        if villes_str:
+            for ville in villes_str:
+                if ville not in sommets_de_chaque_ville:
+                    sommets_de_chaque_ville[ville] = set()
+                sommets_de_chaque_ville[ville].add(s_d)
+            
     ## Création/màj des sommets
     LOG(f"Ajout des {len(à_créer)} nouveaux sommets dans la base")
     sauv_objets_par_lots(à_créer)
@@ -225,7 +235,8 @@ def transfert_graphe(g, ville_d,
     Sommet.objects.bulk_update(à_màj, ["lon", "lat"], batch_size=5000)
 
     # Il faut indiquer la ville sur ces sommets
-    ajoute_ville_à_sommets_et_arêtes(ville_d, à_créer+à_màj, [])
+    for ville, sommets in sommets_de_chaque_ville.items():
+        ajoute_ville_à_sommets_et_arêtes(dico_ville[ville], sommets, [])
 
     
     ### Arêtes ###
@@ -235,7 +246,7 @@ def transfert_graphe(g, ville_d,
     # nb_appels = {"correspondance":0, "remplace_arêtes":0, "màj_arêtes":0, "récup_nom":0}
 
     # Création du dico sommet -> liste de (voisin, arête) pour les arêtes déjà existantes dans la base.
-    dico_voisins = {}
+    dico_voisins: dict[Sommet, list[tuple[Sommet, Arête]]] = {}
     toutes_les_arêtes = Arête.objects.all().select_related("départ", "arrivée")
     for a in toutes_les_arêtes:
         s = a.départ
@@ -244,16 +255,29 @@ def transfert_graphe(g, ville_d,
             dico_voisins[s] = []
         dico_voisins[s].append((t, a))
 
-    
-    
 
     LOG("Chargement des arêtes depuis le graphe osmnx", bavard)
+    arêtes_de_chaque_ville: dict[str, list[Arête]] = {v: [] for v in sommets_de_chaque_ville.keys() } # dico ville_str -> ses arêtes
     for paquet in paquets(gx.nodes, taille_paquets, affiche_tous_les=500):
-        transfertUnPaquetDarêtes(paquet, tous_les_sommets, gx, ville_d, rapide, champs_arêtes_à_màj, dico_voisins, bavard=bavard)
+        # La fonction ci-dessous remplit au passage le dico arêtes_de_chaque_ville
+        transfertUnPaquetDarêtes(
+            paquet, tous_les_sommets, gx,# dico_ville,
+            rapide, champs_arêtes_à_màj, dico_voisins,
+            arêtes_de_chaque_ville,
+            bavard=bavard
+        )
 
-
+    LOG("Ajoute la ville aux nouvelles arêtes.")
+    for villes_str, arêtes in arêtes_de_chaque_ville.items():
+        ajoute_ville_à_sommets_et_arêtes(
+            dico_ville[villes_str],
+            set(),
+            arêtes,
+            bavard=bavard-1
+        )
+    
         
-def màj_arêtes(arêtes_vn, champs_arêtes_à_màj):
+def màj_arêtes(arêtes_vn: list[tuple[Arête, Arête]], champs_arêtes_à_màj):
     """
     Met à jour les arêtes  déjà existante avec les données des arêtes du nouveau graphe.
     
@@ -277,7 +301,11 @@ def màj_arêtes(arêtes_vn, champs_arêtes_à_màj):
     return à_màj, à_garder
     
     
-def correspondance(s_d, t_d, gx, champs_arêtes_à_màj, dico_voisins: dict):
+def correspondance(
+        s_d: Sommet, t_d: Sommet, gx: MultiDiGraph,
+        champs_arêtes_à_màj: list,
+        dico_voisins: dict[Sommet, list[tuple[Sommet, Arête]]]
+) -> tuple[list[Arête], list[Arête], list[Arête], list[Arête]]:
     """
     Compare les arêtes déjà ans la base avec celles dans gx.
     
@@ -300,10 +328,10 @@ def correspondance(s_d, t_d, gx, champs_arêtes_à_màj, dico_voisins: dict):
 
     else:
             nouvelles_arêtes = [Arête.of_arête_nx(s_d, t_d, ax) for ax in gx[s][t].values()]
-            à_màj = []
-            à_supprimer = []
+            à_màj_couples: list[tuple[Arête, Arête]] = []
+            à_supprimer: list[Arête] = []
 
-            def récup_arête(va):
+            def récup_arête(va: Arête) -> None:
                 """
                 Entrée : une vieille arête
                 Effet :
@@ -312,7 +340,7 @@ def correspondance(s_d, t_d, gx, champs_arêtes_à_màj, dico_voisins: dict):
                 """
                 for (i, na) in enumerate(nouvelles_arêtes):
                     if na == va:  # NB: le __eq__ se base sur la géom.
-                        à_màj.append((va, na))
+                        à_màj_couples.append((va, na))
                         nouvelles_arêtes.pop(i)
                         return None
                 à_supprimer.append(va)
@@ -322,7 +350,7 @@ def correspondance(s_d, t_d, gx, champs_arêtes_à_màj, dico_voisins: dict):
                 récup_arête(va)
 
             à_créer = nouvelles_arêtes
-            à_màj, à_garder = màj_arêtes(à_màj, champs_arêtes_à_màj)
+            à_màj, à_garder = màj_arêtes(à_màj_couples, champs_arêtes_à_màj)
 
             return (à_supprimer, à_créer, à_màj, à_garder)
 
@@ -330,11 +358,23 @@ def correspondance(s_d, t_d, gx, champs_arêtes_à_màj, dico_voisins: dict):
 
         
 def transfertUnPaquetDarêtes(
-        sommets_à_traiter, tous_les_sommets, gx: MultiDiGraph(), ville_d: Ville, rapide: int, champs_arêtes_à_màj, dico_voisins,
+        sommets_à_traiter: Iterable[int],
+        tous_les_sommets: QuerySet[Sommet],
+        gx: MultiDiGraph,
+        # dico_villes: dict[str, Ville],
+        rapide: int,
+        champs_arêtes_à_màj: list,
+        dico_voisins: dict[Sommet, list[tuple[Sommet, Arête]]],
+        arêtes_de_chaque_ville: dict[str, list[Arête]],
         bavard=0
 ):
     """
-    Transfert un paquet d’arêtes dans la base
+    Transfert un paquet d’arêtes dans la base.
+    Remplit au passage le dico arêtes_de_chaque_ville
+
+    Args:
+        dico_voisins: dico sommet -> liste de (voisin, arête) pour les arêtes déjà existantes dans la base.
+        arêtes_de_chaque_ville: dico nom_de_la_ville -> ens de ses arêtes
     """
         
     à_créer = []
@@ -352,6 +392,10 @@ def transfertUnPaquetDarêtes(
                     à_créer.extend(à_c)
                     à_màj.extend(à_m)
                     à_garder.extend(à_g)
+                villes_str = gx.nodes[s].get("ville", ())
+                for ville in villes_str:
+                    if ville in gx.nodes[t].get("ville", ()):
+                        arêtes_de_chaque_ville[ville].extend(à_c+à_m+à_g)
 
     LOG(f"Suppression de {len(à_supprimer)} arêtes.", bavard=bavard)
     supprime_tout(à_supprimer)
@@ -367,27 +411,23 @@ def transfertUnPaquetDarêtes(
         
     LOG(f"{len(à_garder)} arêtes conservées")
 
-    LOG("Ajoute la ville aux nouvelles arêtes.")
-    ajoute_ville_à_sommets_et_arêtes(
-        ville_d,
-        [],
-        à_créer + à_màj + à_garder,
-        bavard=bavard-1
-    )
-    
 
 
-
-def ajoute_ville_à_sommets_et_arêtes(ville, sommets, arêtes, bavard=0):
+def ajoute_ville_à_sommets_et_arêtes(
+        ville: Ville,
+        sommets: set[Sommet],
+        arêtes: list[Arête],
+        bavard=0
+):
     """
     Entrées:
-       ville (instance de Ville)
-       sommets (itérable de Sommets) : sommets de la ville
+       ville: la ville contenant les objets à marquer
+       sommets: sommets de la ville
        arêtes (itérable d’Arêtes) : arêtes.
 
     Précondition : les arêtes et sommets doivent avoir été sauvegardées.
 
-    Effet : ajoute la ville dans les ManyToMany correspondant.
+    Effet : ajoute la ville dans les ManyToMany correspondant si elle n’y est pas déjà.
     """
     LOG(f"(ajoute_ville_à_sommets_et_arêtes) ville : {ville}. {len(sommets)} sommets et {len(arêtes)} arêtes reçus.\n", bavard=bavard)
     rel_à_créer = []
@@ -396,7 +436,8 @@ def ajoute_ville_à_sommets_et_arêtes(ville, sommets, arêtes, bavard=0):
     sommets_à_traiter = [s for s in sommets if s not in sommets_à_ignorer]
     
     ## Sommets
-    LOG("Ajout de la ville à chaque sommet...")
+    if sommets_à_traiter:
+        LOG("Ajout de la ville à chaque sommet...")
     for s_d in sommets_à_traiter:
         rel = Sommet.villes.through(sommet_id=s_d.id, ville_id=ville.id)
         rel_à_créer.append(rel)
@@ -404,7 +445,6 @@ def ajoute_ville_à_sommets_et_arêtes(ville, sommets, arêtes, bavard=0):
     Sommet.villes.through.objects.bulk_create(rel_à_créer)
 
     ## Arêtes
-    LOG("Ajout de la ville à chaque sommet...")
     rel_à_créer = []
     arêtes_à_ignorer = frozenset(ville.arête_set.all())
     LOG(f"{len(arêtes_à_ignorer)} arêtes déjà associés à {ville}.", bavard=bavard)
@@ -412,13 +452,14 @@ def ajoute_ville_à_sommets_et_arêtes(ville, sommets, arêtes, bavard=0):
         a for a in arêtes
         if a not in arêtes_à_ignorer
     ]
+    if arêtes_à_traiter:
+        LOG("Ajout de la ville à chaque sommet...")
+    rel_a_à_créer = []
     for a in arêtes_à_traiter:
-        rel = Arête.villes.through(arête_id=a.id, ville_id=ville.id)
-        rel_à_créer.append(rel)
+        rel_a = Arête.villes.through(arête_id=a.id, ville_id=ville.id)
+        rel_a_à_créer.append(rel_a)
     LOG(f"{len(rel_à_créer)} relations à créer pour les arêtes.")
-    Arête.villes.through.objects.bulk_create(rel_à_créer)
-
-    LOG("fin de l’ajout de la ville aux arêtes et sommets.")
+    Arête.villes.through.objects.bulk_create(rel_a_à_créer)
 
 
     
@@ -459,21 +500,18 @@ def ajoute_arêtes_de_ville(ville_d, créées, màj, bavard=0):
 
 
 @transaction.atomic()
-def charge_dico_rues_nœuds(ville_d, dico):
+def charge_dico_rues_nœuds(ville_d: Ville, dico: dict[str, tuple[str, set[int]]]):
     """
     Entrée :
         - ville_d (instance de ville)
-        - dico : un dico nom_de_rue -> liste de nœuds
+        - dico : un dico nom_norm_de_rue -> (nom_complet, set de nœuds)
     Effet :
-        remplit la table dijk_rue. Si une rue était déjà présente, elle sera supprimée.
+        remplit la table dijk_rue. Pas de vérification concernant les rues déjà présentes; on suppose qu’elles ont été supprimées au préalable.
     """
     rues_à_créer = []
     for rue_n, (rue, nœuds) in dico.items():
-        #rue_n = prétraitement_rue(rue)
         assert rue_n == prétraitement_rue(rue_n), f"La rue suivante n’était pas normalisée : {rue_n}"
         nœuds_texte = ",".join(map(str, nœuds))
-        # vieilles_rues = Rue.objects.filter(nom_norm=rue_n, ville=ville_d)
-        # vieilles_rues.delete()
         rue_d = Rue(nom_complet=rue, nom_norm=rue_n, ville=ville_d, nœuds_à_découper=nœuds_texte)
         rues_à_créer.append(rue_d)
     Rue.objects.bulk_create(rues_à_créer)

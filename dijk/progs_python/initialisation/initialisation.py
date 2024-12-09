@@ -4,11 +4,13 @@
 import os
 from pprint import pprint
 from time import perf_counter
+from resource import getrusage, RUSAGE_SELF
 from typing import Iterable
 import logging
 
+import networkx as nx
 import osmnx
-from geopandas import GeoSeries, GeoDataFrame
+from geopandas import GeoDataFrame
 
 import dijk.models as mo
 import dijk.progs_python.initialisation.vers_django as vd
@@ -21,19 +23,21 @@ from dijk.progs_python.params import RACINE_PROJET
 from dijk.progs_python.quadrarbres import QuadrArbreArête
 from django.db import close_old_connections, transaction
 from django.db.models import Count
-from graphe_par_networkx import Graphe_nx
-from lecture_adresse.normalisation import (arbre_rue_dune_ville, normalise_rue,
-                                           partie_commune, prétraitement_rue)
-from petites_fonctions import LOG, chrono, paires, supprime_objets_par_lots
-
-from initialisation.noeuds_des_rues import extrait_nœuds_des_rues
-from dijk.progs_python.initialisation.geom_utils import union_de_géoms
+from dijk.progs_python.graphe_par_networkx import Graphe_nx
+from dijk.progs_python.lecture_adresse.normalisation import (arbre_rue_dune_ville, normalise_rue, partie_commune, prétraitement_rue)
+from dijk.progs_python.petites_fonctions import LOG, chrono, paires, supprime_objets_par_lots, distance_euc
 
 
 #############################################################################
 ### Fonctions pour (ré)initialiser ou ajouter une nouvelle ville ou zone. ###
 #############################################################################
 
+
+def coords_dun_sommet(g: nx.MultiDiGraph, s:int)-> tuple[float, float]:
+    """
+    Renvoie les coordonnées du sommet s de g.
+    """
+    return g.nodes[s]["x"], g.nodes[s]["y"]
 
 
 
@@ -67,7 +71,7 @@ def quadArbresArêtesDeLaBase():
             z.save()
 
     
-def créeQuadArbreArêtesDeZone(z_d: mo.Zone, bavard=0) -> ArbreArête:
+def créeQuadArbreArêtesDeZone(z_d: mo.Zone, bavard=0) -> QuadrArbreArête:
     """
     Effet : Crée le quadArbre de la plus grande zone contenant z_d, l’enregistre dans la base, et l’associe à z_d ainsi qu’à toutes les zones contenant z_d.
 
@@ -97,29 +101,17 @@ def quadarbre_of_arêtes(arêtes: Iterable[Arête]) -> ArbreArête:
     Entrée : itérable d’Arêtes
     Sortie (mo.ArbreArête) : le plus petit sous-arbre contenant les arêtes passées en arg.
     """
-    print(f"{len(arêtes)} arêtes. Récupération des feuilles, càd des segmets d’arêtes.")
+    print(f"{len(arêtes)} arêtes. Récupération des feuilles, càd des segments d’arêtes.")
     feuilles = mo.ArbreArête.objects.filter(
         related_manager_segment__arête__in=arêtes  # Django est quand même balèze
     )
     print(f"Fini. {len(feuilles)} feuilles.\nCalcul de l’arbre:")
-    return mo.ArbreArête.racine().sous_arbre_contenant(feuilles)
+    return mo.ArbreArête.uneRacine().sous_arbre_contenant(feuilles)
 
 
 def quadArbreArêtesDeVille(v_d: mo.Ville):
     """Renvoie le plus petit sous-arbre de la base contenant les arêtes de v_d."""
     return QuadrArbreArête.of_list_darêtes_d(v_d.arêtes())
-
-
-
-# def quadArbreArêtesDeToutesLesZones():
-#     """
-#     Enregistre dans la base la racine de l’arbre de chaque zone.
-#     """
-#     for z_d in mo.Zone.all():
-#         a = quadArbreArêtesDeZone(z_d)
-#         z_d.arbre_arêtes = a
-#         z_d.save()
-
 
 
 def supprime_arêtes_en_double():
@@ -138,10 +130,12 @@ def supprime_arêtes_en_double():
     supprime_objets_par_lots(à_supprimer)
 
 
-def graphe_de_villes(villes: list[Ville], marge=500, pays="France"):
+def graphe_de_villes(villes: list[Ville], marge=500, pays="France") -> nx.MultiDiGraph:
     """
     Renvoie le graphe de l’enveloppe convexe de l’union des villes passées an arg, avec la marge indiquée.
 
+    Les noms des villes sont indiqués sur les sommets du graphe.
+    
     Args:
        - villes: liste des villes à inclure
        - marge: en mètres
@@ -188,56 +182,53 @@ def graphe_de_villes(villes: list[Ville], marge=500, pays="France"):
 
     return g
     
-#ei1c1722589
+
+def enregistre_rues(g: nx.MultiDiGraph, bavard=0):
+    """
+    Réupère les rues indiquées dans le graphe qui ont une ville associée.
+    Remplit la table dijk_rue.
+    Crée les arbres lexicographiques des noms norm des rues.
+    """
+
+    # Récup des noms de rue et de leur sommets
+    # dico nom_ville -> nom_rue_norm -> (nom_rue_complet, ens des nœuds)
+    dico_rues: dict[str, dict[str, tuple[str, set[int]]]] = {}
+    for s in g:
+        for t in g[s]:
+            # TODO g.nodes_[s]["ville"] est une *liste* de villes!
+            if "ville" in g.nodes[s] and g.nodes[t].get("ville") == g.nodes[s]["ville"]:
+                ville = g.nodes[s]["ville"]
+                if ville not in dico_rues:
+                    dico_rues[ville] = {}
+                for a in g[s][t]:
+                    if "name" in a:  # l’arête a un nom
+                        nom_norm = prétraitement_rue(a["name"])
+                        if nom_norm not in dico_rues[ville]:
+                            dico_rues[ville][nom_norm]=(a["name"], set())
+                        dico_rues[ville][nom_norm][1].update({s,t})
+
+    # Enregistrement en base
+    close_old_connections()
+    for ville_str, données in dico_rues.items():
+        ville = mo.Ville.objects.get(nom_complet=ville_str)
+        print("Suppression des anciennes rues")
+        print(Rue.objects.filter(ville=ville).delete())
+        print("Ajout des nouvelles rues.")
+        vd.charge_dico_rues_nœuds(ville, données)
+        ## Arbrex lex des noms de rue normalisés
+        print("Création de l'arbre lexicographique")
+        arbre_rue_dune_ville(
+            ville,
+            données.keys()
+        )
+
+
 def charge_graphe_de_ville(ville_d: Ville, pays="France", bavard=0, rapide=0) -> None:
     """
     Récupère le graphe grâce à osmnx et le charge dans la base.
 
     Une marge de 500m est prise. En particulier les sommets et arêtes à moins de 500m d’une frontière entre deux villes seront au final associés à ces deux villes.
     """
-    ## Récup des graphe via osmnx
-    print(f"\nRécupération du graphe pour « {ville_d.code} {ville_d.nom_complet}, {pays} » avec une marge :\n")
-    gr_avec_marge = osmnx.graph_from_place(
-        {"city": f"{ville_d.nom_complet}", "postcode": ville_d.code, "country": pays},
-        network_type="all",  # Tout sauf private
-        retain_all=False,  # Sinon il peut y avoir des enclaves déconnectées car accessibles seulement par chemin privé (ex: CSTJF)
-        buffer_dist=500,  # Marge de 500m
-        truncate_by_edge=True,   # garde les arêtes dont une extrémité est dans la zone.
-        simplify=False,          # On simplifiera après places_en_cliques
-    )
-    print("\n\nRécupération du graphe exact:\n")
-    gr_strict = osmnx.graph_from_place(
-        {"city": f"{ville_d.nom_complet}", "postcode": ville_d.code, "country": pays},
-        network_type="all",
-        retain_all=True,
-        simplify=False,
-    )
-
-    g = Graphe_nx(gr_avec_marge)
-    places_en_cliques(g, ville_d.bbox())
-    osmnx.simplify_graph(g.multidigraphe)
-
-    ## Noms des villes ajouté dans g
-    for n in gr_strict:
-        g.villes_of_nœud[n] = [ville_d.nom_complet]
-
-    ## Nœuds des rues
-    print("\n\nCalcul des nœuds de chaque rue")
-    dico_rues, places_piétonnes = extrait_nœuds_des_rues(g, bavard=bavard-1)  # dico ville -> rue_n -> (rue, liste nœuds) # Seules les rues avec nom de ville, donc dans g_strict seront calculées.
-    print(f"\nPlaces piétonnes trouvées : {places_piétonnes}\n")
-
-    close_old_connections()
-    print("Suppression des anciennes rues")
-    print(Rue.objects.filter(ville=ville_d).delete())
-    print("Ajout des nouvelles rues.")
-    vd.charge_dico_rues_nœuds(ville_d, dico_rues[ville_d.nom_complet])
-
-    ## Arbrex lex des rues
-    print("Création de l'arbre lexicographique")
-    arbre_rue_dune_ville(
-        ville_d,
-        dico_rues[ville_d.nom_complet].keys()
-    )
 
     ## Désorientation
     close_old_connections()
@@ -251,12 +242,11 @@ def charge_graphe_de_ville(ville_d: Ville, pays="France", bavard=0, rapide=0) ->
 
 
 
-def remplaceArête(g: Graphe_nx, s, t, nom: str):
+def remplaceArête(gn: nx.MultiDiGraph, s, t, nom: str):
     """
     Supprime toutes les arêtes entre s et t et entre t et s et les remplace par une ligne droite dans chaque sens, avec le tag « highway: pedestrian »
     """
-    d = g.d_euc(s, t)
-    gn = g.multidigraphe
+    d = distance_euc( coords_dun_sommet(gn, s), coords_dun_sommet(gn, t))
     if t in gn[s]:
         for _ in range(len(gn[s][t])):
             gn.remove_edge(s, t)
@@ -268,7 +258,7 @@ def remplaceArête(g: Graphe_nx, s, t, nom: str):
     
 
 
-def places_en_cliques(g: Graphe_nx, bbox: tuple[float, float, float, float]):
+def places_en_cliques(g: nx.MultiDiGraph, bbox: tuple[float, float, float, float]):
     """
     Récupère les zones piétonnes de la ville et ajoute les cliques correspondantes au graphe g.
     """
@@ -426,14 +416,15 @@ def ville_of_nom_et_code_postal(nom: str, code: int):
 
 
 
-def crée_zone(liste_villes_str, zone: str,
-              réinit_données=False,
-              réinit_zone=False,
-              effacer_cache=False, bavard=2, rapide=0,
-              force_lieux=False,
-              inclue_dans: str|None = None,
-              contient: str|None = None
-              ):
+def crée_zone(
+        liste_villes_str, zone: str,
+        réinit_données=False,
+        réinit_zone=False,
+        effacer_cache=False, bavard=2, rapide=0,
+        force_lieux=False,
+        inclue_dans: str|None = None,
+        contient: str|None = None
+):
     """
     Entrée : liste_villes, itérable de (nom de ville, code postal). La ville par défaut sera la première de cette liste.
              zone (str), nom de la zone
@@ -458,6 +449,8 @@ def crée_zone(liste_villes_str, zone: str,
 
     ## Récup des villes :
     liste_villes_d = [ville_of_nom_et_code_postal(*c) for c in liste_villes_str]
+    # dico ville_str -> ville_django
+    dico_ville = {v.nom_complet: v for v in liste_villes_d}
     
     ## Récupération ou création de la zone :
     z_d, créée = Zone.objects.get_or_create(nom=zone, ville_défaut=liste_villes_d[0])
@@ -508,17 +501,14 @@ def crée_zone(liste_villes_str, zone: str,
 
     # Graphe total
     graphe_total = graphe_de_villes(liste_villes_d)
+
+    # Transférer le graphe dans la base
+    close_old_connections()
+    vd.transfert_graphe(graphe_total, dico_ville, bavard=bavard-1, rapide=rapide)
     
-    ## Chargement des villes :
-    villes_modifiées = []
-    for v_d in liste_villes_d:
-        LOG(f"\nChargement de {v_d}", bavard=bavard)
-        _, données_ajoutées = charge_ville(
-            v_d, z_d,
-            bavard=bavard, rapide=rapide, rajouter_les_lieux=False
-        )
-        if données_ajoutées or force_lieux:
-            villes_modifiées.append(v_d)
+    # Rues
+    enregistre_rues(graphe_total)
+    
 
     ## Arbre quad des arêtes de la plus grande zone contenant z_d
     arbre_a = créeQuadArbreArêtesDeZone(z_d, bavard=bavard)
@@ -526,7 +516,7 @@ def crée_zone(liste_villes_str, zone: str,
 
     ## Lieux (besoin de l’arbre des arêtes)
     LOG("\nChargement des lieux")
-    échec_lieux = charge_lieux_of_liste_ville(villes_modifiées, arbre_a, réinit=True)
+    échec_lieux = charge_lieux_of_liste_ville(liste_villes_d, arbre_a, réinit=True)
     if échec_lieux:
         print("Problème sur les villes :")
         pprint(échec_lieux)
@@ -534,15 +524,21 @@ def crée_zone(liste_villes_str, zone: str,
 
     ## Entrainement sur les trajets sauvegardés
     if réinit_données:
-        print(f"Entrainement (Pas encore implémenté! Utiliser pour_shell.entraine_tout)")
+        print("Entrainement (Pas encore implémenté! Utiliser pour_shell.entraine_tout)")
         
 
     print("(crée_zone) fini!")
+    print(getrusage(RUSAGE_SELF))
 
 
-def charge_lieux_of_liste_ville(villes, arbre_a: QuadrArbreArête, réinit=False) -> list:
+def charge_lieux_of_liste_ville(villes: Iterable[Ville], arbre_a: QuadrArbreArête, réinit=False) -> list:
     """
     Charge les lieux des villes de la liste éponyme.
+
+    Args:
+        arbre_a: arbre d’arête contenant les villes utilisées. Sert pour ajouter son arête la plus proche à chaque lieu.
+        réinit: si True, on va effacer tous les lieux des vlles au préalable.
+    
     Sortie : villes pour lesquelles charge_lieux_of_ville a échoué.
     """
     pb = []
