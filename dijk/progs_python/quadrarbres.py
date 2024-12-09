@@ -10,7 +10,7 @@ from math import cos, pi
 from typing import Self
 from abc import ABC
 
-from dijk.progs_python.petites_fonctions import distance_euc, R_TERRE, chrono, deuxConséc, fusionne_tab_de_tab, zip_dico, sauv_objets_par_lots
+from dijk.progs_python.petites_fonctions import distance_euc, R_TERRE, chrono, deuxConséc, fusionne_tab_de_tab, sauv_objets_par_lots
 
 
 def produit_scalaire(u, v):
@@ -30,7 +30,7 @@ def union_bb(lbb):
     )
 
 
-def fonction_distance_pour_feuille(départ: (float, float), arrivée: (float, float), coords: (float, float)):
+def fonction_distance_pour_feuille(départ: tuple[float, float], arrivée: tuple[float, float], coords: tuple[float, float]):
     """
     Entrée : début et fin d’un segment d’arête. coords d’un autre point.
     Sortie : distance entre le point et le segment.
@@ -134,15 +134,6 @@ class Quadrarbre():
             return res
 
     
-    # def __len__(self):
-    #     """ Renvoie le nb de feuilles."""
-    #     raise RuntimeError("Le calcul de la longeur d’un arbre est trop lent; cette méthode a été supprimée.")
-    #     if self.fils is None:
-    #         return 1
-    #     else:
-    #         return sum(len(f) for f in self.fils)
-
-        
     def bbox_contient(self, bb: tuple[float, float, float, float]) -> bool:
         """
         Indique si bb est inclue dans self.bb
@@ -214,7 +205,7 @@ class Quadrarbre():
     
     # exemple : Barthou/SaintLouis (-0.37054131408589847, 43.295030439425645)
     # (-0.371292129834015, 43.29535229996814)
-    def étiquette_la_plus_proche(self, coords: (float, float)):
+    def étiquette_la_plus_proche(self, coords: tuple[float, float]):
         """
         Sortie (étiquette×float) : (étiquette, distance) de la feuille plus la proche de coords.
         """
@@ -455,7 +446,10 @@ class QuadrArbreArête(Quadrarbre):
         nœuds = []
         feuilles = []
 
-        données = zip_dico(["borne_sud", "borne_ouest", "borne_nord", "borne_est"], self.bb)  # Pour envoyer à nv_nœud pour créer le nœud actuel.
+        données = dict(zip(
+            ["borne_sud", "borne_ouest", "borne_nord", "borne_est"],
+            self.bb
+        ))  # Pour envoyer à nv_nœud pour créer le nœud actuel.
         données["père"] = père
         nœud_actuel = nv_nœud(**données)
         nœuds.append([nœud_actuel])

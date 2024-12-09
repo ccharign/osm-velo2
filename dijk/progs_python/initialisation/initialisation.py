@@ -1,32 +1,32 @@
 #!/usr/bin/python3
 # -*- coding:utf-8 -*-
 
+import logging
 import os
 from pprint import pprint
+from resource import RUSAGE_SELF, getrusage
 from time import perf_counter
-from resource import getrusage, RUSAGE_SELF
 from typing import Iterable
-import logging
 
+
+from django.db import close_old_connections, transaction
+from django.db.models import Count, Q
+from geopandas import GeoDataFrame
 import networkx as nx
 import osmnx
-from geopandas import GeoDataFrame
 
 import dijk.models as mo
+from dijk.models import ArbreArête, Arête, Cache_Adresse, Lieu, Rue, SegmentArête, Sommet, Ville, Ville_Zone, Zone
+
 import dijk.progs_python.initialisation.vers_django as vd
 import dijk.progs_python.recup_donnees as rd
 
-from dijk.models import (ArbreArête, Arête, Cache_Adresse, Lieu, Rue,
-                         SegmentArête, Sommet, Ville, Ville_Zone, Zone)
 from dijk.progs_python.initialisation.amenities import charge_lieux_of_ville
+from dijk.progs_python.lecture_adresse.normalisation import (
+    arbre_rue_dune_ville, normalise_rue, partie_commune, prétraitement_rue)
 from dijk.progs_python.params import RACINE_PROJET
+from dijk.progs_python.petites_fonctions import LOG, chrono, distance_euc, paires, supprime_objets_par_lots
 from dijk.progs_python.quadrarbres import QuadrArbreArête
-from django.db import close_old_connections, transaction
-from django.db.models import Count
-from dijk.progs_python.graphe_par_networkx import Graphe_nx
-from dijk.progs_python.lecture_adresse.normalisation import (arbre_rue_dune_ville, normalise_rue, partie_commune, prétraitement_rue)
-from dijk.progs_python.petites_fonctions import LOG, chrono, paires, supprime_objets_par_lots, distance_euc
-
 
 #############################################################################
 ### Fonctions pour (ré)initialiser ou ajouter une nouvelle ville ou zone. ###
@@ -415,6 +415,17 @@ def ville_of_nom_et_code_postal(nom: str, code: int):
         return Ville.objects.get(nom_norm=partie_commune(nom), code=code)
 
 
+def vide_zone(zone: Zone):
+    """
+    Supprime le contenu de la zone, mais pas la zone elle-même.
+    Précisément, supprime:
+       - les sommets
+       - les arêtes
+       - les lieux
+    liés à cette zone.
+    """
+    
+
 
 def crée_zone(
         liste_villes_str, zone: str,
@@ -431,7 +442,6 @@ def crée_zone(
 
     Effet : charge toutes ces ville dans la base, associées à la zone indiquée.
             Si la zone n’existe pas, elle sera créée.
-            ## Si la zone existe, l’ancienne est supprimée. -> Plus le cas !
 
     Paramètres:
        Si réinit_données, tous les éléments associés à la zone (villes, rues, sommets, arêtes) ainsi que le cache sont au préalable supprimés.
@@ -481,18 +491,20 @@ def crée_zone(
             print(f"J’ai mis données présentes à False pour {v}.")
 
             print("Suppression des relations sommet-ville et arête-ville :")
-            #supprime_objets_par_lots(list(Sommet.villes.through.objects.filter(ville_id=v.id)))
-            rels = Sommet.villes.through.objects.filter(ville_id=v.id)
-            print(rels._raw_delete(rels.db))
-            #supprime_objets_par_lots(list(Arête.villes.through.objects.filter(ville_id=v.id)))
-            rels = Arête.villes.through.objects.filter(ville_id=v.id)
-            print(rels._raw_delete(rels.db))
+            rels_sommet_ville = Sommet.villes.through.objects.filter(ville_id=v.id)
+            # Le _raw_delete évite les vérif de clef étrangère.
+            print(rels_sommet_ville._raw_delete(rels_sommet_ville.db))
+            rels_arête_ville = Arête.villes.through.objects.filter(ville_id=v.id)
+            print(rels_arête_ville._raw_delete(rels_arête_ville.db))
             
             
-            sansVille = Sommet.objects.all().alias(nbvilles=Count("villes")).filter(nbvilles=0)
-            print(f"Suppression des {len(sansVille)}sommets orphelins :")
-            #supprimeQuerySetParLots(sansVille)
-            sansVille.delete()
+            sommets_sans_ville = Sommet.objects.all().alias(nbvilles=Count("villes")).filter(nbvilles=0)
+
+            arêtes_à_supprimer = Arête.objects.filter(Q(départ__in=sommets_sans_ville) | Q(arrivée__in=sommets_sans_ville))
+            print("Suppression des arêtes")
+            print(arêtes_à_supprimer._raw_delete(arêtes_à_supprimer))
+            print(f"Suppression des {len(sommets_sans_ville)}sommets orphelins :")
+            sommets_sans_ville._raw_delete(sommets_sans_ville)
             # Ceci supprime au passage les arêtes liées aux sommets supprimés
             
         Cache_Adresse.objects.all().delete()

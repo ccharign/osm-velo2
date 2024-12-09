@@ -12,12 +12,11 @@ import shutil
 import os
 import datetime
 import re
-from typing import Iterable
+from collections.abc import Iterable, Sequence
 
 from django.db import transaction
-# import geopy
-# import geopy.distance
-from params import D_MAX_POUR_NŒUD_LE_PLUS_PROCHE, LOG
+
+from dijk.progs_python.params import D_MAX_POUR_NŒUD_LE_PLUS_PROCHE, LOG
 
 
 
@@ -34,7 +33,7 @@ R_TERRE = 6360000  # en mètres
 
 # geopy.distance.distance
 
-def distance_euc(c1, c2):
+def distance_euc(c1: tuple[float, float], c2: tuple[float, float]) -> float:
     """
     Entrée : deux coords sous la forme (lon, lat)
     Sortie : distance en mètres.
@@ -60,7 +59,7 @@ def distance_euc(c1, c2):
     return R_TERRE * acos(cos(lat1)*cos(lat2)*cos(lon2-lon1) + sin(lat1 * lat2))
 
 
-def bbox_autour(coords, d):
+def bbox_autour(coords: tuple[float, float], d: float) -> tuple[float, float, float, float]:
     """
     Entrée:
         coords (float×float)
@@ -74,7 +73,7 @@ def bbox_autour(coords, d):
     
 
 
-def distance_si_pas_trop(c1, c2):
+def distance_si_pas_trop(c1: tuple[float, float], c2: tuple[float, float]) -> float:
     d = distance_euc(c1, c2)
     if d > D_MAX_POUR_NŒUD_LE_PLUS_PROCHE:
         print(f"distance entre {c1} et {c2} supérieure à {D_MAX_POUR_NŒUD_LE_PLUS_PROCHE}")
@@ -83,7 +82,7 @@ def distance_si_pas_trop(c1, c2):
         return d
 
     
-def milieu(c1, c2):
+def milieu(c1: tuple[float, float], c2: tuple[float, float]) -> tuple[float, float]:
     lon1, lat1 = c1
     lon2, lat2 = c2
     return (lon1+lon2)/2, (lat1+lat2)/2
@@ -122,7 +121,7 @@ def union(t1, t2):
             yield x
 
             
-def union_liste(l):
+def union_liste(l: Iterable[Iterable]):
     """
     Entrée : l, iterable d’itérables
     Sortie : itérateur sur l’union des éléments de l
@@ -139,7 +138,7 @@ def intersection(t1, t2):
             yield x
 
 
-def paquets(tout: Iterable, taille_paquets: int, affiche_tous_les: int=None):
+def paquets(tout: Sequence, taille_paquets: int, affiche_tous_les: int|None=None):
     """
     Renvoie un itérateur d’itérateurs.
 
@@ -176,7 +175,7 @@ def paquets(tout: Iterable, taille_paquets: int, affiche_tous_les: int=None):
 ########################################
 
 
-def morceaux_tableaux(t, taille):
+def morceaux_tableaux(t: Sequence, taille: int):
     """
     Itérateurs sur des tranches de tableaux de taille taille.
     """
@@ -230,7 +229,7 @@ def sauv_objets_par_lots(l, taille_lots=2000):
 ###################
 
 
-def chrono(tic, tâche, bavard=1, force=False):
+def chrono(tic: float, tâche: str, bavard=1, force: bool=False):
     """
     Entrée : tic, float
              tâche, str
@@ -290,7 +289,7 @@ def get_full_class_name(obj):
     return module + '.' + obj.__class__.__name__
 
 
-def sauv_fichier(chemin):
+def sauv_fichier(chemin: str):
     """
     Crée une copie du fichier dans le sous-répertoire « sauv » du répertoire contenant le fichier. Le sous-répertoire « sauv » doit exister au préalable.
     """
@@ -304,7 +303,7 @@ def sauv_fichier(chemin):
     )
 
 
-def multi_remplace(d, texte):
+def multi_remplace(d: dict[str, str], texte: str):
     """
     Entrées : d (str -> str dict)
               texte (str)
@@ -320,7 +319,7 @@ def multi_remplace(d, texte):
 #### Manip de tableaux ####
 ########################################
 
-def fusionne_tab_de_tab(t1, t2):
+def fusionne_tab_de_tab(t1: list[list], t2: list[list]):
     """
     Entrées:
        t1 et t2 tableaux de tableaux
@@ -334,7 +333,7 @@ def fusionne_tab_de_tab(t1, t2):
         t1[i].extend(t2[i])
 
 
-def ajouteDico(d, clef, val):
+def ajouteDico[S, T](d: dict[S, list[T]], clef: S, val: T):
     """d est un dico de listes.
        Ajoute val à la liste de clef donnée si pas encore présente."""
     if clef in d:
@@ -342,18 +341,3 @@ def ajouteDico(d, clef, val):
             d[clef].append(val)
     else:
         d[clef] = [val]
-
-
-
-def zip_dico(clefs, vals):
-    """
-    Sortie : dico contenant les clefs de clefs, associées aux valeurs de vals, respectivement.
-    """
-    return {c: v for (c, v) in zip(clefs, vals)}
-
-# geopy.geocoders.options.default_user_agent = "pau à vélo"
-# localisateur = geopy.geocoders.Nominatim(user_agent="pau à vélo")
-# def recherche_inversée(coords, bavard=0):
-#     if bavard>0:print("Pause de 1s avant la recherche inversée")
-#     time.sleep(1)
-#     return(localisateur.reverse(coords))
