@@ -7,6 +7,9 @@ Arbres quaternaires. Le type correspond plutôt aux R-arbres, mais la fonction o
 
 from time import perf_counter
 from math import cos, pi
+from typing import Self
+from abc import ABC
+
 from dijk.progs_python.petites_fonctions import distance_euc, R_TERRE, chrono, deuxConséc, fusionne_tab_de_tab, zip_dico, sauv_objets_par_lots
 
 
@@ -75,6 +78,9 @@ class Quadrarbre():
         distance (pour les feuilles) : fonction qui a une coords associe la distance à la feuille.
     """
 
+    bb: tuple[float, float, float, float]
+    fils: tuple[Self, ...]
+
     def __init__(self):
         """
         Fonction init bidon car cette classe ne sera jamais utilisée seule : que des sous-classes.
@@ -137,7 +143,7 @@ class Quadrarbre():
     #         return sum(len(f) for f in self.fils)
 
         
-    def bbox_contient(self, bb: (float, float, float, float)) -> bool:
+    def bbox_contient(self, bb: tuple[float, float, float, float]) -> bool:
         """
         Indique si bb est inclue dans self.bb
         """
@@ -159,7 +165,7 @@ class Quadrarbre():
             return False
         
     
-    def majorant_de_d_min(self, coords: (float, float)):
+    def majorant_de_d_min(self, coords: tuple[float, float]):
         """
         Sortie : en O(1) un majorant de la plus petite distance entre coords et un élément de l’arbre. (Pour le branch and bound de la recherche de nœud le plus proche.)
         Basé sur le fait qu’il existe au moins un objet sur chaque bord de la bbox.
@@ -184,14 +190,14 @@ class Quadrarbre():
         return min(d1, d2, d3, d4)
     
     
-    def minorant_de_d_min(self, coords: (float, float)):
+    def minorant_de_d_min(self, coords: tuple[float, float]):
         """
         Sortie : en O(1), un minorant de la distance min entre coords et un nœud de l’arbre.
         C’est la distance entre coords et la bounding box de self.
         """
         s, o, n, e = self.bb
         lon, lat = coords  # lon : ouest-est
-        res_carré = 0
+        res_carré = 0.
         le_cos = cos(lat*pi/180)
         
         if lon < o:
@@ -403,7 +409,7 @@ class QuadrArbreArête(Quadrarbre):
         for a_d in l:
             for (d, a) in deuxConséc(a_d.géométrie()):
                 (d, a) = sorted((d, a))
-                if not (d, a) in déjà_vues:
+                if (d, a) not in déjà_vues:
                     lf.append(ArêteSimplifiée(d, a, a_d.pk))
                     déjà_vues.add((d, a))
         return cls.of_list(lf)
@@ -436,8 +442,8 @@ class QuadrArbreArête(Quadrarbre):
     def vers_django(self, nv_nœud, nv_segment, père):
         """
         Entrées:
-            crée_nœud : fonction à utiliser pour créer un nœud. En pratique, models.ArbreArête.
-            crée_segment : fonction à utiliser pour créer un segment d’arête. Sera mis dans le champ « segment » des feuilles. En pratique models.SegmentArête.
+            nv_nœud : fonction à utiliser pour créer un nœud. En pratique, models.ArbreArête.
+            nv_segment : fonction à utiliser pour créer un segment d’arête. Sera mis dans le champ « segment » des feuilles. En pratique models.SegmentArête.
             père (models.ArbreArête ou None) : le père du nœud actuel.
 
         Sortie :
