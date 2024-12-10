@@ -223,13 +223,13 @@ class Rue(models.Model):
         """
         res = []
         for (s, t) in deuxConséc(self.nœuds()):
-            arête_aller = Arête.objects.filter(départ__id_osm=s, arrivée__id_osm=t)
+            arête_aller = Arête.objects.filter(départ__id_osm=s, arrivée__id_osm=t).first()
             if arête_aller is not None:
-                res.extend(arête_aller.first().géométrie())
+                res.extend(arête_aller.géométrie())
             else:
-                arête_retour = Arête.objects.filter(départ__id_osm=t, arrivée__id_osm=s)
+                arête_retour = Arête.objects.filter(départ__id_osm=t, arrivée__id_osm=s).first()
                 if arête_retour:
-                    res.extend(arête_retour.first().géométrie())
+                    res.extend(reversed(arête_retour.géométrie()))
         return res
 
     
@@ -704,8 +704,8 @@ class Zone(models.Model):
         """Renvoie les villes de la zone."""
         return tuple(rel.ville for rel in Ville_Zone.objects.filter(zone=self).prefetch_related("ville"))
 
-    def sommets(self) -> QuerySet:
-        """Renvoie self.sommet_set.all(), cette méhode est surtout là pour rappeler la syntaxe..."""
+    def sommets_qs(self) -> QuerySet[Sommet]:
+        """Renvoie self.sommet_set.all(), cette méhode est surtout là pour rappeler la syntaxe, et pour indiquer le type à mypy."""
         return self.sommet_set.all()
 
     def sousZones(self):
