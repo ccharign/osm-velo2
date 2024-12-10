@@ -164,8 +164,9 @@ def graphe_de_villes(villes: list[Ville], marge=500, pays="France") -> nx.MultiD
     o, s, e, n = enveloppe_gdf.bounds.values[0]
     places_en_cliques(g, (s,o,n,e))
 
-    logging.info("Simplification du graphe")
-    osmnx.simplify_graph(g)
+    logging.info(f"Simplification du graphe. Avant: {len(g)} sommets.")
+    g=osmnx.simplify_graph(g, remove_rings=True)
+    logging.info(f"après: {len(g)} sommets")
 
     logging.info("Ajout du nom des villes sur les sommets")
     # GeoDataFrame des sommets
@@ -180,18 +181,22 @@ def graphe_de_villes(villes: list[Ville], marge=500, pays="France") -> nx.MultiD
             else:
                 g.nodes[s]["ville"].append(ville.nom_complet)
 
+
+    vd.désoriente(g)
+
     return g
     
 
 def enregistre_rues(g: nx.MultiDiGraph, bavard=0):
     """
-    Réupère les rues indiquées dans le graphe qui ont une ville associée.
+    Récupère les rues indiquées dans le graphe qui ont une ville associée.
     Remplit la table dijk_rue.
     Crée les arbres lexicographiques des noms norm des rues.
     """
 
     # Récup des noms de rue et de leur sommets
     # dico nom_ville -> nom_rue_norm -> (nom_rue_complet, ens des nœuds)
+    logging.info("Récupération des nœuds de chaque rue")
     dico_rues: dict[str, dict[str, tuple[str, set[int]]]] = {}
     for s in g:
         for t in g[s]:
@@ -199,22 +204,31 @@ def enregistre_rues(g: nx.MultiDiGraph, bavard=0):
                 if ville in g.nodes[s].get("ville", ()):
                     if ville not in dico_rues:
                         dico_rues[ville] = {}
-                    breakpoint()
                     for a in g[s][t].values():
                         if "name" in a:  # l’arête a un nom
-                            nom_norm = prétraitement_rue(a["name"])
+                            if isinstance(a["name"], str):
+                                nom_norm = prétraitement_rue(a["name"])
+                            else:
+                                logging.warning("L’arête suivante a plusieurs nom: %s. Je vais prendre le premier.", a["name"])
+                                nom_norm = prétraitement_rue(a["name"][0])
                             if nom_norm not in dico_rues[ville]:
                                 dico_rues[ville][nom_norm]=(a["name"], set())
                             dico_rues[ville][nom_norm][1].update({s,t})
 
+                            
     # Enregistrement en base
+    logging.info("Enregistrement des rues dans la base")
     close_old_connections()
     for ville_str, données in dico_rues.items():
         ville = mo.Ville.objects.get(nom_complet=ville_str)
-        print("Suppression des anciennes rues")
+        print(f"Suppression des anciennes rues de {ville}")
         print(Rue.objects.filter(ville=ville).delete())
         print("Ajout des nouvelles rues.")
-        vd.charge_dico_rues_nœuds(ville, données)
+        vd.charge_dico_rues_nœuds(
+            ville,
+            données,
+            g
+        )
         ## Arbrex lex des noms de rue normalisés
         print("Création de l'arbre lexicographique")
         arbre_rue_dune_ville(
@@ -429,22 +443,24 @@ def vide_zone(zone: Zone):
         v.save()
         print(f"J’ai mis données présentes à False pour {v}.")
 
-        print("Suppression des relations sommet-ville et arête-ville :")
-        rels_sommet_ville = Sommet.villes.through.objects.filter(ville_id=v.id)
-        # Le _raw_delete évite les vérif de clef étrangère.
-        print(rels_sommet_ville._raw_delete(rels_sommet_ville.db))
-        rels_arête_ville = Arête.villes.through.objects.filter(ville_id=v.id)
-        print(rels_arête_ville._raw_delete(rels_arête_ville.db))
-
-        sommets = zone.sommet_set.all()
+        # Sommets relié à <zone> et à aucune autre
+        sommets = zone.sommets_qs().annotate(nb_zones=Count("zones")).filter(nb_zones=1)
 
         arêtes_à_supprimer = Arête.objects.filter(Q(départ__in=sommets) | Q(arrivée__in=sommets))
+
+        print("Suppression des relations sommet-ville, arête-ville et sommet-zone :")
+        rels_sommet_ville = Sommet.villes.through.objects.filter(sommet__in=sommets)
+        # Le _raw_delete évite les vérif de clef étrangère.
+        print(rels_sommet_ville._raw_delete(rels_sommet_ville.db))
+        rels_arête_ville = Arête.villes.through.objects.filter(arête__in=arêtes_à_supprimer)
+        print(rels_arête_ville._raw_delete(rels_arête_ville.db))
+        rels_sommet_zone = Sommet.zones.through.objects.filter(sommet__in=sommets)
+        print(rels_sommet_zone._raw_delete(rels_sommet_zone.db))
+
         print("Suppression des arêtes")
-        #print(arêtes_à_supprimer._raw_delete(arêtes_à_supprimer))
-        arêtes_à_supprimer.delete()
-        print(f"Suppression des {len(sommets)}sommets orphelins :")
-        #print(sommets._raw_delete(sommets))
-        sommets.delete()
+        print(arêtes_à_supprimer._raw_delete(arêtes_à_supprimer.db))
+        print(f"Suppression des {len(sommets)}sommets:")
+        print(sommets._raw_delete(sommets.db))
         # Ceci supprime au passage les arêtes liées aux sommets supprimés
 
     Cache_Adresse.objects.all().delete()
@@ -516,6 +532,8 @@ def crée_zone(
 
     # Graphe total
     graphe_total = graphe_de_villes(liste_villes_d)
+    logging.info(f"Image du graphe enregistrée dans /tmp/{zone}.png")
+    osmnx.plot_graph(graphe_total, show=False, save=True, filepath="/tmp/{zone}.png")
 
     # Transférer le graphe dans la base
     vd.transfert_graphe(graphe_total, z_d, dico_ville, bavard=bavard-1, rapide=rapide)

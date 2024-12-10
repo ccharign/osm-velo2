@@ -9,17 +9,18 @@ Ces fonctions seront cachées dans la console.
 
 import re
 from typing import Iterable
+import logging
+
+import networkx as nx
 
 from django.db import transaction, close_old_connections
 from django.db.models import QuerySet
 
-from networkx import MultiDiGraph
-from dijk.progs_python.graphe_par_networkx import Graphe_nx
 from dijk.models import Ville, Rue, Sommet, Arête, Chemin_d, Zone, Lieu
 from dijk.progs_python.lecture_adresse.normalisation import prétraitement_rue, partie_commune
-from params import LOG
-from petites_fonctions import intersection, sauv_objets_par_lots, paquets
-from lecture_adresse.arbresLex import ArbreLex
+from dijk.progs_python.params import LOG
+from dijk.progs_python.petites_fonctions import intersection, sauv_objets_par_lots, paquets
+from dijk.progs_python.lecture_adresse.arbresLex import ArbreLex
 
 
 
@@ -64,16 +65,16 @@ def arbre_des_villes(zone_d=None):
 
 
     
-def liste_attributs(g: MultiDiGraph):
+def liste_attributs(g: nx.MultiDiGraph) -> dict[str, set[str]]:
     """
     Renvoie un dico contenant les attributs et les valeurs associées trouvées dans g.
 
     Entrée : g (multidigraph)
-    Sortie : dico (attribut -> liste des valeurs) des arêtes qui apparaissent dans g
+    Sortie : dico (attribut -> ensemble des valeurs) des arêtes qui apparaissent dans g
     Fonction utile pour régler les paramètres de cycla_défaut.
     """
 
-    res = {}
+    res: dict[str, set[str]] = {}
     for s in g.nodes:
         for t in g[s].keys():
             for a in g[s][t].values():
@@ -96,15 +97,14 @@ def tuple_valeurs(a, att):
         return ()
 
     
-def désoriente(g: Graphe_nx, bavard=0):
+def désoriente(gx: nx.MultiDiGraph, bavard=0) -> None:
     """
     Désoriente le graphe g.
 
-    Entrée : g (Graphe_nx)
+    Entrée : gx, graphe
     Effet : rajoute les arêtes inverses si elles ne sont pas présentes, avec un attribut 'sens_interdit' en plus.
     """
-    
-    gx = g.multidigraphe
+    logging.info("Désorientation du graphe")
 
     def géom_of_arête_nx(a):
         """Sortie : sorted(a["geometry"].coords) si existe, None sinon."""
@@ -169,7 +169,7 @@ def supprime_tout(à_supprimer: Iterable):
         x.delete()
     
     
-def transfert_graphe(gx: MultiDiGraph,
+def transfert_graphe(gx: nx.MultiDiGraph,
                      #ville_d: Ville,
                      z_d: Zone,
                      dico_ville: dict[str, Ville],
@@ -303,7 +303,7 @@ def màj_arêtes(arêtes_vn: list[tuple[Arête, Arête]], champs_arêtes_à_màj
     
     
 def correspondance(
-        s_d: Sommet, t_d: Sommet, gx: MultiDiGraph,
+        s_d: Sommet, t_d: Sommet, gx: nx.MultiDiGraph,
         champs_arêtes_à_màj: list,
         dico_voisins: dict[Sommet, list[tuple[Sommet, Arête]]]
 ) -> tuple[list[Arête], list[Arête], list[Arête], list[Arête]]:
@@ -361,7 +361,7 @@ def correspondance(
 def transfertUnPaquetDarêtes(
         sommets_à_traiter: Iterable[int],
         tous_les_sommets: QuerySet[Sommet],
-        gx: MultiDiGraph,
+        gx: nx.MultiDiGraph,
         # dico_villes: dict[str, Ville],
         rapide: int,
         champs_arêtes_à_màj: list,
@@ -499,9 +499,42 @@ def ajoute_arêtes_de_ville(ville_d, créées, màj, bavard=0):
     Arête.villes.through.objects.bulk_create(rel_àcréer, batch_size=2000)
 
 
+def nœuds_triées(nœuds: set[int], g: nx.MultiDiGraph) -> list[int]:
+    """
+    Args:
+       g: graphe
+       nœuds, un ensemble de nœuds de g
+
+    Sortie:
+       les même nœuds dans un ordre correspondant à un parcours en profondeur du sous-graphe de g qu’ils forment.
+    """
+
+
+    
+    déjà_vu = set()
+    res = []
+
+    def remplit_la_suite(s: int):
+        """
+        rajoute dans res, et dans déjà vu, un chemin de <nœuds> accessible depuis s.
+        s lui-même ne doit pas encore figurer dans déjà_vu ni dans res.
+        """
+        res.append(s)
+        déjà_vu.add(s)
+        for t in g[s]:
+            if t in nœuds and t not in déjà_vu:
+                remplit_la_suite(t)
+
+        
+    for s in nœuds:
+        if s not in déjà_vu:
+            remplit_la_suite(s)
+            
+    return res
+
 
 @transaction.atomic()
-def charge_dico_rues_nœuds(ville_d: Ville, dico: dict[str, tuple[str, set[int]]]):
+def charge_dico_rues_nœuds(ville_d: Ville, dico: dict[str, tuple[str, set[int]]], g: nx.MultiDiGraph):
     """
     Entrée :
         - ville_d (instance de ville)
@@ -512,7 +545,10 @@ def charge_dico_rues_nœuds(ville_d: Ville, dico: dict[str, tuple[str, set[int]]
     rues_à_créer = []
     for rue_n, (rue, nœuds) in dico.items():
         assert rue_n == prétraitement_rue(rue_n), f"La rue suivante n’était pas normalisée : {rue_n}"
-        nœuds_texte = ",".join(map(str, nœuds))
+        
+        nœuds_texte = ",".join(map(str,
+                                   nœuds_triées(nœuds, g)
+                                   ))
         rue_d = Rue(nom_complet=rue, nom_norm=rue_n, ville=ville_d, nœuds_à_découper=nœuds_texte)
         rues_à_créer.append(rue_d)
     Rue.objects.bulk_create(rues_à_créer)
