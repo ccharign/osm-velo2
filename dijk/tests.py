@@ -40,7 +40,7 @@ def test_data_gouv(nb=5):
     return rés
 
 
-def sommetsdéconnectés(g):
+def sommetsdéconnectés(g: Graphe) -> list[Sommet]:
     """
     Renvoie la liste des sommets non connectés au sommet de départ (arbitrairement le 1000-ième de g).
     """
