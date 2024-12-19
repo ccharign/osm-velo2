@@ -183,7 +183,9 @@ def graphe_de_villes(villes: list[Ville], marge=500, pays="France") -> nx.MultiD
 
 
     vd.désoriente(g)
-
+    logging.info(f"Image du graphe enregistrée dans /tmp/{','.join(map(str(villes)))}.png")
+    osmnx.plot_graph(graphe_total, show=False, save=True, filepath=f"/tmp/{zone}.png")
+    assert nx.is_wealy_connected(g), "Le graphe n’est pas faiblement connexe"
     return g
     
 
@@ -532,9 +534,7 @@ def crée_zone(
 
     # Graphe total
     graphe_total = graphe_de_villes(liste_villes_d)
-    logging.info(f"Image du graphe enregistrée dans /tmp/{zone}.png")
-    osmnx.plot_graph(graphe_total, show=False, save=True, filepath="/tmp/{zone}.png")
-
+    
     # Transférer le graphe dans la base
     vd.transfert_graphe(graphe_total, z_d, dico_ville, bavard=bavard-1, rapide=rapide)
     

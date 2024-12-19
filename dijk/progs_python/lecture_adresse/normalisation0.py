@@ -46,7 +46,10 @@ def normalise_adresse(c):
 def découpe_adresse(texte: str, bavard=0) -> tuple[str, str, str, str]:
     """
     Entrée : texte (str)
+
     Sortie (str*str*str*str) : num, bis_ter, rue, ville
+    Si pas de virgule, renvoie  '' pour ville
+    Si deux virgules, on considère que le troisième bloc est le oays, mais celui-ci n’est actuellement pas renvoyé.
     """
     # Découpage selon les virgules
     trucs = texte.split(",")
@@ -86,7 +89,7 @@ def prétraitement_rue(rue):
     """
     Après l’étape "partie_commune", supprime les «de », «du », «de la ».
     Si deux espaces consécutives, supprime la deuxième.
-    Remplace les mots « avenue », « rue », etc par une lettre grecque. (Pour que la confusion rue/avenue compte pour une seule fautede frappe.)
+    Remplace les mots « avenue », « rue », etc par une lettre grecque. (Pour que la confusion rue/avenue compte pour une seule faute de frappe.)
     Remplace enfin tous les caractères non alphanumériques par une espace.
     """
     

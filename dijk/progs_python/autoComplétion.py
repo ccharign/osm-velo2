@@ -7,8 +7,7 @@ import re
 
 from django.db.models import Subquery
 
-from .lecture_adresse.normalisation0 import prétraitement_rue
-from .lecture_adresse.normalisation0 import découpe_adresse
+from .lecture_adresse.normalisation0 import prétraitement_rue, partie_commune, découpe_adresse
 import dijk.models as mo
 
 
@@ -73,36 +72,83 @@ def complétion(à_compléter: str, nbMax: int, z_d: mo.Zone) -> Résultat:
     Fonction principale pour la complétion.
 
     Entrée : à_compléter, chaîne de car à compléter.
+    En cas de présence de parenthèse, on considère qu’il s’agit d’un lieu, et que dans la parenthèse il y a l’adresse.
+    
     Sortie: l’objet de la classe Résultat contenant les complétions possibles.
     """
-    # Découpage de la chaîne à chercher
-    à_chercher_non_normalisé = à_compléter
-    à_chercher = prétraitement_rue(à_compléter)
-    num, bis_ter, rue, déb_ville = découpe_adresse(à_chercher)
-    print(f"Recherche de {à_chercher}")
+    
+    à_compléter = à_compléter.strip()
+    str_ville = ""
+    
+    # cas 1 : parenthèse
+    # dans ce cas le contenu de la parenthèse peut avoir une adresse complète, ou juste un nom de ville.
+    # et la première partie est un nom de lieu
+    regexp_lieu = re.compile("(.*)\(([^)]*)\)?")
+    avec_parenthèse = regexp_lieu.fullmatch()
+    if avec_parenthèse:
+        str_lieu, str_adresse = avec_parenthèse.groups()
+        # Dans la parenthèse, il peut y avoir une adresse complète, ou juste une ville
+        str_ville = avec_parenthèse.group(2)
+    else:
+        # Sinon on ne sait pas su la chaîne cherchée est un lieu ou une adresse
+        str_lieu = à_compléter
+        str_adresse = à_compléter
 
+    
+    
+    
+    # Découpage de la chaîne à chercher
+    num, bis_ter, str_rue, déb_ville = découpe_adresse(str_adresse)
+    if déb_ville:
+        # Si on a trouvé une ville dans l’adresse, on garde celle-ci
+        # (càd si l’adresse contenait une virgule)
+        str_ville = déb_ville
+        
+    str_ville_norm = partie_commune(str_ville)
+
+    # prétraitement_rue est la fonction qui normalise à la fois les noms de rue et de lieux
+    à_chercher = prétraitement_rue(str_rue)
+    
+    print(f"Recherche de {à_chercher} dans la ville {str_ville_norm}")
+    breakpoint()
     # Villes : dans la zone et contient la partie après la virgule de à_compléter
     villes = mo.Ville_Zone.objects.filter(
-        zone=z_d, ville__nom_norm__icontains=déb_ville
+        zone=z_d, ville__nom_norm__startswith=déb_ville
     )
     req_villes = Subquery(villes.values("ville"))
 
     res = Résultat(nbMax)
 
-    # Complétion dans l’arbre lexicographique (pour les fautes de frappe...)
-    # Fonctionne sauf qu’on ne récupère pas la ville pour l’instant
-    # dans_l_arbre = g.arbre_lex_zone[z_d].complétion(à_chercher, tol=2, n_max_rés=nbMax)
-    # print(dans_l_arbre)
+    cherche_dans_gtls(str_lieu, res)
+    
+    cherche_un_lieu(str_lieu, res, req_villes)
 
-    # Recherche dans les gtls:
-    essais = re.findall("(une?) (.*)", à_chercher_non_normalisé)
-    if len(essais) == 1:
-        déterminant, texte = essais[0]
-        gtls = mo.GroupeTypeLieu.objects.filter(
-            nom__istartswith=texte, féminin=déterminant == "une"
-        )
-        res.ajoute_un_paquet([gtl.pour_js() for gtl in gtls])
+    cherche_une_adresse(num, bis_ter, str_rue, res, req_villes)
+    
+    return res
 
+
+# Complétion dans l’arbre lexicographique (pour les fautes de frappe...)
+# Fonctionne sauf qu’on ne récupère pas la ville pour l’instant
+# dans_l_arbre = g.arbre_lex_zone[z_d].complétion(à_chercher, tol=2, n_max_rés=nbMax)
+# print(dans_l_arbre)
+
+
+def cherche_une_adresse(num: str, bis_ter: str, str_rue: str, res: Résultat, req_villes) -> None:
+    # Recherche dans les rues
+    début = " ".join(x for x in [num, bis_ter] if x)
+    if début:
+        début += " "
+    rues = mo.Rue.objects.filter(
+        nom_norm__icontains=str_rue,
+        ville__in=req_villes
+    ).prefetch_related("ville")
+    res.ajoute_un_paquet([r.pour_autocomplète(num, bis_ter) for r in rues])
+
+
+
+def cherche_un_lieu(à_chercher: str, res: Résultat, req_villes) -> None:
+    """Cherche un Lieu"""
     # Recherche dans les lieux
     mots = à_chercher.split(" ")
     lieux = mo.Lieu.objects.filter(
@@ -112,18 +158,20 @@ def complétion(à_compléter: str, nbMax: int, z_d: mo.Zone) -> Résultat:
     )
     for mot in mots:
         lieux = lieux.filter(nom_norm__contains=mot)
-
     print(f"{len(lieux)} lieux trouvées")
 
     res.ajoute_un_paquet([l.pour_js() for l in lieux])
 
-    # Recherche dans les rues
-    début = " ".join(x for x in [num, bis_ter] if x)
-    if début:
-        début += " "
-    rues = mo.Rue.objects.filter(
-        nom_norm__icontains=rue, ville__in=req_villes
-    ).prefetch_related("ville")
-    res.ajoute_un_paquet([r.pour_autocomplète(num, bis_ter) for r in rues])
 
-    return res
+def cherche_dans_gtls(à_chercher: str, res: Résultat):
+    """
+    Recherche dans les groupes de types de lieu
+    Exemple: Une boulangerie
+    """
+    essais = re.findall("(une?) (.*)", à_chercher)
+    if len(essais) == 1:
+        déterminant, texte = essais[0]
+        gtls = mo.GroupeTypeLieu.objects.filter(
+            nom__istartswith=texte, féminin=déterminant == "une"
+        )
+        res.ajoute_un_paquet([gtl.pour_js() for gtl in gtls])
