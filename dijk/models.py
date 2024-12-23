@@ -1,7 +1,9 @@
+
 import json
 from pprint import pformat
 import os
 import math
+from typing import Any
 from typing_extensions import Self
 
 from django.db import models, close_old_connections, transaction, connection
@@ -224,7 +226,7 @@ class Rue(models.Model):
         res = []
         for (s, t) in deuxConséc(self.nœuds()):
             arête_aller = Arête.objects.filter(départ__id_osm=s, arrivée__id_osm=t).first()
-            if arête_aller is not None:
+            if arête_aller:
                 res.extend(arête_aller.géométrie())
             else:
                 arête_retour = Arête.objects.filter(départ__id_osm=t, arrivée__id_osm=s).first()
@@ -1157,7 +1159,7 @@ class Lieu(models.Model):
     
     nom = models.TextField(blank=True, default=None, null=True)
     autre_nom = models.TextField(blank=True, default=None, null=True)
-    nom_norm = models.TextField(blank=True, default=None, null=True)
+    nom_norm = models.TextField(blank=True, default=None, null=True) # normalisé par « prétraitement_rue »
     type_lieu = models.ForeignKey(TypeLieu, on_delete=models.CASCADE)
     ville = models.ForeignKey(Ville, on_delete=models.CASCADE, blank=True, default=None, null=True)
     lon = models.FloatField()
@@ -1165,7 +1167,7 @@ class Lieu(models.Model):
     horaires = models.TextField(blank=True, default=None, null=True)
     tél = models.TextField(blank=True, default=None, null=True)
     id_osm = models.BigIntegerField(unique=True)
-    json_tout = models.TextField(blank=True, default=None, null=True)
+    json_tout = models.TextField(blank=True, default="", null=True)
     arête = models.ForeignKey(Arête, on_delete=models.CASCADE, blank=True, default=None, null=True)  # Arête la plus proche
     num = models.IntegerField(blank=True, default=None, null=True)  # numéro de rue
     
@@ -1198,7 +1200,7 @@ class Lieu(models.Model):
         return res+", ".join(str(x) for x in (self.arête.nom, self.ville) if x)
 
         
-    def toutes_les_infos(self):
+    def toutes_les_infos(self) -> dict[str, Any]:
         """Renvoie le dico des données présentes sur osm."""
         res = json.loads(self.json_tout)
         res["adresse"] = self.adresse()
