@@ -476,7 +476,7 @@ class ArbreArête(models.Model, qa.Quadrarbre):
     def bbox(self):
         return (self.borne_sud, self.borne_ouest, self.borne_nord, self.borne_est)
 
-    def distance(self, coords: (float, float)):
+    def distance(self, coords: tuple[float, float]):
         """
         Précondition : self est une feuille.
         Sortie (float) : distance entre le point de coordonnées coords et le segment représenté par self.
@@ -564,16 +564,6 @@ class ArbreArête(models.Model, qa.Quadrarbre):
         print(f"Après rassemblement des frères il reste {len(fils)} nœuds. Je lance l’algo naïf.")
         return self.sous_arbre_contenant_naïf(fils)
                 
-            
-
-    # Maintenant il y a plusieurs arbres dans la base. Ne plus utiliser ceci!
-    @classmethod
-    def uneRacine(cls) -> Self:
-        """
-        Renvoie une racine d’un arbre la base. Obtenu en remontant depuis le premier élément de la base.
-        """
-        return cls.objects.all().first().ancètre()
-
 
     def getZones(self):
         """
@@ -593,7 +583,7 @@ class ArbreArête(models.Model, qa.Quadrarbre):
             raise ValueError(f"{self} ne semble pas être une feuille. J’ai obtenu {len(segments)} segments associés. Ce sont {segments}.")
     
     
-    def arête_la_plus_proche(self, coords: (float, float)):
+    def arête_la_plus_proche(self, coords: tuple[float, float]):
         """
         Sortie : (arête django la plus proche de coords, distance)
         """
