@@ -4,6 +4,7 @@
 
 import json
 import re
+import logging
 
 from django.db.models import Subquery
 
@@ -84,41 +85,40 @@ def complétion(à_compléter: str, nbMax: int, z_d: mo.Zone) -> Résultat:
     # dans ce cas le contenu de la parenthèse peut avoir une adresse complète, ou juste un nom de ville.
     # et la première partie est un nom de lieu
     regexp_lieu = re.compile("(.*)\(([^)]*)\)?")
-    avec_parenthèse = regexp_lieu.fullmatch()
+    avec_parenthèse = regexp_lieu.fullmatch(à_compléter)
     if avec_parenthèse:
         str_lieu, str_adresse = avec_parenthèse.groups()
         # Dans la parenthèse, il peut y avoir une adresse complète, ou juste une ville
         str_ville = avec_parenthèse.group(2)
+        # Donc dans ce cas, str_adresse == str_ville : on va se baser sur la ême chaîne pour chercher ville ou adresse.
     else:
         # Sinon on ne sait pas su la chaîne cherchée est un lieu ou une adresse
         str_lieu = à_compléter
         str_adresse = à_compléter
+        # on va chercher un lieu ou une adresse en partant de la même chaîne.
 
-    
-    
     
     # Découpage de la chaîne à chercher
     num, bis_ter, str_rue, déb_ville = découpe_adresse(str_adresse)
     if déb_ville:
-        # Si on a trouvé une ville dans l’adresse, on garde celle-ci
-        # (càd si l’adresse contenait une virgule)
+        # Si on a trouvé une ville dans l’adresse, on garde celle-ci à la place de ce qu’on avait éventuellement auparavant
         str_ville = déb_ville
         
     str_ville_norm = partie_commune(str_ville)
 
     # prétraitement_rue est la fonction qui normalise à la fois les noms de rue et de lieux
-    à_chercher = prétraitement_rue(str_rue)
+    # à_chercher = prétraitement_rue(str_rue)
     
-    print(f"Recherche de {à_chercher} dans la ville {str_ville_norm}")
-    breakpoint()
+    logging.info("Recherche dans la ville %s.", str_ville_norm)
+
     # Villes : dans la zone et contient la partie après la virgule de à_compléter
     villes = mo.Ville_Zone.objects.filter(
-        zone=z_d, ville__nom_norm__startswith=déb_ville
+        zone=z_d, ville__nom_norm__startswith=str_ville_norm
     )
     req_villes = Subquery(villes.values("ville"))
 
     res = Résultat(nbMax)
-
+    breakpoint()
     cherche_dans_gtls(str_lieu, res)
     
     cherche_un_lieu(str_lieu, res, req_villes)
@@ -135,12 +135,15 @@ def complétion(à_compléter: str, nbMax: int, z_d: mo.Zone) -> Résultat:
 
 
 def cherche_une_adresse(num: str, bis_ter: str, str_rue: str, res: Résultat, req_villes) -> None:
-    # Recherche dans les rues
+    """
+    Recherche une rue dont le nom_norm contient partie_commune(str_rue) et dont la ville est dans le rés de req_villes.
+    Enregistre les résultats dans res, en y ajoutant le numéro et l’éventuel bis ou ter (à ce stade c’est juste pour être transmis au front).
+    """
     début = " ".join(x for x in [num, bis_ter] if x)
     if début:
         début += " "
     rues = mo.Rue.objects.filter(
-        nom_norm__icontains=str_rue,
+        nom_norm__icontains=partie_commune(str_rue),
         ville__in=req_villes
     ).prefetch_related("ville")
     res.ajoute_un_paquet([r.pour_autocomplète(num, bis_ter) for r in rues])
@@ -148,9 +151,12 @@ def cherche_une_adresse(num: str, bis_ter: str, str_rue: str, res: Résultat, re
 
 
 def cherche_un_lieu(à_chercher: str, res: Résultat, req_villes) -> None:
-    """Cherche un Lieu"""
+    """Cherche un Lieu dont le nom normalisé contienne les mots de partie_commune(à_chercher) et lié à une ville dans le résultat de req_ville.
+    Les lieux trouvés sont enregistrés dans res.
+    """
     # Recherche dans les lieux
-    mots = à_chercher.split(" ")
+    mots = partie_commune(à_chercher).split(" ")
+    logging.info("Recherche dans les lieux de %s", mots)
     lieux = mo.Lieu.objects.filter(
         ville__in=req_villes,
     ).prefetch_related(
@@ -158,7 +164,7 @@ def cherche_un_lieu(à_chercher: str, res: Résultat, req_villes) -> None:
     )
     for mot in mots:
         lieux = lieux.filter(nom_norm__contains=mot)
-    print(f"{len(lieux)} lieux trouvées")
+    logging.info("%d lieux trouvées", len(lieux))
 
     res.ajoute_un_paquet([l.pour_js() for l in lieux])
 
