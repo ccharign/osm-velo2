@@ -28,6 +28,8 @@ from dijk.progs_python.params import RACINE_PROJET
 from dijk.progs_python.petites_fonctions import LOG, chrono, distance_euc, paires, supprime_objets_par_lots
 from dijk.progs_python.quadrarbres import QuadrArbreArête
 
+
+
 #############################################################################
 ### Fonctions pour (ré)initialiser ou ajouter une nouvelle ville ou zone. ###
 #############################################################################
@@ -71,7 +73,7 @@ def quadArbresArêtesDeLaBase():
             z.save()
 
     
-def créeQuadArbreArêtesDeZone(z_d: mo.Zone, bavard=0) -> QuadrArbreArête:
+def créeQuadArbreArêtesDeZone(z_d: mo.Zone, bavard=0) -> mo.ArbreArête:
     """
     Effet : Crée le quadArbre de la plus grande zone contenant z_d, l’enregistre dans la base, et l’associe à z_d ainsi qu’à toutes les zones contenant z_d.
 
@@ -82,17 +84,15 @@ def créeQuadArbreArêtesDeZone(z_d: mo.Zone, bavard=0) -> QuadrArbreArête:
     # Cas récursif
     if z_d.inclue_dans:
         res = créeQuadArbreArêtesDeZone(z_d.inclue_dans, bavard=bavard)
-        z_d.arbre_arêtes = res
-        z_d.save()
-        return res
 
     # Cas de base
     else:
         qaa = QuadrArbreArête.of_list_darêtes_d(z_d.arêtes())
         res = qaa.sauv_dans_base(ArbreArête, SegmentArête)
-        z_d.arbre_arêtes = res
-        z_d.save()
-        return res
+
+    z_d.arbre_arêtes = res
+    z_d.save()
+    return res
 
     
     
@@ -183,9 +183,10 @@ def graphe_de_villes(villes: list[Ville], marge=500, pays="France") -> nx.MultiD
 
 
     vd.désoriente(g)
-    logging.info(f"Image du graphe enregistrée dans /tmp/{','.join(map(str(villes)))}.png")
-    osmnx.plot_graph(graphe_total, show=False, save=True, filepath=f"/tmp/{zone}.png")
-    assert nx.is_wealy_connected(g), "Le graphe n’est pas faiblement connexe"
+    nom_plot_graphe = ','.join(map(str, villes))
+    logging.info(f"Image du graphe enregistrée dans /tmp/{nom_plot_graphe}.png")
+    osmnx.plot_graph(g, show=False, save=True, filepath=f"/tmp/{nom_plot_graphe}.png")
+    assert nx.is_weakly_connected(g), "Le graphe n’est pas faiblement connexe"
     return g
     
 
@@ -245,7 +246,7 @@ def charge_graphe_de_ville(ville_d: Ville, pays="France", bavard=0, rapide=0) ->
 
     Une marge de 500m est prise. En particulier les sommets et arêtes à moins de 500m d’une frontière entre deux villes seront au final associés à ces deux villes.
     """
-
+    raise ValueError("Fonction à corriger")
     ## Désorientation
     close_old_connections()
     print("\nDésorientation du graphe")
@@ -438,6 +439,7 @@ def vide_zone(zone: Zone):
        - les sommets
        - les arêtes
        - les lieux
+       - les arbres arêtes devenus orphelins
     liés à cette zone.
     """
     for v in zone.villes():
@@ -465,6 +467,17 @@ def vide_zone(zone: Zone):
         print(sommets._raw_delete(sommets.db))
         # Ceci supprime au passage les arêtes liées aux sommets supprimés
 
+    # Arbre arête
+    logging.info("Suppressions des arbres arête orphelins")
+    fini = False
+    while not fini:
+        nb_supprimés = mo.ArbreArête.objects.filter(related_manager_segment=None, related_manager_fils=None).delete()[0]
+        if nb_supprimés:
+            logging.info("%d objets supprimés", nb_supprimés)
+        else:
+            fini=True
+
+    # Cache_Adresse
     Cache_Adresse.objects.all().delete()
 
 
@@ -563,7 +576,7 @@ def crée_zone(
     print(getrusage(RUSAGE_SELF))
 
 
-def charge_lieux_of_liste_ville(villes: Iterable[Ville], arbre_a: QuadrArbreArête, réinit=False) -> list:
+def charge_lieux_of_liste_ville(villes: Iterable[Ville], arbre_a: mo.ArbreArête, réinit=False) -> list:
     """
     Charge les lieux des villes de la liste éponyme.
 
@@ -595,7 +608,11 @@ def recharge_lieux_of_zone(zone, bavard=0):
     charge_lieux_of_liste_ville(villes, QuadrArbreArête.of_list_darêtes_d(zone.arêtes(), sauv=False))
     
 
-def charge_fichier_cycla_défaut(g, chemin=os.path.join(RACINE_PROJET, "progs_python/initialisation/données_à_charger/rues et cyclabilité.txt"), zone="Pau_agglo"):
+def charge_fichier_cycla_défaut(
+        g,
+        chemin=os.path.join(RACINE_PROJET, "progs_python/initialisation/données_à_charger/rues et cyclabilité.txt"),
+        zone: str="Pau_agglo"
+):
     """
     Entrées : g (graphe)
               chemin (str)
