@@ -15,8 +15,10 @@ from pathlib import Path
 # récup les valeurs du .env
 from dotenv import load_dotenv
 import os
+import logging
 load_dotenv()
 
+logging.basicConfig(level=logging.__getattribute__(os.environ.get("LOG_LEVEL")))
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
