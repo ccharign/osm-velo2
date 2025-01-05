@@ -691,7 +691,9 @@ class Zone(models.Model):
     nom = models.CharField(max_length=100, unique=True)
     ville_défaut = models.ForeignKey(Ville, on_delete=models.CASCADE)
     arbre_arêtes = models.ForeignKey(ArbreArête, on_delete=models.SET_NULL, null=True)
-    inclue_dans = models.ForeignKey("self", related_name="related_manager_sous_zones", blank=True, null=True, default=None, on_delete=models.SET_NULL)
+    inclue_dans = models.ForeignKey(
+        "self", related_name="related_manager_sous_zones", blank=True, null=True, default=None, on_delete=models.SET_NULL
+    )
     cycla_min = models.FloatField(default=1.0)
     cycla_max = models.FloatField(default=1.0)
     
@@ -790,6 +792,24 @@ class Zone(models.Model):
         print(f"Cycla min et max pour la zone {self}: {self.cycla_min}, {self.cycla_max}")
         self.save()
 
+    
+    def estConnexe(self) ->bool:
+        """Indique si self est connexe"""
+        visité = {s: False for s in self.sommets()}
+
+        # Un sommet au hasard pour partir
+        s0 = next(visité.keys())
+        
+        def visite(s: Sommet):
+            if not visité[s]:
+                visité[s]=True
+                for t in s.voisins_nus():
+                    visite(t)
+
+        visite(s0)
+
+        return all(v for (c,v) in visité.items())
+        
     
     def sauv_csv(self, chemin_csv=DONNÉES) -> str:
         """
