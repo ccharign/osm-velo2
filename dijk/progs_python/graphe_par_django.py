@@ -39,6 +39,18 @@ class Graphe_django(Graphe):
         arbre_arêtes : dico (nom de zone -> arbreQuad des arêtes).
         arbre_lex_zone : dico (zone -> ArbreLex des noms de rue) (Pour autocomplétion)
     """
+
+    dico_Sommet: dict[int, Sommet]
+    dico_voisins: dict[int, list[tuple[int, Arête]]]
+    arbre_villes: ArbreLex
+    cycla_min: float
+    cycla_max: float
+    zones: list[Zone]
+    ville_défaut: Ville
+    arbres_des_rues: dict[str, ArbreLex]
+    arbre_arêtes: dict[str, mo.ArbreArête]
+    arbre_lex_zone: dict[Zone, ArbreLex]
+
     
     def __init__(self):
         self.dico_voisins = {}
@@ -121,7 +133,6 @@ class Graphe_django(Graphe):
 
         self.zones.append(z_d)
         return z_d
-
 
 
     def vérif_zone(self, z_t):

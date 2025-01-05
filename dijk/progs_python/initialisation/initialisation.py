@@ -477,6 +477,10 @@ def vide_zone(zone: Zone):
         else:
             fini=True
 
+    # Lieux
+    logging.info("Suppression des lieux sans arête")
+    print(mo.Lieu.objects.filter(arête=None).delete())
+    
     # Cache_Adresse
     Cache_Adresse.objects.all().delete()
 

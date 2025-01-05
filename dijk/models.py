@@ -1,4 +1,4 @@
-
+import logging
 import json
 from pprint import pformat
 import os
@@ -15,6 +15,9 @@ import dijk.progs_python.quadrarbres as qa
 
 from dijk.progs_python.lecture_adresse.normalisation0 import prétraitement_rue
 from dijk.progs_python.petites_fonctions import deuxConséc
+
+class LieuTropLoin(Exception):
+    pass
 
 
 def objet_of_dico(
@@ -590,7 +593,30 @@ class ArbreArête(models.Model, qa.Quadrarbre):
         a, d = self.étiquette_la_plus_proche(coords)  # a est une ArêteSimplifiée
         a_d = Arête.objects.get(pk=a.pk)
         return a_d, d
-    
+
+    def arête_et_ville_les_plus_proches(self, coords: tuple[float, float], dmax=30.) -> tuple[Arête, Ville]:
+        """
+        Ajoute à l’objet son arête la plus proche.
+
+        Entrée :
+            arbre_arêtes un Q arbre d’arêtes
+
+        Effet:
+            l’arête la plus proche de self est ajoutée dans l’attribut arête.
+            Enregistre aussi la ville de l’arête. Dans le cas où l’arête est sur une frontière c’est la ville avec la plus grande population qui est gardée.
+            La modif n’est *pas* sauvegardée, pour permettre un bulk_update ultérieur.
+
+        Param :
+            dmax, distance max entre coords et l’arête la plus proche pour que l’arête et la ville soient enregistrés. En mètres.
+        """
+        a, d = self.étiquette_la_plus_proche(coords)  # a est une ArêteSimplifiée
+        if d < dmax:
+            a_d = Arête.objects.get(pk=a.pk)
+            ville = max(a_d.villes.all())  # La relation d’ordre sur les villes est la population
+            return a_d, ville
+        else:
+            raise LieuTropLoin
+
     
     @transaction.atomic
     def supprime_n_feuilles(self, n: int):
@@ -789,6 +815,14 @@ class Zone(models.Model):
         self.save()
 
     
+    def estConnexe(self) -> bool:
+        """Indique si self est connexe"""
+        logging.info("Vérification de la connexité de %s", self.nom)
+        une_ville = Ville_Zone.objects.filter(zone=self).first().ville
+        un_sommet = Sommet.objects.filter(villes=[une_ville]).first()
+        déjà_vu = set()
+        
+        
     def sauv_csv(self, chemin_csv=DONNÉES) -> str:
         """
         Renvoie un csv contenant tous les chemins de la table.
@@ -1157,8 +1191,8 @@ class Lieu(models.Model):
     horaires = models.TextField(blank=True, default=None, null=True)
     tél = models.TextField(blank=True, default=None, null=True)
     id_osm = models.BigIntegerField(unique=True)
-    json_tout = models.TextField(blank=True, default="", null=True)
-    arête = models.ForeignKey(Arête, on_delete=models.CASCADE, blank=True, default=None, null=True)  # Arête la plus proche
+    json_tout = models.TextField(blank=True, default="")
+    arête = models.ForeignKey(Arête, on_delete=models.CASCADE)  # Arête la plus proche
     num = models.IntegerField(blank=True, default=None, null=True)  # numéro de rue
     
 
@@ -1249,8 +1283,9 @@ class Lieu(models.Model):
 
 
 
-    def ajoute_arête_la_plus_proche(self, arbre_arêtes: ArbreArête, dmax=30.):
+    def ajoute_arête_la_plus_proche(self, arbre_arêtes: ArbreArête, dmax: float=30.):
         """
+        DÉPRÉCIÉ
         Ajoute à l’objet son arête la plus proche.
 
         Entrée :
@@ -1314,6 +1349,10 @@ class Lieu(models.Model):
         d_final = {c: d[c] for c in cls._champs if c in d}  # Le dico à envoyer au constructeur
         d_final["nom_norm"] = prétraitement_rue(d["nom"])
         d_final["json_tout"] = nv_json_tout
+
+        arête, ville = arbre_a.arête_et_ville_les_plus_proches((d["lon"], d["lat"]))
+        d_final["arête"] = arête
+        d_final["ville"] = ville
         if "addr:housenumber" in d_final:
             d_final["num"] = d_final.pop("addr:housenumber")
 
@@ -1350,7 +1389,7 @@ class Lieu(models.Model):
 
         
         # Arête et ville
-        res.ajoute_arête_la_plus_proche(arbre_a)
+        # res.ajoute_arête_la_plus_proche(arbre_a)
 
         return res, créé, utile
 
