@@ -8,6 +8,8 @@
  
  Les lieux publics (point d’eau, boutiques, cafés, lieux culturels ou sportif, administration...) présents sur openstreetmap sont également proposés à l’autocomplétion, et les informations présentes (horaires, téléphone, ...) affichées.
 
+ L'option "passer par " permet des recherches du type "de chez moi à mon café préféré en passant par une boulangerie".
+
  Il est testable ici : http://trajet.pauavelo.fr/
 
 Installation
