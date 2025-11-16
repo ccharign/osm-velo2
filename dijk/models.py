@@ -818,10 +818,21 @@ class Zone(models.Model):
     def estConnexe(self) -> bool:
         """Indique si self est connexe"""
         logging.info("Vérification de la connexité de %s", self.nom)
-        une_ville = Ville_Zone.objects.filter(zone=self).first().ville
-        un_sommet = Sommet.objects.filter(villes=[une_ville]).first()
-        déjà_vu = set()
         
+        déjà_vu = set()
+
+        def visite(s: Sommet):
+            if s not in déjà_vu:
+                déjà_vu.add(s)
+                for t in s.voisins_nus():
+                    visite(t)
+
+        visite(next(self.sommets()))
+        logging.info("Parcours du graphe fini")
+
+        print(f"{len(déjà_vu)} sommets visités, {len(self.sommets_qs())} sommets dans la base associés à cette zone.")
+        print(f"Sommet(s) non visité(s): {tuple(s for s in self.sommets() if s not in déjà_vu)}")
+        return len(déjà_vu) == len(self.sommets_qs())
         
     def sauv_csv(self, chemin_csv=DONNÉES) -> str:
         """

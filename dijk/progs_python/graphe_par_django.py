@@ -2,6 +2,8 @@
 
 from time import perf_counter
 import os
+from typing import Iterator, override
+
 from django.db.models import Max, Min, Subquery
 from django.db import transaction, close_old_connections
 
@@ -62,7 +64,10 @@ class Graphe_django(Graphe):
         self.arbre_cache = {}
         self.arbre_arêtes = {}
         self.arbre_lex_zone = {}
-    
+
+    @override
+    def __iter__(self) -> Iterator[int]:
+        return self.dico_Sommet.keys()
         
     def charge_zone(self, zone_t: str, bavard=0) -> Zone:
         """
@@ -281,7 +286,7 @@ class Graphe_django(Graphe):
         return Sommet.objects.all()
 
 
-    def voisins(self, s: int, p_détour: float, interdites={}):
+    def voisins(self, s: int, p_détour: float, interdites={}) -> tuple[tuple[int, float], ...]:
         """
         La méthode utilisée par dijkstra.
         Entrées :
@@ -292,9 +297,9 @@ class Graphe_django(Graphe):
         La méthode utilisée par dijkstra. Renvoie les couples (voisin, longueur de l'arrête) issus du sommet s.
         La longueur de l'arrête (s, t) renvoyée est sa longueur physique divisée par sa cyclabilité**(p_détour*1.5).
         """
-        tout = [ (t, a.longueur_corrigée(p_détour) ) for (t, a) in self.dico_voisins[s]]
+        tout = tuple((t, a.longueur_corrigée(p_détour) ) for (t, a) in self.dico_voisins[s])
         if s in interdites:
-            return [(t, l) for (t, l) in tout if t not in interdites[s]]
+            return tuple((t, l) for (t, l) in tout if t not in interdites[s])
         else:
             return tout
 

@@ -91,6 +91,7 @@ def itinéraire(request: WSGIRequest, nom_zone: str, étapes_str: str) -> list |
     try:
         z_d = g.charge_zone(nom_zone)
         étapes = [Étape.of_dico(é, g, z_d) for é in json.loads(étapes_str)]
+        assert all(é.nœuds_existent for é in étapes)
         res = [
             iti.vers_js()
             for iti in itinéraire_of_étapes(

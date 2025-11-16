@@ -8,7 +8,7 @@ from dijk.progs_python.params import LOG_PB, LOG
 #from dijk.models import formule_pour_correction_longueur
 #from dijk.progs_python.petites_fonctions import deuxConséc
 if TYPE_CHECKING:
-    from dijk.progs_python.chemins import Étape, ÉtapeEnsLieux
+    from dijk.progs_python.chemins import Étape
 
 class PasDeChemin(Exception):
     pass
@@ -186,7 +186,7 @@ def vers_une_étape(g, départ, arrivée, p_détour, dist, pred, première_étap
     
     def entasse(s, d):
         """
-        Entasse dans àVisiter le couple (d+heuristique, s)
+        Entasse dans àVisiter le couple (d, s)
         """
         heappush(àVisiter, (d, s))
         
@@ -228,6 +228,7 @@ def vers_une_étape(g, départ, arrivée, p_détour, dist, pred, première_étap
         # _, plus_proche = min((heuristique(g, s, arrivée, correction_max), s) for s in dist.keys())
         # chemin = [plus_proche]
         # reconstruction(chemin, pred, départ)
+        breakpoint()
         raise PasDeChemin(f"Pas réussi à atteindre l’étape {arrivée}.\n")
     if not fini:
         LOG_PB(f"Avertissement : je n’ai pas réussi à atteindre tous les sommets de {arrivée}.\n Sommets non atteints:{[s for s in arrivée if s not in sommetsFinalsTraités]}.")
@@ -250,13 +251,13 @@ def reconstruction(chemin, pred, départ):
             s = spp
 
 
-def iti_étapes_ensembles(g, c, bavard=0):
+def iti_étapes_ensembles(g, c, bavard=0) -> tuple[list[int], float]:
     """
     Entrées : - départ et arrivée, deux sommets
               - c, instance de Chemin (c.étapes est une liste d’Étapes. Pour toute étape é, é.nœuds est une liste de nœuds. Un nœud est un int (id_osm))
               - interdites : arêtes interdites. dico s->sommets interdits depuis s.
 
-    Sortie (int list × float): plus court chemin d’un sommet de étapes[0] vers un sommet de étapes[-1] qui passe par au moins une arête de chaque étape intérmédiaire, longueur de l’itinéraire.
+    Sortie (int list × float): plus court chemin d’un sommet de étapes[0] vers un sommet de étapes[-1] qui passe par au moins une arête de chaque étape intermédiaire, longueur de l’itinéraire.
     """
     LOG(f"Recherche d’un itinéraire pour le chemin {c}", bavard=bavard)
     #correction_max = 1. / formule_pour_correction_longueur(1., c.zone.cycla_max, c.p_détour)

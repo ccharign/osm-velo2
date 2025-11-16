@@ -186,7 +186,8 @@ def graphe_de_villes(villes: list[Ville], marge=500, pays="France") -> nx.MultiD
     nom_plot_graphe = ','.join(map(str, villes))
     logging.info(f"Image du graphe enregistrée dans /tmp/{nom_plot_graphe}.png")
     osmnx.plot_graph(g, show=False, save=True, filepath=f"/tmp/{nom_plot_graphe}.png")
-    assert nx.is_weakly_connected(g), "Le graphe n’est pas faiblement connexe"
+    # assert nx.is_weakly_connected(g), "Le graphe n’est pas faiblement connexe"
+    assert nx.is_strongly_connected(g), "le graphe n’est pas fortement connexe"
     return g
     
 

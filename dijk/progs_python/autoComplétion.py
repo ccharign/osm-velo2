@@ -118,7 +118,7 @@ def complétion(à_compléter: str, nbMax: int, z_d: mo.Zone) -> Résultat:
     req_villes = Subquery(villes.values("ville"))
 
     res = Résultat(nbMax)
-    breakpoint()
+
     cherche_dans_gtls(str_lieu, res)
     
     cherche_un_lieu(str_lieu, res, req_villes)

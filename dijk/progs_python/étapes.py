@@ -22,6 +22,10 @@ class HorsZone(ValueError):
 class Étape(abc.ABC):
     """Classe mère pour des étapes utilisables dans les variantes de Dijkstra."""
 
+    nom: str
+    nœuds: set[int]
+    coords: None | tuple[float, float]
+    
     def __init__(self):
         self.nœuds = set()
         self.nom = ""
@@ -36,7 +40,10 @@ class Étape(abc.ABC):
 
     def __len__(self):
         return len(self.nœuds)
-    
+
+    def nœuds_existent(self):
+        nœuds_pas_dans_la_base = [s for s in self.nœuds if not mo.Sommet.objects.filter(id_osm=s).first()]
+        assert not nœuds_pas_dans_la_base, f"l’étape {self} a des nœuds pas dans la base: {nœuds_pas_dans_la_base}"
 
     def infos(self):
         """
@@ -48,6 +55,7 @@ class Étape(abc.ABC):
         res = {"nom": str(self)}
         return res
 
+    
     
     @abc.abstractmethod
     def pour_marqueur(self):
