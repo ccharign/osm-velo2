@@ -6,9 +6,9 @@ from dijk.progs_python.overpass_with_ua import OverpassWithUA
 import geopy, overpy
 #import functools
 from params import VILLE_DÉFAUT
-import xml.etree.ElementTree as xml
+import xml.etree.ElementTree as xml  # Manipuler le xml local
 
-from site_velo.settings import OVERPASS_UA  # Manipuler le xml local
+from site_velo.settings import OVERPASS_UA
 
 
 geopy.geocoders.options.default_user_agent = "pau à vélo"
