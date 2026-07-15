@@ -10,12 +10,14 @@ from pprint import pprint, pformat
 import subprocess
 from functools import reduce
 
+from dijk.progs_python.overpass_with_ua import OverpassWithUA
 import geopy
 import overpy
 
 from params import LOG_PB
 from petites_fonctions import LOG
 import dijk.models as mo
+from site_velo.settings import OVERPASS_UA
 
 
 geopy.geocoders.options.default_user_agent = "pau à vélo"
@@ -220,7 +222,7 @@ def bb_enveloppante(nœuds, bavard=0):
     Entrée : nœuds (int iterable), liste d’id_osm de nœuds
     Sortie : la plus petite bounding box contenant ces nœuds.
     """
-    api = overpy.Overpass()
+    api = OverpassWithUA(user_agent=OVERPASS_UA)
     req = f"""
     node(id:{",".join(map( str, nœuds))});
     out;
@@ -242,7 +244,7 @@ def nœuds_dans_bb(bb, tol=0):
     """
     print("(nœuds_dans_bb) J’attends 5s pour overpass.")
     time.sleep(5)
-    api = overpy.Overpass()
+    api = OverpassWithUA(user_agent=OVERPASS_UA)
     s, o, n, e = bb
     req = f"node({s-tol}, {o-tol}, {n+tol}, {e+tol});out;"
     return [n.id for n in api.query(req).nodes]
@@ -254,7 +256,7 @@ def ways_contenant_nodes(nœuds):
     Entrée : nœuds (int itérable), id_osm de nœuds
     Sortie : liste des ways avec tag highwaycontenant au moins un élément de nœuds.
     """
-    api = overpy.Overpass()
+    api = OverpassWithUA(user_agent=OVERPASS_UA)
     requête = f"""
     node(id:{",".join(map( str, nœuds))});
     way[highway](bn);

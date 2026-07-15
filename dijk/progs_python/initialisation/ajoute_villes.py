@@ -30,7 +30,7 @@ def liste_villes():
 #     r = localisateur.geocode({"city":ville, "country":"France"}).raw
 #     assert r["osm_type"] == "relation"
 #     id_ville = r["osm_id"]
-#     api = overpy.Overpass()
+#     api = OverpassWithUA(user_agent=OVERPASS_UA)
 #     r = api.query(f"""
 #     node(area:{3600000000+id_ville});
 #     out ids;

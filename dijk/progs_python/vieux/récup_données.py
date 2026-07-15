@@ -2,17 +2,20 @@
 
 # Ce module regroupe les fonctions de recherche de données géographiques qui n'utilisent pas osmnx
 
+from dijk.progs_python.overpass_with_ua import OverpassWithUA
 import geopy, overpy
 #import functools
 from params import VILLE_DÉFAUT
 import xml.etree.ElementTree as xml  # Manipuler le xml local
+
+from site_velo.settings import OVERPASS_UA
 
 
 geopy.geocoders.options.default_user_agent = "pau à vélo"
 
 localisateur = geopy.geocoders.osm.Nominatim(user_agent="pau à vélo")
 #geocode = functools.lru_cache(maxsize=128)(functools.partial(localisateur.geocode, timeout=5)) #mémoïzation
-api = overpy.Overpass()
+api = OverpassWithUA(user_agent=OVERPASS_UA)
 
 
 class LieuPasTrouvé(Exception):

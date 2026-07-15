@@ -31,6 +31,11 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG')
 
+# Overpass' User Agent. A descriptive string identifying your script and a contact point.
+# e.g. ``"MyProject/1.0 (https://github.com/me/myproject)"``.
+# Must not be a stock UA string, a browser UA, or a rotating UA.
+OVERPASS_UA = os.environ.get("OVERPASS_USER_AGENT", "")
+
 ALLOWED_HOSTS = []
 
 
